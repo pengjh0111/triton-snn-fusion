@@ -11,7 +11,12 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import torch
 
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+torch.set_float32_matmul_precision("high")
+
 from test.test_fused_convlif_kernel_configs import CASES, _dtype_from_arg, _pair, make_case_tensors, torch_temporal_ref
+from kernels.benchmark_conv_lif_temporal_general import format_kernel_dtype_diagnostics
 from runtime.triton_convlif_backend import (
     classify_conv_lif_config,
     run_triton_fused_conv_lif_state,
@@ -100,6 +105,7 @@ def run_case(case: Dict, T: int, device: str, dtype_name: str, warmup: int, repe
     torch.cuda.synchronize()
     triton_stats = time_cuda(triton_fn, warmup, repeat)
     temporal_config = sample_result.kernel_temporal_config if hasattr(sample_result, "kernel_temporal_config") else None
+    kernel_diagnostics = sample_result.kernel_diagnostics if hasattr(sample_result, "kernel_diagnostics") else None
     speedup = torch_stats["mean_ms"] / triton_stats["mean_ms"] if triton_stats["mean_ms"] > 0 else 0.0
     speedup_vs_compile = (
         torch_compile_stats["mean_ms"] / triton_stats["mean_ms"] if triton_stats["mean_ms"] > 0 else 0.0
@@ -121,6 +127,7 @@ def run_case(case: Dict, T: int, device: str, dtype_name: str, warmup: int, repe
         "speedup": float(speedup),
         "speedup_vs_compile": float(speedup_vs_compile),
         "kernel_temporal_config": temporal_config,
+        "kernel_diagnostics": kernel_diagnostics,
         "BTILE_T": None if temporal_config is None else temporal_config.get("BTILE_T"),
         "REUSE_GROUPS": None if temporal_config is None else temporal_config.get("REUSE_GROUPS"),
         "kernel_temporal_window": None if temporal_config is None else temporal_config.get("kernel_temporal_window"),
@@ -160,6 +167,14 @@ def main():
         raise RuntimeError("CUDA is required for this benchmark")
     torch.manual_seed(2026)
     torch.cuda.manual_seed_all(2026)
+    print(
+        "[Baseline Config] "
+        f"dtype={args.dtype} "
+        f"matmul_allow_tf32={torch.backends.cuda.matmul.allow_tf32} "
+        f"cudnn_allow_tf32={torch.backends.cudnn.allow_tf32} "
+        f"float32_matmul_precision={torch.get_float32_matmul_precision()}"
+    )
+    print(format_kernel_dtype_diagnostics(_dtype_from_arg(args.dtype)))
 
     if args.t_values is not None:
         t_values = args.t_values

@@ -4,7 +4,7 @@ import json
 import sys
 import time
 import traceback
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -17,7 +17,12 @@ import torch.nn as nn
 from spikingjelly.activation_based import functional, surrogate
 from spikingjelly.activation_based.model import spiking_resnet
 
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+torch.set_float32_matmul_precision("high")
+
 import runtime.snn_custom_ops as snn_custom_ops
+from compiler.chronos_compile import build_chronos_compile_config, compile_with_chronos_options
 from compiler.fx_lif_rewrite import (
     count_fused_conv_lif_state_nodes,
     count_lif_state_nodes,
@@ -28,14 +33,26 @@ from compiler.fx_lif_rewrite import (
 )
 from compiler.fx_lif_temporal_rewrite import (
     collect_conv_bn_lif_state_patterns,
+    collect_conv_bn_add_lif_state_patterns,
+    collect_standalone_lif_state_patterns,
+    count_fused_temporal_conv_add_lif_state_nodes,
     count_fused_temporal_conv_lif_state_nodes,
+    count_fused_temporal_lif_state_nodes,
     dump_temporal_patterns,
     dump_temporal_rewrite_log,
     dump_temporal_windows,
     group_temporal_patterns,
+    group_temporal_residual_patterns,
+    group_temporal_lif_patterns,
     make_temporal_windows,
+    make_temporal_residual_windows,
+    make_temporal_lif_windows,
+    rewrite_temporal_conv_bn_add_lif_state_to_fused,
     rewrite_temporal_conv_bn_lif_state_to_fused,
+    rewrite_temporal_lif_state_to_fused,
 )
+from compiler.fx_spatial_batching import apply_spatial_batching
+from compiler.fx_temporal_annotation import annotate_temporal_metadata
 from compiler.fx_temporal_scheduler import reorder_fx_graph_by_temporal_windows
 from test.models_for_fx_test import CustomStatefulIFNode, reset_custom_stateful_lif_modules
 
@@ -63,28 +80,49 @@ class RewriteCounters:
     conv_bn_replaced: int = 0
     fused_state_nodes: int = 0
     fused_temporal_state_nodes: int = 0
+    fused_temporal_residual_state_nodes: int = 0
+    fused_temporal_lif_state_nodes: int = 0
     temporal_groups: int = 0
     temporal_windows: int = 0
     temporal_replaced_windows: int = 0
     temporal_replaced_patterns: int = 0
     temporal_skipped_windows: int = 0
+    temporal_residual_groups: int = 0
+    temporal_residual_windows: int = 0
+    temporal_residual_total_windows: int = 0
+    temporal_residual_replaced_windows: int = 0
+    temporal_residual_rewritten_windows: int = 0
+    temporal_residual_replaced_patterns: int = 0
+    temporal_residual_skipped_windows: int = 0
+    temporal_residual_skip_reasons: Dict[str, int] = field(default_factory=dict)
+    residual_fuse_skip_reasons: Dict[str, int] = field(default_factory=dict)
+    temporal_lif_windows: int = 0
+    temporal_lif_total_windows: int = 0
+    temporal_lif_rewritten_windows: int = 0
+    temporal_lif_replaced_patterns: int = 0
+    temporal_lif_skipped_windows: int = 0
+    temporal_lif_skip_reasons: Dict[str, int] = field(default_factory=dict)
     single_step_replaced_patterns: int = 0
     temporal_schedule_ok: bool = False
     temporal_schedule_windows: int = 0
     temporal_schedule_moved_nodes: int = 0
     temporal_schedule_reason: str = ""
+    temporal_annotated_nodes: int = 0
+    temporal_annotation_missing: int = 0
+    temporal_annotation_roles: Dict[str, int] = field(default_factory=dict)
+    temporal_annotation_windows: Dict[int, int] = field(default_factory=dict)
+    temporal_annotation_reasons: Dict[str, int] = field(default_factory=dict)
+    spatial_batch_groups: int = 0
+    spatial_batched_ops: int = 0
+    spatial_batch_chains: int = 0
+    spatial_chain_groups: int = 0
+    spatial_cat_eliminated: int = 0
+    spatial_chunk_eliminated: int = 0
+    spatial_batch_skipped: int = 0
+    spatial_batch_reasons: Dict[str, int] = field(default_factory=dict)
 
 
-class SingleStepWrapper(nn.Module):
-    def __init__(self, layer: nn.Module):
-        super().__init__()
-        self.layer = layer
-
-    def forward(self, x):
-        return self.layer(x)
-
-
-class MultiStepWrapper(nn.Module):
+class SingleStepModeLoopWrapper(nn.Module):
     def __init__(self, layer: nn.Module, T: int):
         super().__init__()
         self.layer = layer
@@ -97,40 +135,41 @@ class MultiStepWrapper(nn.Module):
         return out_spikes_counter / self.T
 
 
-def _make_spiking_resnet32_from_blocks():
-    # Some SpikingJelly versions do not export spiking_resnet32. This fallback
-    # keeps the validation script usable while reporting that the direct API was absent.
-    return spiking_resnet.SpikingResNet(
-        spiking_resnet.BasicBlock,
-        [3, 4, 5, 3],
-        spiking_neuron=CustomStatefulIFNode,
-        surrogate_function=surrogate.ATan(),
-    )
+class MultiStepModeWrapper(nn.Module):
+    def __init__(self, layer: nn.Module, T: int):
+        super().__init__()
+        self.layer = layer
+        self.T = T
+
+    def forward(self, x):
+        x_seq = x.unsqueeze(0).repeat(self.T, 1, 1, 1, 1)
+        y_seq = self.layer(x_seq)
+        return y_seq.mean(0)
 
 
-def make_resnet_layer(model_name: str, allow_resnet32_fallback: bool) -> nn.Module:
+SingleStepWrapper = SingleStepModeLoopWrapper
+MultiStepWrapper = MultiStepModeWrapper
+
+
+def make_resnet_layer(model_name: str, allow_resnet32_fallback: bool, step_mode: str = "s") -> nn.Module:
     if model_name == "resnet18":
         layer = spiking_resnet.spiking_resnet18(
             pretrained=False,
             spiking_neuron=CustomStatefulIFNode,
             surrogate_function=surrogate.ATan(),
         )
-    elif model_name == "resnet32":
-        if hasattr(spiking_resnet, "spiking_resnet32"):
-            layer = spiking_resnet.spiking_resnet32(
-                pretrained=False,
-                spiking_neuron=CustomStatefulIFNode,
-                surrogate_function=surrogate.ATan(),
-            )
-        elif allow_resnet32_fallback:
-            print("[WARN] spiking_resnet.spiking_resnet32 is not available; using SpikingResNet BasicBlock [3,4,5,3] fallback.")
-            layer = _make_spiking_resnet32_from_blocks()
-        else:
-            raise RuntimeError("spiking_resnet.spiking_resnet32 is not available in this SpikingJelly install")
+    elif model_name in ("resnet34", "resnet32"):
+        if model_name == "resnet32":
+            print("[WARN] resnet32 is deprecated typo; using spiking_resnet34 instead.")
+        layer = spiking_resnet.spiking_resnet34(
+            pretrained=False,
+            spiking_neuron=CustomStatefulIFNode,
+            surrogate_function=surrogate.ATan(),
+        )
     else:
         raise ValueError(f"unsupported model: {model_name}")
 
-    functional.set_step_mode(layer, step_mode="s")
+    functional.set_step_mode(layer, step_mode=step_mode)
     return layer
 
 
@@ -145,8 +184,15 @@ def save_graph_files(gm: torch.fx.GraphModule, out_dir: Path, prefix: str):
     (out_dir / f"{prefix}_fx.txt").write_text(str(gm.graph), encoding="utf-8")
 
 
+def inductor_options_from_compile_kwargs(compile_kwargs: Dict[str, Any]):
+    options = compile_kwargs.get("options")
+    if options is None and compile_kwargs.get("mode") == "reduce-overhead":
+        options = {"triton.cudagraphs": True}
+    return options
+
+
 def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
-    def backend(gm: torch.fx.GraphModule, example_inputs):
+    def backend(gm: torch.fx.GraphModule, example_inputs, **compile_kwargs):
         graph_idx = counters.captured_graphs
         counters.captured_graphs += 1
         local_dir = graph_dir if graph_idx == 0 else graph_dir / f"graph_{graph_idx}"
@@ -158,7 +204,31 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         temporal_replaced_patterns = 0
         temporal_log: List[str] = []
 
+        annotation_window = args.temporal_schedule_window or args.temporal_fuse_window
+        annotation_stats = annotate_temporal_metadata(
+            gm,
+            annotation_window,
+            args.T,
+            strict=False,
+        )
+        counters.temporal_annotated_nodes += annotation_stats.temporal_annotated_nodes
+        counters.temporal_annotation_missing += annotation_stats.temporal_annotation_missing
+        for role, count in annotation_stats.temporal_annotation_roles.items():
+            counters.temporal_annotation_roles[role] = counters.temporal_annotation_roles.get(role, 0) + count
+        for window_id, count in annotation_stats.temporal_annotation_windows.items():
+            counters.temporal_annotation_windows[window_id] = counters.temporal_annotation_windows.get(window_id, 0) + count
+        for reason, count in annotation_stats.temporal_annotation_reasons.items():
+            counters.temporal_annotation_reasons[reason] = (
+                counters.temporal_annotation_reasons.get(reason, 0) + count
+            )
+        print(
+            f"[TEMPORAL_ANNOTATION] annotated={annotation_stats.temporal_annotated_nodes} "
+            f"missing={annotation_stats.temporal_annotation_missing} "
+            f"roles={annotation_stats.temporal_annotation_roles}"
+        )
+
         temporal_patterns = collect_conv_bn_lif_state_patterns(gm) if not args.disable_conv_bn_lif else []
+        residual_patterns = collect_conv_bn_add_lif_state_patterns(gm) if not args.disable_conv_bn_lif else []
         if args.enable_temporal_schedule and temporal_patterns:
             schedule_window = args.temporal_schedule_window or args.temporal_fuse_window
             schedule_result = reorder_fx_graph_by_temporal_windows(
@@ -175,6 +245,7 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
             counters.temporal_schedule_reason = schedule_result.reason
             if schedule_result.ok:
                 temporal_patterns = collect_conv_bn_lif_state_patterns(gm)
+                residual_patterns = collect_conv_bn_add_lif_state_patterns(gm)
             elif args.temporal_schedule_strict:
                 raise RuntimeError(schedule_result.reason)
             else:
@@ -205,6 +276,63 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                 counters.temporal_replaced_windows += temporal_stats.temporal_replaced_windows
                 counters.temporal_replaced_patterns += temporal_stats.temporal_replaced_patterns
                 counters.temporal_skipped_windows += temporal_stats.temporal_skipped_windows
+
+            residual_patterns = collect_conv_bn_add_lif_state_patterns(gm)
+            residual_groups = group_temporal_residual_patterns(residual_patterns)
+            residual_windows = make_temporal_residual_windows(
+                residual_groups,
+                args.temporal_fuse_window,
+                args.temporal_allow_tail,
+            )
+            counters.temporal_residual_groups += len(residual_groups)
+            counters.temporal_residual_windows += len(residual_windows)
+            counters.temporal_residual_total_windows += len(residual_windows)
+            if not args.disable_rewrite and residual_windows:
+                residual_stats = rewrite_temporal_conv_bn_add_lif_state_to_fused(
+                    gm,
+                    residual_windows,
+                    placeholder_values,
+                    max(0, args.max_patterns - temporal_replaced_patterns),
+                )
+                temporal_replaced_patterns += residual_stats.temporal_residual_replaced_patterns
+                counters.temporal_residual_replaced_windows += residual_stats.temporal_residual_replaced_windows
+                counters.temporal_residual_rewritten_windows += residual_stats.temporal_residual_replaced_windows
+                counters.temporal_residual_replaced_patterns += residual_stats.temporal_residual_replaced_patterns
+                counters.temporal_residual_skipped_windows += residual_stats.temporal_residual_skipped_windows
+                for reason, count in residual_stats.residual_fuse_skip_reasons.items():
+                    counters.temporal_residual_skip_reasons[reason] = (
+                        counters.temporal_residual_skip_reasons.get(reason, 0) + count
+                    )
+                    counters.residual_fuse_skip_reasons[reason] = (
+                        counters.residual_fuse_skip_reasons.get(reason, 0) + count
+                    )
+                temporal_log.extend(residual_stats.log)
+
+            if not args.disable_temporal_lif_rewrite:
+                lif_patterns = collect_standalone_lif_state_patterns(gm)
+                lif_groups = group_temporal_lif_patterns(lif_patterns)
+                lif_windows = make_temporal_lif_windows(
+                    lif_groups,
+                    args.temporal_fuse_window,
+                    args.temporal_allow_tail,
+                )
+                counters.temporal_lif_windows += len(lif_windows)
+                counters.temporal_lif_total_windows += len(lif_windows)
+                if not args.disable_rewrite and lif_windows:
+                    lif_stats = rewrite_temporal_lif_state_to_fused(
+                        gm,
+                        lif_windows,
+                        max(0, args.max_patterns - temporal_replaced_patterns),
+                    )
+                    temporal_replaced_patterns += lif_stats.temporal_lif_replaced_patterns
+                    counters.temporal_lif_rewritten_windows += lif_stats.temporal_lif_rewritten_windows
+                    counters.temporal_lif_replaced_patterns += lif_stats.temporal_lif_replaced_patterns
+                    counters.temporal_lif_skipped_windows += lif_stats.temporal_lif_skipped_windows
+                    for reason, count in lif_stats.temporal_lif_skip_reasons.items():
+                        counters.temporal_lif_skip_reasons[reason] = (
+                            counters.temporal_lif_skip_reasons.get(reason, 0) + count
+                        )
+                    temporal_log.extend(lif_stats.log)
             dump_temporal_rewrite_log(temporal_log, local_dir / "temporal_rewrite_log.txt")
 
         direct_matches = match_conv_lif_state(gm)
@@ -233,8 +361,38 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
             gm.graph.lint()
             gm.recompile()
 
+        if args.enable_spatial_batching and not args.disable_rewrite:
+            try:
+                spatial_window = args.temporal_schedule_window or args.temporal_fuse_window
+                spatial_stats = apply_spatial_batching(
+                    gm,
+                    spatial_window,
+                    args.spatial_batching_ops,
+                    dump_dir=local_dir if args.spatial_batching_dump else None,
+                    strict=args.spatial_batching_strict,
+                    enable_chain=not args.disable_spatial_batching_chain,
+                )
+                counters.spatial_batch_groups += spatial_stats.spatial_batch_groups
+                counters.spatial_batched_ops += spatial_stats.spatial_batched_ops
+                counters.spatial_batch_chains += spatial_stats.spatial_batch_chains
+                counters.spatial_chain_groups += spatial_stats.spatial_chain_groups
+                counters.spatial_cat_eliminated += spatial_stats.spatial_cat_eliminated
+                counters.spatial_chunk_eliminated += spatial_stats.spatial_chunk_eliminated
+                counters.spatial_batch_skipped += spatial_stats.spatial_batch_skipped
+                for reason, count in spatial_stats.reasons.items():
+                    counters.spatial_batch_reasons[reason] = (
+                        counters.spatial_batch_reasons.get(reason, 0) + count
+                    )
+            except Exception:
+                if args.spatial_batching_strict:
+                    raise
+                print("WARNING: spatial batching failed; continuing with the current graph.")
+                traceback.print_exc()
+
         fused_state_count = count_fused_conv_lif_state_nodes(gm)
         fused_temporal_state_count = count_fused_temporal_conv_lif_state_nodes(gm)
+        fused_temporal_residual_state_count = count_fused_temporal_conv_add_lif_state_nodes(gm)
+        fused_temporal_lif_state_count = count_fused_temporal_lif_state_nodes(gm)
         save_graph_files(gm, local_dir, "rewritten")
 
         counters.lif_state_nodes += lif_state_count
@@ -244,6 +402,8 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         counters.conv_bn_replaced += conv_bn_replaced
         counters.fused_state_nodes += fused_state_count
         counters.fused_temporal_state_nodes += fused_temporal_state_count
+        counters.fused_temporal_residual_state_nodes += fused_temporal_residual_state_count
+        counters.fused_temporal_lif_state_nodes += fused_temporal_lif_state_count
         counters.single_step_replaced_patterns += direct_replaced + conv_bn_replaced
 
         if args.rewrite_backend_mode == "eager":
@@ -251,7 +411,11 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         gm.meta.pop("dynamo_compile_id", None)
         if hasattr(gm, "_param_name_to_source"):
             delattr(gm, "_param_name_to_source")
-        return torch._inductor.compile(gm, example_inputs)
+        return torch._inductor.compile(
+            gm,
+            example_inputs,
+            options=inductor_options_from_compile_kwargs(compile_kwargs),
+        )
 
     return backend
 
@@ -261,13 +425,20 @@ def synchronize_if_needed(device: str):
         torch.cuda.synchronize()
 
 
-def run_model(name: str, model: nn.Module, x: torch.Tensor, device: str, compile_mode: bool, backend=None) -> RunResult:
+def run_model(name: str, model: nn.Module, x: torch.Tensor, device: str, compile_mode: bool, args, backend=None) -> RunResult:
     try:
         model.eval()
         reset_custom_stateful_lif_modules(model)
         runnable = model
         if compile_mode:
-            runnable = torch.compile(model, backend=backend if backend is not None else "inductor", fullgraph=False, dynamic=False)
+            runnable = compile_with_chronos_options(
+                model,
+                backend=backend if backend is not None else "inductor",
+                enable_cudagraphs=args.enable_cudagraphs,
+                cudagraph_mode=args.cudagraph_mode,
+                fullgraph=False,
+                dynamic=False,
+            )
         synchronize_if_needed(device)
         start = time.perf_counter()
         with torch.no_grad():
@@ -282,7 +453,7 @@ def run_model(name: str, model: nn.Module, x: torch.Tensor, device: str, compile
             shape=list(out.shape),
             dtype=str(out.dtype),
             elapsed_ms=elapsed_ms,
-        ), out.detach()
+        ), out.detach().clone()
     except Exception:
         return RunResult(name=name, ok=False, error=traceback.format_exc()), None
 
@@ -303,21 +474,37 @@ def write_summary(path: Path, payload: Dict[str, Any]):
 
 def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     print(f"\n================ {model_name} ================")
+    dtype = torch.float16 if args.dtype == "fp16" else torch.float32
+    print(
+        "[Baseline Config] "
+        f"dtype={args.dtype} "
+        f"matmul_allow_tf32={torch.backends.cuda.matmul.allow_tf32} "
+        f"cudnn_allow_tf32={torch.backends.cudnn.allow_tf32} "
+        f"float32_matmul_precision={torch.get_float32_matmul_precision()}"
+    )
     torch.manual_seed(args.seed)
     if args.device.startswith("cuda"):
         torch.cuda.manual_seed_all(args.seed)
 
-    base_layer = make_resnet_layer(model_name, allow_resnet32_fallback=not args.require_direct_resnet32_api)
-    base_layer = base_layer.to(device=args.device, dtype=torch.float32).eval()
-    x = torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=torch.float32)
+    base_layer_s = make_resnet_layer(
+        model_name,
+        allow_resnet32_fallback=not args.require_direct_resnet32_api,
+        step_mode="s",
+    ).to(device=args.device, dtype=dtype).eval()
+    base_layer_m = make_resnet_layer(
+        model_name,
+        allow_resnet32_fallback=not args.require_direct_resnet32_api,
+        step_mode="m",
+    ).to(device=args.device, dtype=dtype).eval()
+    x = torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=dtype)
 
     models = {
-        "baseline_s_eager": SingleStepWrapper(copy.deepcopy(base_layer)).to(args.device).eval(),
-        "baseline_s_compile": SingleStepWrapper(copy.deepcopy(base_layer)).to(args.device).eval(),
-        "baseline_m_eager": MultiStepWrapper(copy.deepcopy(base_layer), args.T).to(args.device).eval(),
-        "baseline_m_compile": MultiStepWrapper(copy.deepcopy(base_layer), args.T).to(args.device).eval(),
-        "rewrite_s_compile": SingleStepWrapper(copy.deepcopy(base_layer)).to(args.device).eval(),
-        "rewrite_m_compile": MultiStepWrapper(copy.deepcopy(base_layer), args.T).to(args.device).eval(),
+        "baseline_s_eager": SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(args.device).eval(),
+        "baseline_s_compile": SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(args.device).eval(),
+        "baseline_m_eager": MultiStepModeWrapper(copy.deepcopy(base_layer_m), args.T).to(args.device).eval(),
+        "baseline_m_compile": MultiStepModeWrapper(copy.deepcopy(base_layer_m), args.T).to(args.device).eval(),
+        "rewrite_s_compile": SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(args.device).eval(),
+        "rewrite_m_compile": MultiStepModeWrapper(copy.deepcopy(base_layer_m), args.T).to(args.device).eval(),
     }
 
     snn_custom_ops.configure_fused_op(
@@ -340,7 +527,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         ("baseline_m_compile", True, None),
     ]:
         print(f"[RUN] {model_name}/{case_name}")
-        result, out = run_model(case_name, models[case_name], x, args.device, compile_mode, backend)
+        result, out = run_model(case_name, models[case_name], x, args.device, compile_mode, args, backend)
         results[case_name] = result
         outputs[case_name] = out
         if not result.ok:
@@ -356,7 +543,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     ]:
         print(f"[RUN] {model_name}/{case_name}")
         backend = make_rewrite_backend(args, out_dir / case_name, rewrite_counters[case_name])
-        result, out = run_model(case_name, models[case_name], x, args.device, True, backend)
+        result, out = run_model(case_name, models[case_name], x, args.device, True, args, backend)
         results[case_name] = result
         outputs[case_name] = out
         if not result.ok:
@@ -372,13 +559,25 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         compare_to(results[case_name], outputs[case_name], outputs[ref_name], args.rtol, args.atol)
 
     call_stats = snn_custom_ops.get_fused_op_call_stats()
+    _, compile_config = build_chronos_compile_config(
+        backend="inductor",
+        enable_cudagraphs=args.enable_cudagraphs,
+        cudagraph_mode=args.cudagraph_mode,
+        fullgraph=False,
+        dynamic=False,
+    )
     payload = {
         "model": model_name,
         "input_shape": [args.batch_size, 3, args.height, args.width],
+        "dtype": args.dtype,
         "T": args.T,
         "temporal_fuse_window": args.temporal_fuse_window,
         "enable_temporal_rewrite": args.enable_temporal_rewrite,
         "fused_op_backend": args.fused_op_backend,
+        "enable_cudagraphs": args.enable_cudagraphs,
+        "cudagraph_mode": args.cudagraph_mode,
+        "compile_mode": compile_config["compile_mode"],
+        "compile_options": compile_config["compile_options"],
         "results": {name: asdict(result) for name, result in results.items()},
         "rewrite_counters": {name: asdict(counters) for name, counters in rewrite_counters.items()},
         "fused_op_call_stats": call_stats,
@@ -403,6 +602,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     print(f"  rewrite_s counters: {asdict(rewrite_counters['rewrite_s_compile'])}")
     print(f"  rewrite_m counters: {asdict(rewrite_counters['rewrite_m_compile'])}")
     print(f"  temporal_fuse_window: {args.temporal_fuse_window}")
+    print(f"  compile config: {compile_config}")
     print(f"  fused calls: {call_stats}")
     print(f"  wrote: {out_dir / 'summary.json'}")
     return payload
@@ -410,17 +610,19 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Validate Chronos FX Conv+BN+LIF rewrite against baseline s/m eager/compile.")
-    parser.add_argument("--models", nargs="+", default=["resnet18", "resnet32"], choices=["resnet18", "resnet32"])
+    parser.add_argument("--models", nargs="+", default=["resnet18", "resnet34"], choices=["resnet18", "resnet34", "resnet32"])
     parser.add_argument("--T", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--height", type=int, default=64)
     parser.add_argument("--width", type=int, default=64)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--dtype", choices=("fp32", "fp16"), default="fp32")
     parser.add_argument("--fused-op-backend", choices=("torch", "triton"), default="torch")
     parser.add_argument("--rewrite-backend-mode", choices=("eager", "inductor"), default="inductor")
     parser.add_argument("--strict-triton", action="store_true")
     parser.add_argument("--disable-rewrite", action="store_true")
     parser.add_argument("--disable-conv-bn-lif", action="store_true")
+    parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
     parser.add_argument("--enable-temporal-rewrite", action="store_true")
     parser.add_argument("--temporal-fuse-window", type=int, default=1)
     parser.add_argument("--temporal-allow-tail", action="store_true")
@@ -428,6 +630,18 @@ def parse_args():
     parser.add_argument("--temporal-schedule-window", type=int, default=None)
     parser.add_argument("--temporal-schedule-dump", action="store_true")
     parser.add_argument("--temporal-schedule-strict", action="store_true")
+    parser.add_argument("--enable-spatial-batching", action="store_true")
+    parser.add_argument(
+        "--spatial-batching-ops",
+        nargs="+",
+        default=["maxpool", "linear"],
+        choices=["maxpool", "linear", "flatten", "avgpool", "elementwise"],
+    )
+    parser.add_argument("--spatial-batching-dump", action="store_true")
+    parser.add_argument("--spatial-batching-strict", action="store_true")
+    parser.add_argument("--disable-spatial-batching-chain", action="store_true")
+    parser.add_argument("--enable-cudagraphs", action="store_true")
+    parser.add_argument("--cudagraph-mode", choices=("reduce-overhead", "triton-option", "both"), default="reduce-overhead")
     parser.add_argument("--max-patterns", type=int, default=1)
     parser.add_argument("--print-fused-op-calls", action="store_true")
     parser.add_argument("--require-direct-resnet32-api", action="store_true")
@@ -442,6 +656,9 @@ def main():
     args = parse_args()
     if args.device.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError("CUDA was requested, but torch.cuda.is_available() is False")
+    if args.dtype == "fp16" and args.rtol == 1e-4 and args.atol == 1e-4:
+        args.rtol = 1e-2
+        args.atol = 1e-2
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
     all_payloads = {}

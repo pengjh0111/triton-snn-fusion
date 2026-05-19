@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Dict, Sequence, Tuple
 from collections import Counter
+import os
 
 import torch
 import torch.nn.functional as F
@@ -8,8 +9,11 @@ import torch.nn.functional as F
 from runtime.triton_convlif_backend import (
     check_triton_support,
     run_triton_fused_conv_lif_state,
+    run_triton_fused_temporal_conv_add_lif_state,
     run_triton_fused_temporal_conv_lif_state,
 )
+from runtime.triton_temporal_lif_backend import run_triton_fused_temporal_lif_state
+from runtime.triton_temporal_lif_tail_backend import run_triton_fused_temporal_lif_tail
 
 
 TORCH_LIBRARY_HANDLES = []
@@ -36,6 +40,15 @@ _CALL_STATS: Dict[str, Any] = {
     "temporal_k3_s1_p1": 0,
     "temporal_k3_s2_p1": 0,
     "temporal_k7_s2_p3": 0,
+    "temporal_residual_total": 0,
+    "temporal_residual_triton": 0,
+    "temporal_residual_fallback": 0,
+    "temporal_lif_total": 0,
+    "temporal_lif_triton": 0,
+    "temporal_lif_fallback": 0,
+    "temporal_lif_tail_total": 0,
+    "temporal_lif_tail_triton": 0,
+    "temporal_lif_tail_fallback": 0,
     "kernel_temporal_configs": {},
 }
 
@@ -78,6 +91,8 @@ def _reason_key(reasons):
     if not reasons:
         return "unknown"
     msg = "; ".join(str(r) for r in reasons)
+    if "not implemented" in msg:
+        return "not_implemented"
     if "stride" in msg:
         return "unsupported_stride"
     if "padding" in msg:
@@ -148,15 +163,54 @@ def get_fused_op_call_stats() -> Dict[str, Any]:
     return out
 
 
-def _record_kernel_temporal_config(kind: str, kernel_key: str, config):
+def get_kernel_temporal_configs() -> Dict[str, int]:
+    """Get kernel temporal configuration statistics."""
+    return dict(_CALL_STATS.get("kernel_temporal_configs", {}))
+
+
+def reset_fused_op_call_stats():
+    """Reset fused op call statistics for per-case tracking."""
+    global _CALL_STATS, _FALLBACK_REASON_STATS
+    _CALL_STATS = {
+        "total": 0,
+        "triton": 0,
+        "fallback": 0,
+        "temporal_total": 0,
+        "temporal_triton": 0,
+        "temporal_fallback": 0,
+        "single_k3_s1_p1": 0,
+        "single_k3_s2_p1": 0,
+        "single_k7_s2_p3": 0,
+        "temporal_k3_s1_p1": 0,
+        "temporal_k3_s2_p1": 0,
+        "temporal_k7_s2_p3": 0,
+        "temporal_residual_total": 0,
+        "temporal_residual_triton": 0,
+        "temporal_residual_fallback": 0,
+        "temporal_lif_total": 0,
+        "temporal_lif_triton": 0,
+        "temporal_lif_fallback": 0,
+        "temporal_lif_tail_total": 0,
+        "temporal_lif_tail_triton": 0,
+        "temporal_lif_tail_fallback": 0,
+        "kernel_temporal_configs": {},
+    }
+    _FALLBACK_REASON_STATS.clear()
+
+
+def _record_kernel_temporal_config(kind: str, kernel_key: str, config, compute_dtype: str = "float32"):
     if not config:
         return
     btile_t = config.get("BTILE_T")
     reuse_groups = config.get("REUSE_GROUPS")
     window = config.get("kernel_temporal_window")
-    key = f"{kind}:{kernel_key}:BTILE_T={btile_t}:REUSE_GROUPS={reuse_groups}:window={window}"
+    key = f"{kind}:{kernel_key}:compute_dtype={compute_dtype}:BTILE_T={btile_t}:REUSE_GROUPS={reuse_groups}:window={window}"
     configs = _CALL_STATS["kernel_temporal_configs"]
     configs[key] = configs.get(key, 0) + 1
+
+
+def _strict_temporal_lif_triton_enabled() -> bool:
+    return bool(_CONFIG.strict_triton) or os.environ.get("CHRONOS_STRICT_TEMPORAL_LIF_TRITON", "0") == "1"
 
 
 def _ensure_v_prev(x: torch.Tensor, v_prev: torch.Tensor) -> torch.Tensor:
@@ -237,6 +291,76 @@ def fused_temporal_conv_lif_state_torch(
     return torch.stack(spikes, dim=0), v
 
 
+def fused_temporal_conv_add_lif_state_torch(
+    xs,
+    residuals,
+    weight,
+    bias,
+    v_init,
+    stride: Sequence[int],
+    padding: Sequence[int],
+    dilation: Sequence[int],
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if len(xs) == 0:
+        raise RuntimeError("fused_temporal_conv_add_lif_state requires at least one input tensor")
+    if len(xs) != len(residuals):
+        raise RuntimeError("xs and residuals must have the same temporal length")
+
+    v = v_init
+    spikes = []
+    for x, residual in zip(xs, residuals):
+        conv_out = F.conv2d(x, weight, bias, stride, padding, dilation, groups)
+        lif_in = conv_out + residual
+        spike, v = lif_forward_state_torch(lif_in, v, v_threshold, v_reset, tau, detach_reset)
+        spikes.append(spike)
+    return torch.stack(spikes, dim=0), v
+
+
+def fused_temporal_lif_state_torch(
+    x_seq,
+    v_init,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if x_seq.dim() != 5:
+        raise RuntimeError(f"fused_temporal_lif_state requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
+    v = v_init
+    spikes = []
+    for t in range(int(x_seq.shape[0])):
+        spike, v = lif_forward_state_torch(x_seq[t], v, v_threshold, v_reset, tau, detach_reset)
+        spikes.append(spike)
+    return torch.stack(spikes, dim=0), v
+
+
+def fused_temporal_lif_tail_torch(
+    x_seq,
+    v_init,
+    fc_weight,
+    fc_bias,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if x_seq.dim() != 5:
+        raise RuntimeError(f"fused_temporal_lif_tail requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
+    v = v_init
+    out_sum = None
+    for t in range(int(x_seq.shape[0])):
+        spike, v = lif_forward_state_torch(x_seq[t], v, v_threshold, v_reset, tau, detach_reset)
+        pooled = F.adaptive_avg_pool2d(spike, (1, 1)).flatten(1)
+        logits = F.linear(pooled, fc_weight, fc_bias if isinstance(fc_bias, torch.Tensor) and fc_bias.numel() > 0 else None)
+        out_sum = logits if out_sum is None else out_sum + logits
+    return out_sum, v
+
+
 def _conv2d_output_shape(x, weight, stride, padding, dilation) -> Tuple[int, int, int, int]:
     batch, _, height, width = x.shape
     out_channels = weight.shape[0]
@@ -292,6 +416,57 @@ def _fused_temporal_conv_lif_state_meta(
     return spike_stack, v_final
 
 
+def _fused_temporal_conv_add_lif_state_meta(
+    xs,
+    residuals,
+    weight,
+    bias,
+    v_init,
+    stride,
+    padding,
+    dilation,
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if len(xs) == 0:
+        raise RuntimeError("fused_temporal_conv_add_lif_state requires at least one input tensor")
+    out_shape = _conv2d_output_shape(xs[0], weight, stride, padding, dilation)
+    spike_stack = xs[0].new_empty((len(xs),) + tuple(out_shape))
+    v_final = xs[0].new_empty(out_shape)
+    return spike_stack, v_final
+
+
+def _fused_temporal_lif_state_meta(
+    x_seq,
+    v_init,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if x_seq.dim() != 5:
+        raise RuntimeError(f"fused_temporal_lif_state requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
+    return x_seq.new_empty(x_seq.shape), x_seq.new_empty(x_seq.shape[1:])
+
+
+def _fused_temporal_lif_tail_meta(
+    x_seq,
+    v_init,
+    fc_weight,
+    fc_bias,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if x_seq.dim() != 5:
+        raise RuntimeError(f"fused_temporal_lif_tail requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
+    return x_seq.new_empty((x_seq.shape[1], fc_weight.shape[0])), x_seq.new_empty(x_seq.shape[1:])
+
+
 def _lif_forward_state_impl(x, v_prev, v_threshold: float, v_reset: float, tau: float, detach_reset: bool):
     return lif_forward_state_torch(x, v_prev, v_threshold, v_reset, tau, detach_reset)
 
@@ -330,6 +505,9 @@ def _fused_conv_lif_state_impl(
         )
         if not reasons:
             try:
+                # Determine compute dtype based on input tensor dtype
+                compute_dtype = "float16" if x.dtype == torch.float16 else "float32"
+                
                 result = run_triton_fused_conv_lif_state(
                     x,
                     weight,
@@ -345,11 +523,21 @@ def _fused_conv_lif_state_impl(
                     detach_reset,
                     strict=_CONFIG.strict_triton,
                     verbose=_CONFIG.verbose,
+                    compute_dtype=compute_dtype,
                 )
                 _CALL_STATS["triton"] += 1
                 _CALL_STATS[f"single_{result.kernel_key}"] = _CALL_STATS.get(f"single_{result.kernel_key}", 0) + 1
-                _record_kernel_temporal_config("single", result.kernel_key, result.kernel_temporal_config)
+                _record_kernel_temporal_config("single", result.kernel_key, result.kernel_temporal_config, compute_dtype)
                 if _CONFIG.verbose:
+                    if result.kernel_diagnostics:
+                        print(
+                            "[Kernel Config] "
+                            f"compute_dtype={result.kernel_diagnostics.get('compute_dtype')} "
+                            f"accumulator_dtype={result.kernel_diagnostics.get('accumulator_dtype')} "
+                            f"membrane_dtype={result.kernel_diagnostics.get('membrane_dtype')} "
+                            f"tf32_enabled={result.kernel_diagnostics.get('tf32_enabled')} "
+                            f"tensor_core_usage_mode={result.kernel_diagnostics.get('tensor_core_usage_mode')}"
+                        )
                     print(f"[TRITON][HIT][single][{result.kernel_key}] {shape_desc}")
                 return result.spikes, result.v_next
             except Exception as exc:
@@ -414,6 +602,9 @@ def _fused_temporal_conv_lif_state_impl(
 
     if _CONFIG.backend == "triton" and first_x is not None and first_x.is_cuda:
         try:
+            # Determine compute dtype based on input tensor dtype
+            compute_dtype = "float16" if first_x.dtype == torch.float16 else "float32"
+            
             result = run_triton_fused_temporal_conv_lif_state(
                 xs,
                 weight,
@@ -429,19 +620,29 @@ def _fused_temporal_conv_lif_state_impl(
                 detach_reset,
                 strict=_CONFIG.strict_triton,
                 verbose=_CONFIG.verbose,
+                compute_dtype=compute_dtype,
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
             _CALL_STATS[f"temporal_{result.kernel_key}"] = _CALL_STATS.get(f"temporal_{result.kernel_key}", 0) + 1
-            _record_kernel_temporal_config("temporal", result.kernel_key, result.kernel_temporal_config)
+            _record_kernel_temporal_config("temporal", result.kernel_key, result.kernel_temporal_config, compute_dtype)
             if _CONFIG.verbose:
+                if result.kernel_diagnostics:
+                    print(
+                        "[Kernel Config] "
+                        f"compute_dtype={result.kernel_diagnostics.get('compute_dtype')} "
+                        f"accumulator_dtype={result.kernel_diagnostics.get('accumulator_dtype')} "
+                        f"membrane_dtype={result.kernel_diagnostics.get('membrane_dtype')} "
+                        f"tf32_enabled={result.kernel_diagnostics.get('tf32_enabled')} "
+                        f"tensor_core_usage_mode={result.kernel_diagnostics.get('tensor_core_usage_mode')}"
+                    )
                 print(f"[TRITON][HIT][temporal][{result.kernel_key}] {shape_desc}")
             return result.spikes, result.v_next
         except Exception as exc:
             _CALL_STATS["fallback"] += 1
             _CALL_STATS["temporal_fallback"] += 1
             _record_fallback("temporal", [str(exc)], shape_desc)
-            if _CONFIG.strict_triton:
+            if _strict_temporal_lif_triton_enabled():
                 raise
     else:
         _CALL_STATS["fallback"] += 1
@@ -458,6 +659,240 @@ def _fused_temporal_conv_lif_state_impl(
         padding,
         dilation,
         groups,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+    )
+
+
+def _fused_temporal_conv_add_lif_state_impl(
+    xs,
+    residuals,
+    weight,
+    bias,
+    v_init,
+    stride,
+    padding,
+    dilation,
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    _CALL_STATS["total"] += 1
+    _CALL_STATS["temporal_total"] += 1
+    _CALL_STATS["temporal_residual_total"] += 1
+    first_x = xs[0] if len(xs) > 0 else None
+    shape_desc = _conv_shape_desc(
+        first_x,
+        weight,
+        bias,
+        v_init,
+        stride,
+        padding,
+        dilation,
+        groups,
+        temporal_len=len(xs) if xs is not None else None,
+    )
+
+    if _CONFIG.backend == "triton" and first_x is not None and first_x.is_cuda:
+        try:
+            compute_dtype = "float16" if first_x.dtype == torch.float16 else "float32"
+            result = run_triton_fused_temporal_conv_add_lif_state(
+                xs,
+                residuals,
+                weight,
+                bias,
+                v_init,
+                stride,
+                padding,
+                dilation,
+                groups,
+                v_threshold,
+                v_reset,
+                tau,
+                detach_reset,
+                strict=_CONFIG.strict_triton,
+                verbose=_CONFIG.verbose,
+                compute_dtype=compute_dtype,
+            )
+            _CALL_STATS["triton"] += 1
+            _CALL_STATS["temporal_triton"] += 1
+            _CALL_STATS["temporal_residual_triton"] += 1
+            _CALL_STATS[f"temporal_residual_{result.kernel_key}"] = (
+                _CALL_STATS.get(f"temporal_residual_{result.kernel_key}", 0) + 1
+            )
+            _record_kernel_temporal_config("temporal_residual", result.kernel_key, result.kernel_temporal_config, compute_dtype)
+            if _CONFIG.verbose:
+                if result.kernel_diagnostics:
+                    print(
+                        "[Kernel Config] "
+                        f"compute_dtype={result.kernel_diagnostics.get('compute_dtype')} "
+                        f"accumulator_dtype={result.kernel_diagnostics.get('accumulator_dtype')} "
+                        f"membrane_dtype={result.kernel_diagnostics.get('membrane_dtype')} "
+                        f"tf32_enabled={result.kernel_diagnostics.get('tf32_enabled')} "
+                        f"tensor_core_usage_mode={result.kernel_diagnostics.get('tensor_core_usage_mode')} "
+                        f"residual_add={result.kernel_diagnostics.get('residual_add')}"
+                    )
+                print(f"[TRITON][HIT][temporal_residual][{result.kernel_key}] {shape_desc}")
+            return result.spikes, result.v_next
+        except Exception as exc:
+            _CALL_STATS["fallback"] += 1
+            _CALL_STATS["temporal_fallback"] += 1
+            _CALL_STATS["temporal_residual_fallback"] += 1
+            _record_fallback("temporal_residual", [str(exc)], shape_desc)
+            if _strict_temporal_lif_triton_enabled():
+                raise
+    else:
+        _CALL_STATS["fallback"] += 1
+        _CALL_STATS["temporal_fallback"] += 1
+        _CALL_STATS["temporal_residual_fallback"] += 1
+        reason = "backend is not triton" if _CONFIG.backend != "triton" else "first_x is not CUDA or xs is empty"
+        _record_fallback("temporal_residual_dispatch", [reason], shape_desc)
+
+    return fused_temporal_conv_add_lif_state_torch(
+        xs,
+        residuals,
+        weight,
+        bias,
+        v_init,
+        stride,
+        padding,
+        dilation,
+        groups,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+    )
+
+
+def _lif_shape_desc(x_seq, v_init):
+    if not isinstance(x_seq, torch.Tensor):
+        return "shape=<unknown>"
+    return (
+        f"T={int(x_seq.shape[0]) if x_seq.dim() > 0 else '<unknown>'}, "
+        f"x_seq={tuple(x_seq.shape)}, v={_shape_tuple(v_init)}, "
+        f"dtype={x_seq.dtype}, device={x_seq.device}"
+    )
+
+
+def _fused_temporal_lif_state_impl(
+    x_seq,
+    v_init,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    _CALL_STATS["total"] += 1
+    _CALL_STATS["temporal_total"] += 1
+    _CALL_STATS["temporal_lif_total"] += 1
+    shape_desc = _lif_shape_desc(x_seq, v_init)
+
+    if _CONFIG.backend == "triton" and isinstance(x_seq, torch.Tensor) and x_seq.is_cuda:
+        try:
+            result = run_triton_fused_temporal_lif_state(
+                x_seq,
+                v_init,
+                v_threshold,
+                v_reset,
+                tau,
+                detach_reset,
+                strict=_CONFIG.strict_triton,
+                verbose=_CONFIG.verbose,
+            )
+            _CALL_STATS["triton"] += 1
+            _CALL_STATS["temporal_triton"] += 1
+            _CALL_STATS["temporal_lif_triton"] += 1
+            if _CONFIG.verbose:
+                diag = result.kernel_diagnostics or {}
+                print(
+                    "[TRITON][HIT][temporal_lif] "
+                    f"compute_dtype={diag.get('compute_dtype')} "
+                    f"membrane_dtype={diag.get('membrane_dtype')} "
+                    f"T={diag.get('T')} numel_per_step={diag.get('numel_per_step')} "
+                    f"{shape_desc}"
+                )
+            return result.spikes, result.v_next
+        except Exception as exc:
+            _CALL_STATS["fallback"] += 1
+            _CALL_STATS["temporal_fallback"] += 1
+            _CALL_STATS["temporal_lif_fallback"] += 1
+            _record_fallback("temporal_lif", [str(exc)], shape_desc)
+            if _CONFIG.strict_triton:
+                raise
+    else:
+        _CALL_STATS["fallback"] += 1
+        _CALL_STATS["temporal_fallback"] += 1
+        _CALL_STATS["temporal_lif_fallback"] += 1
+        reason = "backend is not triton" if _CONFIG.backend != "triton" else "x_seq is not CUDA"
+        _record_fallback("temporal_lif_dispatch", [reason], shape_desc)
+
+    return fused_temporal_lif_state_torch(
+        x_seq,
+        v_init,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+    )
+
+
+def _fused_temporal_lif_tail_impl(
+    x_seq,
+    v_init,
+    fc_weight,
+    fc_bias,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    _CALL_STATS["total"] += 1
+    _CALL_STATS["temporal_total"] += 1
+    _CALL_STATS["temporal_lif_tail_total"] += 1
+    shape_desc = _lif_shape_desc(x_seq, v_init)
+    if _CONFIG.backend == "triton" and isinstance(x_seq, torch.Tensor) and x_seq.is_cuda:
+        try:
+            result = run_triton_fused_temporal_lif_tail(
+                x_seq,
+                v_init,
+                fc_weight,
+                fc_bias,
+                v_threshold,
+                v_reset,
+                tau,
+                detach_reset,
+                strict=_CONFIG.strict_triton,
+                verbose=_CONFIG.verbose,
+            )
+            _CALL_STATS["triton"] += 1
+            _CALL_STATS["temporal_triton"] += 1
+            _CALL_STATS["temporal_lif_tail_triton"] += 1
+            if _CONFIG.verbose:
+                print(f"[TRITON][HIT][temporal_lif_tail] {result.kernel_diagnostics} {shape_desc}")
+            return result.out_sum, result.v_next
+        except Exception as exc:
+            _CALL_STATS["fallback"] += 1
+            _CALL_STATS["temporal_fallback"] += 1
+            _CALL_STATS["temporal_lif_tail_fallback"] += 1
+            _record_fallback("temporal_lif_tail", [str(exc)], shape_desc)
+            if _CONFIG.strict_triton:
+                raise
+    else:
+        _CALL_STATS["fallback"] += 1
+        _CALL_STATS["temporal_fallback"] += 1
+        _CALL_STATS["temporal_lif_tail_fallback"] += 1
+        reason = "backend is not triton" if _CONFIG.backend != "triton" else "x_seq is not CUDA"
+        _record_fallback("temporal_lif_tail_dispatch", [reason], shape_desc)
+    return fused_temporal_lif_tail_torch(
+        x_seq,
+        v_init,
+        fc_weight,
+        fc_bias,
         v_threshold,
         v_reset,
         tau,
@@ -485,6 +920,24 @@ def register_snn_custom_ops():
             "int groups, float v_threshold, float v_reset, float tau, bool detach_reset"
             ") -> (Tensor, Tensor)"
         )
+        def_lib.define(
+            "fused_temporal_conv_add_lif_state("
+            "Tensor[] xs, Tensor[] residuals, Tensor weight, Tensor bias, Tensor v_init, "
+            "int[] stride, int[] padding, int[] dilation, int groups, "
+            "float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
+        def_lib.define(
+            "fused_temporal_lif_state("
+            "Tensor x_seq, Tensor v_init, float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
+        def_lib.define(
+            "fused_temporal_lif_tail("
+            "Tensor x_seq, Tensor v_init, Tensor fc_weight, Tensor fc_bias, "
+            "float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
         TORCH_LIBRARY_HANDLES.append(def_lib)
     except RuntimeError:
         pass
@@ -500,6 +953,15 @@ def register_snn_custom_ops():
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CPU")
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CUDA")
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_meta, "Meta")
+        impl_lib.impl("fused_temporal_conv_add_lif_state", _fused_temporal_conv_add_lif_state_impl, "CPU")
+        impl_lib.impl("fused_temporal_conv_add_lif_state", _fused_temporal_conv_add_lif_state_impl, "CUDA")
+        impl_lib.impl("fused_temporal_conv_add_lif_state", _fused_temporal_conv_add_lif_state_meta, "Meta")
+        impl_lib.impl("fused_temporal_lif_state", _fused_temporal_lif_state_impl, "CPU")
+        impl_lib.impl("fused_temporal_lif_state", _fused_temporal_lif_state_impl, "CUDA")
+        impl_lib.impl("fused_temporal_lif_state", _fused_temporal_lif_state_meta, "Meta")
+        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_tail_impl, "CPU")
+        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_tail_impl, "CUDA")
+        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_tail_meta, "Meta")
         TORCH_LIBRARY_HANDLES.append(impl_lib)
     except RuntimeError:
         pass

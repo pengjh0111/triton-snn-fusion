@@ -15,11 +15,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import torch
 
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.backends.cudnn.allow_tf32 = True
+torch.set_float32_matmul_precision("high")
+
 import runtime.snn_custom_ops as snn_custom_ops
+from compiler.chronos_compile import build_chronos_compile_config, compile_with_chronos_options
 from test.models_for_fx_test import reset_custom_stateful_lif_modules
 from benchmarks.validate_chronos_baselines import (
-    MultiStepWrapper,
-    SingleStepWrapper,
+    MultiStepModeWrapper,
+    SingleStepModeLoopWrapper,
     RewriteCounters,
     make_resnet_layer,
     make_rewrite_backend,
@@ -48,14 +53,24 @@ def percentile(values, q):
     return values[idx]
 
 
-def prepare_runnable(name, model, compile_mode, backend, device):
+def resolve_dtype(dtype_name: str) -> torch.dtype:
+    if dtype_name == "fp16":
+        return torch.float16
+    if dtype_name == "fp32":
+        return torch.float32
+    raise ValueError(f"unsupported dtype: {dtype_name}")
+
+
+def prepare_runnable(name, model, compile_mode, backend, device, args):
     model.eval()
     reset_custom_stateful_lif_modules(model)
 
     if compile_mode:
-        runnable = torch.compile(
+        runnable = compile_with_chronos_options(
             model,
             backend=backend if backend is not None else "inductor",
+            enable_cudagraphs=args.enable_cudagraphs,
+            cudagraph_mode=args.cudagraph_mode,
             fullgraph=False,
             dynamic=False,
         )
@@ -66,7 +81,6 @@ def prepare_runnable(name, model, compile_mode, backend, device):
 
 
 def compile_and_warmup(runnable, model, x, device, warmup):
-    # compile trigger
     reset_custom_stateful_lif_modules(model)
 
     synchronize_if_needed(device)
@@ -74,7 +88,6 @@ def compile_and_warmup(runnable, model, x, device, warmup):
         _ = runnable(x)
     synchronize_if_needed(device)
 
-    # runtime warmup
     for _ in range(warmup):
         reset_custom_stateful_lif_modules(model)
 
@@ -124,7 +137,7 @@ def benchmark_runnable(name, runnable, model, x, device, repeat):
         )
 
 
-def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat):
+def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat, args):
     print(f"[BENCH] {case_name}")
 
     try:
@@ -134,6 +147,7 @@ def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat)
             compile_mode,
             backend,
             device,
+            args,
         )
 
         compile_and_warmup(
@@ -165,19 +179,46 @@ def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat)
 def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     print(f"\n================ {model_name} ================")
 
+    dtype = resolve_dtype(args.dtype)
+    _, compile_config = build_chronos_compile_config(
+        backend="inductor",
+        enable_cudagraphs=args.enable_cudagraphs,
+        cudagraph_mode=args.cudagraph_mode,
+        fullgraph=False,
+        dynamic=False,
+    )
+    print(
+        "[Baseline Config] "
+        f"dtype={args.dtype} "
+        f"matmul_allow_tf32={torch.backends.cuda.matmul.allow_tf32} "
+        f"cudnn_allow_tf32={torch.backends.cudnn.allow_tf32} "
+        f"float32_matmul_precision={torch.get_float32_matmul_precision()}"
+    )
+    print(f"[Compile Summary Config] {compile_config}")
+
     torch.manual_seed(args.seed)
 
     if args.device.startswith("cuda"):
         torch.cuda.manual_seed_all(args.seed)
 
-    base_layer = make_resnet_layer(
+    base_layer_s = make_resnet_layer(
         model_name,
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
+        step_mode="s",
+    )
+    base_layer_m = make_resnet_layer(
+        model_name,
+        allow_resnet32_fallback=not args.require_direct_resnet32_api,
+        step_mode="m",
     )
 
-    base_layer = base_layer.to(
+    base_layer_s = base_layer_s.to(
         device=args.device,
-        dtype=torch.float32,
+        dtype=dtype,
+    ).eval()
+    base_layer_m = base_layer_m.to(
+        device=args.device,
+        dtype=dtype,
     ).eval()
 
     x = torch.randn(
@@ -186,7 +227,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         args.height,
         args.width,
         device=args.device,
-        dtype=torch.float32,
+        dtype=dtype,
     )
 
     snn_custom_ops.configure_fused_op(
@@ -199,55 +240,60 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cases = {}
+    execution_modes = {}
 
-    #
-    # baseline single-step
-    #
     if args.include_s_cases:
-        cases["baseline_s_eager"] = (
-            SingleStepWrapper(copy.deepcopy(base_layer)).to(args.device).eval(),
+        cases["baseline_single_step_mode_eager"] = (
+            SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(
+                device=args.device,
+                dtype=dtype,
+            ).eval(),
             False,
             None,
         )
+        execution_modes["baseline_single_step_mode_eager"] = "single_step_mode_loop"
 
-        cases["baseline_s_compile"] = (
-            SingleStepWrapper(copy.deepcopy(base_layer)).to(args.device).eval(),
+        cases["baseline_single_step_mode_compile"] = (
+            SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(
+                device=args.device,
+                dtype=dtype,
+            ).eval(),
             True,
             None,
         )
+        execution_modes["baseline_single_step_mode_compile"] = "single_step_mode_loop"
 
-    #
-    # baseline multi-step
-    #
-    cases["baseline_m_eager"] = (
-        MultiStepWrapper(
-            copy.deepcopy(base_layer),
+    cases["baseline_multi_step_mode_eager"] = (
+        MultiStepModeWrapper(
+            copy.deepcopy(base_layer_m),
             args.T,
-        ).to(args.device).eval(),
+        ).to(
+            device=args.device,
+            dtype=dtype,
+        ).eval(),
         False,
         None,
     )
+    execution_modes["baseline_multi_step_mode_eager"] = "multi_step_mode_native"
 
-    cases["baseline_m_compile"] = (
-        MultiStepWrapper(
-            copy.deepcopy(base_layer),
+    cases["baseline_multi_step_mode_compile"] = (
+        MultiStepModeWrapper(
+            copy.deepcopy(base_layer_m),
             args.T,
-        ).to(args.device).eval(),
+        ).to(
+            device=args.device,
+            dtype=dtype,
+        ).eval(),
         True,
         None,
     )
+    execution_modes["baseline_multi_step_mode_compile"] = "multi_step_mode_native"
 
-    #
-    # outer temporal autotune
-    #
     if args.sweep_temporal_windows:
         candidate_windows = args.temporal_window_candidates
     else:
         candidate_windows = [args.temporal_fuse_window]
 
-    #
-    # filter invalid windows
-    #
     candidate_windows = [
         w for w in candidate_windows
         if w <= args.T and args.T % w == 0
@@ -257,12 +303,8 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
     for tw in candidate_windows:
         local_args = copy.deepcopy(args)
-
         local_args.temporal_fuse_window = tw
 
-        #
-        # schedule window follows temporal window
-        #
         if local_args.temporal_schedule_window is None:
             local_args.temporal_schedule_window = tw
 
@@ -270,26 +312,27 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
         chronos_backend = make_rewrite_backend(
             local_args,
-            out_dir / f"chronos_m_compile_w{tw}",
+            out_dir / f"chronos_single_step_loop_compile_w{tw}",
             rewrite_counters,
         )
 
-        case_name = f"chronos_m_compile_w{tw}"
+        case_name = f"chronos_single_step_loop_compile_w{tw}"
 
         cases[case_name] = (
-            MultiStepWrapper(
-                copy.deepcopy(base_layer),
+            SingleStepModeLoopWrapper(
+                copy.deepcopy(base_layer_s),
                 local_args.T,
-            ).to(local_args.device).eval(),
+            ).to(
+                device=local_args.device,
+                dtype=dtype,
+            ).eval(),
             True,
             chronos_backend,
         )
+        execution_modes[case_name] = "chronos_single_step_loop_temporal_fusion"
 
         chronos_rewrite_counters[case_name] = rewrite_counters
 
-    #
-    # run benchmark
-    #
     results = {}
     summary_rows = []
     fused_stats_by_case = {}
@@ -306,11 +349,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             backend,
             args.warmup,
             args.repeat,
+            args,
         )
+
         case_fused_stats = snn_custom_ops.get_fused_op_call_stats()
         fused_stats_by_case[case_name] = case_fused_stats
-
         results[case_name] = asdict(result)
+        results[case_name]["execution_mode"] = execution_modes.get(case_name, "")
 
         if result.ok:
             print(
@@ -337,16 +382,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
     fused_stats = snn_custom_ops.get_fused_op_call_stats()
 
-    #
-    # autotune summary
-    #
     print("\n[AUTOTUNE SUMMARY]")
     print(f"{'case':32s} {'mean(ms)':>12s} {'speedup':>12s}")
 
     baseline = None
 
-    if "baseline_m_compile" in results:
-        baseline = results["baseline_m_compile"]["mean_ms"]
+    if "baseline_multi_step_mode_compile" in results:
+        baseline = results["baseline_multi_step_mode_compile"]["mean_ms"]
 
     sorted_rows = sorted(summary_rows, key=lambda x: x["mean_ms"])
 
@@ -361,7 +403,9 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             f"{row['mean_ms']:12.3f} "
             f"{speedup:>12s}"
         )
+
         stats = row.get("fused_stats") or {}
+
         if stats.get("total", 0):
             print(
                 f"{'':32s} triton={stats.get('triton', 0)} "
@@ -370,6 +414,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
                 f"temporal_fallback={stats.get('temporal_fallback', 0)} "
                 f"fallback_reasons={stats.get('fallback_reasons', {})}"
             )
+
+            kernel_temporal_configs = stats.get("kernel_temporal_configs")
+            if kernel_temporal_configs:
+                print(
+                    f"{'':32s} "
+                    f"kernel_temporal_configs={kernel_temporal_configs}"
+                )
 
     best_case = None
 
@@ -382,9 +433,6 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             f"mean={best_case['mean_ms']:.3f} ms"
         )
 
-    #
-    # dump json
-    #
     payload = {
         "model": model_name,
         "input_shape": [
@@ -394,10 +442,16 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             args.width,
         ],
         "T": args.T,
+        "dtype": args.dtype,
         "warmup": args.warmup,
         "repeat": args.repeat,
         "fused_op_backend": args.fused_op_backend,
+        "enable_cudagraphs": args.enable_cudagraphs,
+        "cudagraph_mode": args.cudagraph_mode,
+        "compile_mode": compile_config["compile_mode"],
+        "compile_options": compile_config["compile_options"],
         "candidate_windows": candidate_windows,
+        "execution_mode": execution_modes,
         "results": results,
         "chronos_rewrite_counters": {
             k: asdict(v)
@@ -425,14 +479,11 @@ def parse_args():
         description="Chronos runtime benchmark with temporal autotune."
     )
 
-    #
-    # model
-    #
     parser.add_argument(
         "--models",
         nargs="+",
         default=["resnet18"],
-        choices=["resnet18", "resnet32"],
+        choices=["resnet18", "resnet34", "resnet32"],
     )
 
     parser.add_argument("--T", type=int, default=16)
@@ -445,16 +496,16 @@ def parse_args():
 
     parser.add_argument("--device", default="cuda")
 
-    #
-    # benchmark
-    #
+    parser.add_argument(
+        "--dtype",
+        choices=("fp32", "fp16"),
+        default="fp32",
+    )
+
     parser.add_argument("--warmup", type=int, default=10)
 
     parser.add_argument("--repeat", type=int, default=50)
 
-    #
-    # backend
-    #
     parser.add_argument(
         "--fused-op-backend",
         choices=("torch", "triton"),
@@ -471,9 +522,6 @@ def parse_args():
 
     parser.add_argument("--print-fused-op-calls", action="store_true")
 
-    #
-    # temporal rewrite
-    #
     parser.add_argument("--enable-temporal-rewrite", action="store_true")
 
     parser.add_argument("--enable-temporal-schedule", action="store_true")
@@ -488,9 +536,29 @@ def parse_args():
 
     parser.add_argument("--temporal-schedule-strict", action="store_true")
 
-    #
-    # outer autotune
-    #
+    parser.add_argument("--enable-spatial-batching", action="store_true")
+
+    parser.add_argument(
+        "--spatial-batching-ops",
+        nargs="+",
+        default=["maxpool", "linear"],
+        choices=["maxpool", "linear", "flatten", "avgpool", "elementwise"],
+    )
+
+    parser.add_argument("--spatial-batching-dump", action="store_true")
+
+    parser.add_argument("--spatial-batching-strict", action="store_true")
+
+    parser.add_argument("--disable-spatial-batching-chain", action="store_true")
+
+    parser.add_argument("--enable-cudagraphs", action="store_true")
+
+    parser.add_argument(
+        "--cudagraph-mode",
+        choices=("reduce-overhead", "triton-option", "both"),
+        default="reduce-overhead",
+    )
+
     parser.add_argument(
         "--sweep-temporal-windows",
         action="store_true",
@@ -503,18 +571,14 @@ def parse_args():
         default=[1, 2, 4, 8, 16],
     )
 
-    #
-    # rewrite control
-    #
     parser.add_argument("--disable-rewrite", action="store_true")
 
     parser.add_argument("--disable-conv-bn-lif", action="store_true")
 
+    parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
+
     parser.add_argument("--max-patterns", type=int, default=1000)
 
-    #
-    # misc
-    #
     parser.add_argument("--include-s-cases", action="store_true")
 
     parser.add_argument("--require-direct-resnet32-api", action="store_true")
@@ -523,9 +587,6 @@ def parse_args():
 
     parser.add_argument("--seed", type=int, default=2026)
 
-    #
-    # dummy fields required by imported backend
-    #
     parser.add_argument("--rtol", type=float, default=1e-4)
 
     parser.add_argument("--atol", type=float, default=1e-4)

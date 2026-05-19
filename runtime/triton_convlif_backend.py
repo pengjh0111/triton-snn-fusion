@@ -12,6 +12,7 @@ class TritonConvLIFResult:
     kernel_key: str = "unsupported"
     fallback_reason: str = ""
     kernel_temporal_config: Optional[Dict] = None
+    kernel_diagnostics: Optional[Dict] = None
 
 
 def _as_pair(value) -> Tuple[int, int]:
@@ -182,11 +183,20 @@ def _run_triton_temporal_by_key(
     raise RuntimeError(f"unsupported dispatch key: {kernel_key}")
 
 
-def _get_kernel_temporal_config(kernel_key: str):
+def _get_kernel_temporal_config(kernel_key: str, residual_add: bool = False):
     try:
         from kernels.benchmark_conv_lif_temporal_general import get_autotune_best_config
 
-        return get_autotune_best_config(kernel_key)
+        return get_autotune_best_config(kernel_key, residual_add=residual_add)
+    except Exception:
+        return None
+
+
+def _get_kernel_diagnostics(dtype):
+    try:
+        from kernels.benchmark_conv_lif_temporal_general import kernel_dtype_diagnostics
+
+        return kernel_dtype_diagnostics(dtype)
     except Exception:
         return None
 
@@ -207,6 +217,7 @@ def run_triton_fused_conv_lif_state(
     strict: bool = False,
     verbose: bool = False,
     use_autotune: bool = True,
+    compute_dtype: str = None,
 ) -> TritonConvLIFResult:
     reasons = check_triton_support(
         x,
@@ -225,6 +236,11 @@ def run_triton_fused_conv_lif_state(
     if reasons:
         _unsupported(reasons, strict=strict, verbose=verbose)
         raise RuntimeError("; ".join(reasons))
+    expected_compute_dtype = "float16" if x.dtype == torch.float16 else "float32"
+    if compute_dtype is not None and compute_dtype != expected_compute_dtype:
+        raise RuntimeError(
+            f"compute_dtype={compute_dtype} does not match input dtype path {expected_compute_dtype}"
+        )
 
     try:
         x_seq = x.unsqueeze(0).contiguous()
@@ -238,6 +254,7 @@ def run_triton_fused_conv_lif_state(
             True,
             kernel_key=kernel_key,
             kernel_temporal_config=_get_kernel_temporal_config(kernel_key),
+            kernel_diagnostics=_get_kernel_diagnostics(x.dtype),
         )
     except Exception as exc:
         reason = f"Triton kernel call failed: {exc}"
@@ -262,6 +279,7 @@ def run_triton_fused_temporal_conv_lif_state(
     strict: bool = False,
     verbose: bool = False,
     use_autotune: bool = True,
+    compute_dtype: str = None,
 ) -> TritonConvLIFResult:
     reasons: List[str] = []
     if not isinstance(xs, (list, tuple)) or len(xs) == 0:
@@ -301,6 +319,12 @@ def run_triton_fused_temporal_conv_lif_state(
     if reasons:
         _unsupported(reasons, strict=strict, verbose=verbose)
         raise RuntimeError("; ".join(reasons))
+    first = xs[0]
+    expected_compute_dtype = "float16" if first.dtype == torch.float16 else "float32"
+    if compute_dtype is not None and compute_dtype != expected_compute_dtype:
+        raise RuntimeError(
+            f"compute_dtype={compute_dtype} does not match input dtype path {expected_compute_dtype}"
+        )
 
     try:
         x_seq = torch.stack(tuple(xs), dim=0).contiguous()
@@ -314,9 +338,141 @@ def run_triton_fused_temporal_conv_lif_state(
             True,
             kernel_key=kernel_key,
             kernel_temporal_config=_get_kernel_temporal_config(kernel_key),
+            kernel_diagnostics=_get_kernel_diagnostics(first.dtype),
         )
     except Exception as exc:
         reason = f"temporal Triton kernel call failed: {exc}"
         if verbose:
             print(f"[TRITON][FALLBACK][temporal] {reason}")
+        raise
+
+
+def run_triton_fused_temporal_conv_add_lif_state(
+    xs,
+    residuals,
+    weight,
+    bias,
+    v_init,
+    stride: Sequence[int],
+    padding: Sequence[int],
+    dilation: Sequence[int],
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+    strict: bool = False,
+    verbose: bool = False,
+    use_autotune: bool = True,
+    compute_dtype: str = None,
+) -> TritonConvLIFResult:
+    reasons: List[str] = []
+    if not isinstance(xs, (list, tuple)) or len(xs) == 0:
+        reasons.append("xs must be a non-empty list/tuple of tensors")
+    if not isinstance(residuals, (list, tuple)) or len(residuals) == 0:
+        reasons.append("residuals must be a non-empty list/tuple of tensors")
+    if not reasons and len(xs) != len(residuals):
+        reasons.append(f"xs and residuals length mismatch: {len(xs)} vs {len(residuals)}")
+
+    if not reasons:
+        first = xs[0]
+        for index, x in enumerate(xs):
+            if not isinstance(x, torch.Tensor):
+                reasons.append(f"xs[{index}] is not a tensor")
+                continue
+            if tuple(x.shape) != tuple(first.shape):
+                reasons.append(f"xs[{index}] shape {tuple(x.shape)} differs from first shape {tuple(first.shape)}")
+            if x.device != first.device or x.dtype != first.dtype:
+                reasons.append(f"xs[{index}] device/dtype differs from first tensor")
+
+        out_shape = _conv2d_output_shape(first, weight, stride, padding, dilation)
+        for index, residual in enumerate(residuals):
+            if not isinstance(residual, torch.Tensor):
+                reasons.append(f"residuals[{index}] is not a tensor")
+                continue
+            if tuple(residual.shape) != tuple(out_shape):
+                reasons.append(
+                    f"residuals[{index}] shape {tuple(residual.shape)} does not match conv output shape {out_shape}"
+                )
+            if residual.device != first.device or residual.dtype != first.dtype:
+                reasons.append(f"residuals[{index}] device/dtype differs from first tensor")
+
+    if reasons:
+        _unsupported(reasons, strict=strict, verbose=verbose)
+        raise RuntimeError("; ".join(reasons))
+
+    first = xs[0]
+    reasons.extend(
+        check_triton_support(
+            first,
+            weight,
+            bias,
+            v_init,
+            stride,
+            padding,
+            dilation,
+            groups,
+            v_threshold,
+            v_reset,
+            tau,
+            detach_reset,
+        )
+    )
+    if reasons:
+        _unsupported(reasons, strict=strict, verbose=verbose)
+        raise RuntimeError("; ".join(reasons))
+
+    expected_compute_dtype = "float16" if first.dtype == torch.float16 else "float32"
+    if compute_dtype is not None and compute_dtype != expected_compute_dtype:
+        raise RuntimeError(
+            f"compute_dtype={compute_dtype} does not match input dtype path {expected_compute_dtype}"
+        )
+
+    try:
+        from kernels.benchmark_conv_lif_temporal_general import (
+            run_fused_temporal_general_residual,
+            run_fused_temporal_general_residual_autotuned,
+        )
+
+        x_seq = torch.stack(tuple(xs), dim=0).contiguous()
+        residual_seq = torch.stack(tuple(residuals), dim=0).contiguous()
+        kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
+        if kernel_key == "unsupported":
+            raise RuntimeError("unsupported dispatch key after support check")
+        if use_autotune:
+            spikes, membrane = run_fused_temporal_general_residual_autotuned(
+                x_seq,
+                residual_seq,
+                weight.contiguous(),
+                bias.contiguous(),
+                kernel_key=kernel_key,
+                v_init=v_init,
+            )
+        else:
+            spikes, membrane = run_fused_temporal_general_residual(
+                x_seq,
+                residual_seq,
+                weight.contiguous(),
+                bias.contiguous(),
+                temporal_batch_size=1,
+                reuse_groups=1,
+                kernel_key=kernel_key,
+                v_init=v_init,
+            )
+        diagnostics = _get_kernel_diagnostics(first.dtype) or {}
+        diagnostics = dict(diagnostics)
+        diagnostics["residual_add"] = True
+        diagnostics["kernel_kind"] = "temporal_residual"
+        return TritonConvLIFResult(
+            spikes,
+            membrane,
+            True,
+            kernel_key=kernel_key,
+            kernel_temporal_config=_get_kernel_temporal_config(kernel_key, residual_add=True),
+            kernel_diagnostics=diagnostics,
+        )
+    except Exception as exc:
+        reason = f"temporal residual Triton kernel call failed: {exc}"
+        if verbose:
+            print(f"[TRITON][FALLBACK][temporal_residual] {reason}")
         raise

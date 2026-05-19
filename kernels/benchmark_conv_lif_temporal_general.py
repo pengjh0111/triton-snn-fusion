@@ -115,6 +115,38 @@ def _prune_temporal_configs(configs, named_args, **kwargs):
     ]
 
 
+def kernel_dtype_diagnostics(dtype) -> Dict[str, object]:
+    if dtype in (torch.float16, "fp16", "float16", "torch.float16"):
+        compute_dtype = "fp16"
+        accumulator_dtype = "fp16"
+        membrane_dtype = "fp16"
+        tensor_core_usage_mode = "fp16_tensor_cores"
+    else:
+        compute_dtype = "fp32/tf32"
+        accumulator_dtype = "fp32"
+        membrane_dtype = "fp32"
+        tensor_core_usage_mode = "tf32_tensor_cores" if torch.backends.cuda.matmul.allow_tf32 else "fp32_cuda_cores"
+    return {
+        "compute_dtype": compute_dtype,
+        "accumulator_dtype": accumulator_dtype,
+        "membrane_dtype": membrane_dtype,
+        "tf32_enabled": bool(torch.backends.cuda.matmul.allow_tf32 and torch.backends.cudnn.allow_tf32),
+        "tensor_core_usage_mode": tensor_core_usage_mode,
+    }
+
+
+def format_kernel_dtype_diagnostics(dtype) -> str:
+    diag = kernel_dtype_diagnostics(dtype)
+    return (
+        "[Kernel Config] "
+        f"compute_dtype={diag['compute_dtype']} "
+        f"accumulator_dtype={diag['accumulator_dtype']} "
+        f"membrane_dtype={diag['membrane_dtype']} "
+        f"tf32_enabled={diag['tf32_enabled']} "
+        f"tensor_core_usage_mode={diag['tensor_core_usage_mode']}"
+    )
+
+
 def build_input_sequence(shape: ProblemShape, dtype=torch.float32) -> torch.Tensor:
     x = torch.randn(
         shape.timesteps * shape.batch,
@@ -290,6 +322,7 @@ def _emit_general_kernel_source(
     kernel_size: int = 3,
     stride: int = 1,
     pad: int = 1,
+    residual_add: bool = False,
 ) -> str:
     """Generate a static-unrolled Triton kernel.
 
@@ -329,7 +362,10 @@ def _emit_general_kernel_source(
 
     k_square = kernel_size * kernel_size
     lines.append(f"def {function_name}(")
-    lines.append("    x_ptr, w_ptr, b_ptr, v_ptr, spike_ptr,")
+    if residual_add:
+        lines.append("    x_ptr, residual_ptr, w_ptr, b_ptr, v_ptr, spike_ptr,")
+    else:
+        lines.append("    x_ptr, w_ptr, b_ptr, v_ptr, spike_ptr,")
     lines.append("    num_batches, in_channels: tl.constexpr, out_channels, height, width, out_height, out_width,")
     lines.append("    v_threshold, v_reset, tau_inv,")
     lines.append("    T_STEPS: tl.constexpr,")
@@ -350,9 +386,15 @@ def _emit_general_kernel_source(
     lines.append(f"    K_TOTAL: tl.constexpr = in_channels * {k_square}")
     lines.append("    BM_T: tl.constexpr = BLOCK_M * BTILE_T")
     lines.append("    WINDOW_T: tl.constexpr = BTILE_T * REUSE_GROUPS")
-    lines.append("    bias = tl.load(b_ptr + oc_offsets, mask=oc_mask, other=0.0).to(tl.float32)")
+    lines.append("    if USE_TF32:")
+    lines.append("        bias = tl.load(b_ptr + oc_offsets, mask=oc_mask, other=0.0).to(tl.float32)")
+    lines.append("    else:")
+    lines.append("        bias = tl.load(b_ptr + oc_offsets, mask=oc_mask, other=0.0).to(tl.float16)")
     lines.append("    v_offsets = pix_n[:, None] * (out_channels * out_height * out_width) + oc_offsets[None, :] * (out_height * out_width) + pix_hw[:, None]")
-    lines.append("    v_state = tl.load(v_ptr + v_offsets, mask=m_mask[:, None] & oc_mask[None, :], other=0.0).to(tl.float32)")
+    lines.append("    if USE_TF32:")
+    lines.append("        v_state = tl.load(v_ptr + v_offsets, mask=m_mask[:, None] & oc_mask[None, :], other=0.0).to(tl.float32)")
+    lines.append("    else:")
+    lines.append("        v_state = tl.load(v_ptr + v_offsets, mask=m_mask[:, None] & oc_mask[None, :], other=0.0).to(tl.float16)")
     lines.append("    cat_offsets = tl.arange(0, BM_T)")
     lines.append("    local_t = cat_offsets // BLOCK_M")
     lines.append("    local_m = cat_offsets % BLOCK_M")
@@ -365,7 +407,10 @@ def _emit_general_kernel_source(
     lines.append("    for temporal_base in range(0, T_STEPS, WINDOW_T):")
     for g in range(max_groups):
         lines.append(f"        if REUSE_GROUPS >= {g + 1}:")
-        lines.append(f"            acc_g{g} = tl.zeros((BM_T, BLOCK_OC), dtype=tl.float32)")
+        lines.append("            if USE_TF32:")
+        lines.append(f"                acc_g{g} = tl.zeros((BM_T, BLOCK_OC), dtype=tl.float32)")
+        lines.append("            else:")
+        lines.append(f"                acc_g{g} = tl.zeros((BM_T, BLOCK_OC), dtype=tl.float16)")
     lines.append("        for k_start in range(0, K_TOTAL, BLOCK_K):")
     lines.append("            k_offsets = k_start + tl.arange(0, BLOCK_K)")
     lines.append("            k_mask = k_offsets < K_TOTAL")
@@ -386,7 +431,7 @@ def _emit_general_kernel_source(
         lines.append("                if USE_TF32:")
         lines.append(f"                    acc_g{g} = tl.dot(x_g{g}, w_tile, acc_g{g}, input_precision='tf32')")
         lines.append("                else:")
-        lines.append(f"                    acc_g{g} = tl.dot(x_g{g}, w_tile, acc_g{g})")
+        lines.append(f"                    acc_g{g} = tl.dot(x_g{g}, w_tile, acc_g{g}, out_dtype=tl.float16)")
     for g in range(max_groups):
         lines.append(f"        if REUSE_GROUPS >= {g + 1}:")
         for idx, btile_t in enumerate(TEMPORAL_POW2_CANDIDATES):
@@ -395,10 +440,28 @@ def _emit_general_kernel_source(
             lines.append(f"            if BTILE_T >= {bt + 1}:")
             lines.append(f"                step = temporal_base + {g} * BTILE_T + {bt}")
             lines.append("                if step < T_STEPS:")
-            lines.append(f"                    acc_t = acc_g{g}_{bt} + bias[None, :]")
-            lines.append("                    v_new = v_state + (acc_t - (v_state - v_reset)) * tau_inv")
-            lines.append("                    spike = (v_new >= v_threshold).to(tl.float32)")
-            lines.append("                    v_state = tl.where(spike > 0.5, v_reset, v_new)")
+            if residual_add:
+                lines.append("                    residual_offsets = (step * num_batches + pix_n[:, None]) * out_channels * out_height * out_width + oc_offsets[None, :] * (out_height * out_width) + pix_hw[:, None]")
+                lines.append("                    if USE_TF32:")
+                lines.append("                        residual_t = tl.load(residual_ptr + residual_offsets, mask=m_mask[:, None] & oc_mask[None, :], other=0.0).to(tl.float32)")
+                lines.append("                    else:")
+                lines.append("                        residual_t = tl.load(residual_ptr + residual_offsets, mask=m_mask[:, None] & oc_mask[None, :], other=0.0).to(tl.float16)")
+            lines.append("                    if USE_TF32:")
+            if residual_add:
+                lines.append(f"                        acc_t = acc_g{g}_{bt} + bias[None, :] + residual_t")
+            else:
+                lines.append(f"                        acc_t = acc_g{g}_{bt} + bias[None, :]")
+            lines.append("                        v_new = v_state + (acc_t - (v_state - v_reset)) * tau_inv")
+            lines.append("                        spike = (v_new >= v_threshold).to(tl.float32)")
+            lines.append("                        v_state = tl.where(spike > 0.5, v_reset, v_new)")
+            lines.append("                    else:")
+            if residual_add:
+                lines.append(f"                        acc_t = (acc_g{g}_{bt} + bias[None, :] + residual_t).to(tl.float16)")
+            else:
+                lines.append(f"                        acc_t = (acc_g{g}_{bt} + bias[None, :]).to(tl.float16)")
+            lines.append("                        v_new = (v_state + (acc_t - (v_state - v_reset)) * tau_inv).to(tl.float16)")
+            lines.append("                        spike = (v_new >= v_threshold).to(tl.float16)")
+            lines.append("                        v_state = tl.where(spike > 0.5, v_new * 0.0, v_new)")
             lines.append("                    spike_offsets = (step * num_batches + pix_n[:, None]) * out_channels * out_height * out_width + oc_offsets[None, :] * (out_height * out_width) + pix_hw[:, None]")
             lines.append("                    tl.store(spike_ptr + spike_offsets, spike, mask=m_mask[:, None] & oc_mask[None, :])")
     lines.append("    tl.store(v_ptr + v_offsets, v_state, mask=m_mask[:, None] & oc_mask[None, :])")
@@ -414,6 +477,16 @@ for _variant in KERNEL_VARIANTS.values():
             kernel_size=_variant["kernel"],
             stride=_variant["stride"],
             pad=_variant["pad"],
+        )
+    )
+for _variant in KERNEL_VARIANTS.values():
+    _kernel_sources.append(
+        _emit_general_kernel_source(
+            function_name=f"{_variant['function']}_resadd",
+            kernel_size=_variant["kernel"],
+            stride=_variant["stride"],
+            pad=_variant["pad"],
+            residual_add=True,
         )
     )
 _kernel_sources.append("_fused_conv_lif_temporal_general_kernel_impl = _fused_conv_lif_temporal_general_kernel_k3_s1_p1_impl")
@@ -433,9 +506,17 @@ _kernel_fns = {
     kernel_key: _kernel_namespace[variant["function"]]
     for kernel_key, variant in KERNEL_VARIANTS.items()
 }
+_residual_kernel_fns = {
+    kernel_key: _kernel_namespace[f"{variant['function']}_resadd"]
+    for kernel_key, variant in KERNEL_VARIANTS.items()
+}
 _specialized_kernels = {
     kernel_key: triton.jit(kernel_fn)
     for kernel_key, kernel_fn in _kernel_fns.items()
+}
+_residual_specialized_kernels = {
+    kernel_key: triton.jit(kernel_fn)
+    for kernel_key, kernel_fn in _residual_kernel_fns.items()
 }
 _autotuned_kernels = {
     kernel_key: triton.autotune(
@@ -456,6 +537,26 @@ _autotuned_kernels = {
         cache_results=True,
     )(triton.jit(kernel_fn))
     for kernel_key, kernel_fn in _kernel_fns.items()
+}
+_residual_autotuned_kernels = {
+    kernel_key: triton.autotune(
+        configs=_make_autotune_configs(),
+        key=[
+            "num_batches",
+            "in_channels",
+            "out_channels",
+            "height",
+            "width",
+            "out_height",
+            "out_width",
+            "T_STEPS",
+            "USE_TF32",
+        ],
+        prune_configs_by={"early_config_prune": _prune_temporal_configs},
+        reset_to_zero=["v_ptr"],
+        cache_results=True,
+    )(triton.jit(kernel_fn))
+    for kernel_key, kernel_fn in _residual_kernel_fns.items()
 }
 _kernel_fn = _kernel_fns["k3_s1_p1"]
 fused_conv_lif_temporal_general_specialized_kernel = _specialized_kernels["k3_s1_p1"]
@@ -543,6 +644,90 @@ def run_fused_temporal_general(
     return spikes, membrane
 
 
+def _check_residual_seq(residual_seq: torch.Tensor, spikes: torch.Tensor, x_seq: torch.Tensor):
+    if residual_seq.shape != spikes.shape:
+        raise ValueError(f"residual_seq shape {tuple(residual_seq.shape)} does not match output shape {tuple(spikes.shape)}")
+    if residual_seq.device != x_seq.device:
+        raise ValueError(f"residual_seq device {residual_seq.device} does not match x_seq device {x_seq.device}")
+    if residual_seq.dtype != x_seq.dtype:
+        raise ValueError(f"residual_seq dtype {residual_seq.dtype} does not match x_seq dtype {x_seq.dtype}")
+
+
+def run_fused_temporal_general_residual(
+    x_seq: torch.Tensor,
+    residual_seq: torch.Tensor,
+    weight: torch.Tensor,
+    bias: torch.Tensor,
+    temporal_batch_size: int,
+    reuse_groups: int,
+    spatial_config: Dict[str, int] = None,
+    kernel_key: str = "k3_s1_p1",
+    v_init: torch.Tensor = None,
+):
+    if temporal_batch_size not in TEMPORAL_POW2_CANDIDATES:
+        raise ValueError(f"temporal_batch_size must be one of {TEMPORAL_POW2_CANDIDATES}, got {temporal_batch_size}")
+    if reuse_groups not in TEMPORAL_POW2_CANDIDATES:
+        raise ValueError(f"reuse_groups must be one of {TEMPORAL_POW2_CANDIDATES}, got {reuse_groups}")
+    if reuse_groups > MAX_REUSE_GROUPS:
+        raise ValueError(f"reuse_groups={reuse_groups} exceeds generated max_groups={MAX_REUSE_GROUPS}")
+
+    timesteps, batch, _, height, width = x_seq.shape
+    if temporal_batch_size * reuse_groups > timesteps:
+        raise ValueError(
+            f"BTILE_T * REUSE_GROUPS must be <= T_STEPS, got "
+            f"{temporal_batch_size} * {reuse_groups} > {timesteps}"
+        )
+    if spatial_config is None:
+        spatial_config = {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
+    if kernel_key not in KERNEL_VARIANTS:
+        raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
+
+    in_channels = weight.shape[1]
+    out_channels = weight.shape[0]
+    variant = KERNEL_VARIANTS[kernel_key]
+    out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
+    x_flat = x_seq.reshape(timesteps * batch, in_channels, height, width).contiguous()
+    spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
+    _check_residual_seq(residual_seq, spikes, x_seq)
+    residual_flat = residual_seq.reshape(timesteps * batch, out_channels, out_height, out_width).contiguous()
+    kernel = _residual_specialized_kernels[kernel_key]
+
+    def grid(meta):
+        return (
+            triton.cdiv(batch * out_height * out_width, meta["BLOCK_M"]),
+            triton.cdiv(out_channels, meta["BLOCK_OC"]),
+        )
+
+    kernel[grid](
+        x_flat,
+        residual_flat,
+        weight,
+        bias,
+        membrane,
+        spikes,
+        batch,
+        in_channels,
+        out_channels,
+        height,
+        width,
+        out_height,
+        out_width,
+        V_THRESHOLD,
+        V_RESET,
+        TAU_INV,
+        timesteps,
+        BTILE_T=temporal_batch_size,
+        REUSE_GROUPS=reuse_groups,
+        BLOCK_M=spatial_config["BLOCK_M"],
+        BLOCK_OC=spatial_config["BLOCK_OC"],
+        BLOCK_K=spatial_config["BLOCK_K"],
+        USE_TF32=(x_seq.dtype == torch.float32),
+        num_warps=spatial_config["num_warps"],
+        num_stages=spatial_config["num_stages"],
+    )
+    return spikes, membrane
+
+
 def run_fused_temporal_general_autotuned(
     x_seq: torch.Tensor,
     weight: torch.Tensor,
@@ -589,16 +774,67 @@ def run_fused_temporal_general_autotuned(
     return spikes, membrane
 
 
+def run_fused_temporal_general_residual_autotuned(
+    x_seq: torch.Tensor,
+    residual_seq: torch.Tensor,
+    weight: torch.Tensor,
+    bias: torch.Tensor,
+    kernel_key: str = "k3_s1_p1",
+    v_init: torch.Tensor = None,
+):
+    timesteps, batch, _, height, width = x_seq.shape
+    if kernel_key not in KERNEL_VARIANTS:
+        raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
+    in_channels = weight.shape[1]
+    out_channels = weight.shape[0]
+    variant = KERNEL_VARIANTS[kernel_key]
+    out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
+    x_flat = x_seq.reshape(timesteps * batch, in_channels, height, width).contiguous()
+    spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
+    _check_residual_seq(residual_seq, spikes, x_seq)
+    residual_flat = residual_seq.reshape(timesteps * batch, out_channels, out_height, out_width).contiguous()
+    kernel = _residual_autotuned_kernels[kernel_key]
+
+    def grid(meta):
+        return (
+            triton.cdiv(batch * out_height * out_width, meta["BLOCK_M"]),
+            triton.cdiv(out_channels, meta["BLOCK_OC"]),
+        )
+
+    kernel[grid](
+        x_flat,
+        residual_flat,
+        weight,
+        bias,
+        membrane,
+        spikes,
+        batch,
+        in_channels,
+        out_channels,
+        height,
+        width,
+        out_height,
+        out_width,
+        V_THRESHOLD,
+        V_RESET,
+        TAU_INV,
+        timesteps,
+        USE_TF32=(x_seq.dtype == torch.float32),
+    )
+    return spikes, membrane
+
+
 def run_baseline(model, state_model: nn.Module, x_seq: torch.Tensor):
     with torch.no_grad():
         functional.reset_net(state_model)
         return model(x_seq)
 
 
-def get_autotune_best_config(kernel_key: str = "k3_s1_p1"):
-    if kernel_key not in _autotuned_kernels:
+def get_autotune_best_config(kernel_key: str = "k3_s1_p1", residual_add: bool = False):
+    kernels = _residual_autotuned_kernels if residual_add else _autotuned_kernels
+    if kernel_key not in kernels:
         return None
-    kernel = _autotuned_kernels[kernel_key]
+    kernel = kernels[kernel_key]
     best_config = getattr(kernel, "best_config", None)
     if best_config is None:
         return None
@@ -610,6 +846,7 @@ def get_autotune_best_config(kernel_key: str = "k3_s1_p1"):
         kernel_temporal_window = int(btile_t) * int(reuse_groups)
     return {
         "kernel_key": kernel_key,
+        "residual_add": bool(residual_add),
         "BLOCK_M": all_kwargs.get("BLOCK_M"),
         "BLOCK_OC": all_kwargs.get("BLOCK_OC"),
         "BLOCK_K": all_kwargs.get("BLOCK_K"),
