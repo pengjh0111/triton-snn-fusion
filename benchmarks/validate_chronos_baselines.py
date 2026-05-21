@@ -35,25 +35,38 @@ from compiler.fx_lif_temporal_rewrite import (
     collect_conv_bn_lif_state_patterns,
     collect_conv_bn_add_lif_state_patterns,
     collect_standalone_lif_state_patterns,
+    collect_temporal_lif_avgpool_linear_patterns,
     count_fused_temporal_conv_add_lif_state_nodes,
     count_fused_temporal_conv_lif_state_nodes,
     count_fused_temporal_lif_state_nodes,
+    count_fused_temporal_lif_avgpool_linear_nodes,
     dump_temporal_patterns,
+    dump_temporal_lif_avgpool_linear_patterns,
+    dump_temporal_lif_avgpool_linear_windows,
     dump_temporal_rewrite_log,
     dump_temporal_windows,
     group_temporal_patterns,
     group_temporal_residual_patterns,
     group_temporal_lif_patterns,
+    group_temporal_lif_avgpool_linear_patterns,
     make_temporal_windows,
     make_temporal_residual_windows,
     make_temporal_lif_windows,
+    make_temporal_lif_avgpool_linear_windows,
     rewrite_temporal_conv_bn_add_lif_state_to_fused,
     rewrite_temporal_conv_bn_lif_state_to_fused,
     rewrite_temporal_lif_state_to_fused,
+    rewrite_temporal_lif_avgpool_linear_to_fused,
 )
 from compiler.fx_spatial_batching import apply_spatial_batching
 from compiler.fx_temporal_annotation import annotate_temporal_metadata
+from compiler.fx_temporal_graph_validation import (
+    analyze_temporal_graph,
+    dump_temporal_graph_validation,
+    print_temporal_graph_summary,
+)
 from compiler.fx_temporal_scheduler import reorder_fx_graph_by_temporal_windows
+from compiler.fx_temporal_spatial_canonicalize import canonicalize_temporal_spatial_ir
 from test.models_for_fx_test import CustomStatefulIFNode, reset_custom_stateful_lif_modules
 
 
@@ -82,6 +95,8 @@ class RewriteCounters:
     fused_temporal_state_nodes: int = 0
     fused_temporal_residual_state_nodes: int = 0
     fused_temporal_lif_state_nodes: int = 0
+    fused_temporal_lif_avgpool_linear_nodes: int = 0
+    fused_temporal_lif_tail_nodes: int = 0
     temporal_groups: int = 0
     temporal_windows: int = 0
     temporal_replaced_windows: int = 0
@@ -102,6 +117,19 @@ class RewriteCounters:
     temporal_lif_replaced_patterns: int = 0
     temporal_lif_skipped_windows: int = 0
     temporal_lif_skip_reasons: Dict[str, int] = field(default_factory=dict)
+    temporal_lif_avgpool_linear_windows: int = 0
+    temporal_lif_avgpool_linear_total_windows: int = 0
+    temporal_lif_avgpool_linear_rewritten_windows: int = 0
+    temporal_lif_avgpool_linear_replaced_patterns: int = 0
+    temporal_lif_avgpool_linear_skipped_windows: int = 0
+    temporal_lif_avgpool_linear_skip_reasons: Dict[str, int] = field(default_factory=dict)
+    # Deprecated compatibility fields; mirrors temporal_lif_avgpool_linear_*.
+    temporal_lif_tail_windows: int = 0
+    temporal_lif_tail_total_windows: int = 0
+    temporal_lif_tail_rewritten_windows: int = 0
+    temporal_lif_tail_replaced_patterns: int = 0
+    temporal_lif_tail_skipped_windows: int = 0
+    temporal_lif_tail_skip_reasons: Dict[str, int] = field(default_factory=dict)
     single_step_replaced_patterns: int = 0
     temporal_schedule_ok: bool = False
     temporal_schedule_windows: int = 0
@@ -118,8 +146,41 @@ class RewriteCounters:
     spatial_chain_groups: int = 0
     spatial_cat_eliminated: int = 0
     spatial_chunk_eliminated: int = 0
+    spatial_batched_conv: int = 0
+    spatial_batched_bn: int = 0
+    spatial_batched_add: int = 0
+    spatial_batched_pool: int = 0
+    spatial_batched_maxpool: int = 0
+    spatial_batched_avgpool: int = 0
+    spatial_batched_adaptive_avgpool: int = 0
+    spatial_batched_flatten: int = 0
+    spatial_batched_linear: int = 0
+    spatial_batched_elementwise: int = 0
+    spatial_temporal_stack_bn_groups: int = 0
+    spatial_temporal_stack_add_groups: int = 0
+    spatial_temporal_stack_pool_groups: int = 0
+    spatial_temporal_stack_flatten_groups: int = 0
+    spatial_temporal_stack_linear_groups: int = 0
+    spatial_temporal_stack_groups: int = 0
+    spatial_temporal_stack_flatten_inputs: int = 0
+    spatial_cat_avoided_by_temporal_stack_flatten: int = 0
+    spatial_previous_batched_groups: int = 0
+    spatial_reused_previous_batched_inputs: int = 0
+    spatial_chunk_cat_avoided: int = 0
     spatial_batch_skipped: int = 0
     spatial_batch_reasons: Dict[str, int] = field(default_factory=dict)
+    canonicalize_cat_chunk_removed: int = 0
+    canonicalize_chunk_cat_removed: int = 0
+    canonicalize_getitem_cat_removed: int = 0
+    canonicalize_view_folded: int = 0
+    canonicalize_dead_nodes_removed: int = 0
+    canonicalize_final_cat_count: int = 0
+    canonicalize_final_chunk_count: int = 0
+    canonicalize_final_getitem_count: int = 0
+    temporal_graph_getitem_count: int = 0
+    temporal_graph_getitem_from_temporal: int = 0
+    temporal_graph_materialized_timestep_tensors: int = 0
+    temporal_graph_fragmentation_paths: int = 0
 
 
 class SingleStepModeLoopWrapper(nn.Module):
@@ -308,6 +369,42 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                     )
                 temporal_log.extend(residual_stats.log)
 
+            if not args.disable_temporal_lif_avgpool_linear_rewrite:
+                avgpool_linear_patterns = collect_temporal_lif_avgpool_linear_patterns(gm)
+                avgpool_linear_groups = group_temporal_lif_avgpool_linear_patterns(avgpool_linear_patterns)
+                avgpool_linear_windows = make_temporal_lif_avgpool_linear_windows(
+                    avgpool_linear_groups,
+                    args.temporal_fuse_window,
+                    args.temporal_allow_tail,
+                )
+                dump_temporal_lif_avgpool_linear_patterns(avgpool_linear_groups, local_dir / "temporal_lif_avgpool_linear_patterns.txt")
+                dump_temporal_lif_avgpool_linear_windows(avgpool_linear_windows, local_dir / "temporal_lif_avgpool_linear_windows.txt")
+                counters.temporal_lif_avgpool_linear_windows += len(avgpool_linear_windows)
+                counters.temporal_lif_avgpool_linear_total_windows += len(avgpool_linear_windows)
+                counters.temporal_lif_tail_windows += len(avgpool_linear_windows)
+                counters.temporal_lif_tail_total_windows += len(avgpool_linear_windows)
+                if not args.disable_rewrite and avgpool_linear_windows:
+                    avgpool_linear_stats = rewrite_temporal_lif_avgpool_linear_to_fused(
+                        gm,
+                        avgpool_linear_windows,
+                        max(0, args.max_patterns - temporal_replaced_patterns),
+                    )
+                    temporal_replaced_patterns += avgpool_linear_stats.temporal_lif_avgpool_linear_replaced_patterns
+                    counters.temporal_lif_avgpool_linear_rewritten_windows += avgpool_linear_stats.temporal_lif_avgpool_linear_rewritten_windows
+                    counters.temporal_lif_avgpool_linear_replaced_patterns += avgpool_linear_stats.temporal_lif_avgpool_linear_replaced_patterns
+                    counters.temporal_lif_avgpool_linear_skipped_windows += avgpool_linear_stats.temporal_lif_avgpool_linear_skipped_windows
+                    counters.temporal_lif_tail_rewritten_windows += avgpool_linear_stats.temporal_lif_avgpool_linear_rewritten_windows
+                    counters.temporal_lif_tail_replaced_patterns += avgpool_linear_stats.temporal_lif_avgpool_linear_replaced_patterns
+                    counters.temporal_lif_tail_skipped_windows += avgpool_linear_stats.temporal_lif_avgpool_linear_skipped_windows
+                    for reason, count in avgpool_linear_stats.temporal_lif_avgpool_linear_skip_reasons.items():
+                        counters.temporal_lif_avgpool_linear_skip_reasons[reason] = (
+                            counters.temporal_lif_avgpool_linear_skip_reasons.get(reason, 0) + count
+                        )
+                        counters.temporal_lif_tail_skip_reasons[reason] = (
+                            counters.temporal_lif_tail_skip_reasons.get(reason, 0) + count
+                        )
+                    temporal_log.extend(avgpool_linear_stats.log)
+
             if not args.disable_temporal_lif_rewrite:
                 lif_patterns = collect_standalone_lif_state_patterns(gm)
                 lif_groups = group_temporal_lif_patterns(lif_patterns)
@@ -370,7 +467,7 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                     args.spatial_batching_ops,
                     dump_dir=local_dir if args.spatial_batching_dump else None,
                     strict=args.spatial_batching_strict,
-                    enable_chain=not args.disable_spatial_batching_chain,
+                    enable_chain=False,
                 )
                 counters.spatial_batch_groups += spatial_stats.spatial_batch_groups
                 counters.spatial_batched_ops += spatial_stats.spatial_batched_ops
@@ -378,6 +475,29 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                 counters.spatial_chain_groups += spatial_stats.spatial_chain_groups
                 counters.spatial_cat_eliminated += spatial_stats.spatial_cat_eliminated
                 counters.spatial_chunk_eliminated += spatial_stats.spatial_chunk_eliminated
+                counters.spatial_batched_conv += spatial_stats.spatial_batched_conv
+                counters.spatial_batched_bn += spatial_stats.spatial_batched_bn
+                counters.spatial_batched_add += spatial_stats.spatial_batched_add
+                counters.spatial_batched_pool += spatial_stats.spatial_batched_pool
+                counters.spatial_batched_maxpool += spatial_stats.spatial_batched_maxpool
+                counters.spatial_batched_avgpool += spatial_stats.spatial_batched_avgpool
+                counters.spatial_batched_adaptive_avgpool += spatial_stats.spatial_batched_adaptive_avgpool
+                counters.spatial_batched_flatten += spatial_stats.spatial_batched_flatten
+                counters.spatial_batched_linear += spatial_stats.spatial_batched_linear
+                counters.spatial_batched_elementwise += spatial_stats.spatial_batched_elementwise
+                counters.spatial_temporal_stack_bn_groups += spatial_stats.spatial_temporal_stack_bn_groups
+                counters.spatial_temporal_stack_add_groups += spatial_stats.spatial_temporal_stack_add_groups
+                counters.spatial_temporal_stack_pool_groups += spatial_stats.spatial_temporal_stack_pool_groups
+                counters.spatial_temporal_stack_flatten_groups += spatial_stats.spatial_temporal_stack_flatten_groups
+                counters.spatial_temporal_stack_linear_groups += spatial_stats.spatial_temporal_stack_linear_groups
+                counters.spatial_temporal_stack_groups += spatial_stats.spatial_temporal_stack_groups
+                counters.spatial_temporal_stack_flatten_inputs += spatial_stats.spatial_temporal_stack_flatten_inputs
+                counters.spatial_cat_avoided_by_temporal_stack_flatten += (
+                    spatial_stats.spatial_cat_avoided_by_temporal_stack_flatten
+                )
+                counters.spatial_previous_batched_groups += spatial_stats.spatial_previous_batched_groups
+                counters.spatial_reused_previous_batched_inputs += spatial_stats.spatial_reused_previous_batched_inputs
+                counters.spatial_chunk_cat_avoided += spatial_stats.spatial_chunk_cat_avoided
                 counters.spatial_batch_skipped += spatial_stats.spatial_batch_skipped
                 for reason, count in spatial_stats.reasons.items():
                     counters.spatial_batch_reasons[reason] = (
@@ -389,10 +509,33 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                 print("WARNING: spatial batching failed; continuing with the current graph.")
                 traceback.print_exc()
 
+        canonicalize_stats = canonicalize_temporal_spatial_ir(
+            gm,
+            dump_dir=local_dir,
+            strict=False,
+        )
+        counters.canonicalize_cat_chunk_removed += canonicalize_stats.canonicalize_cat_chunk_removed
+        counters.canonicalize_chunk_cat_removed += canonicalize_stats.canonicalize_chunk_cat_removed
+        counters.canonicalize_getitem_cat_removed += canonicalize_stats.canonicalize_getitem_cat_removed
+        counters.canonicalize_view_folded += canonicalize_stats.canonicalize_view_folded
+        counters.canonicalize_dead_nodes_removed += canonicalize_stats.canonicalize_dead_nodes_removed
+        counters.canonicalize_final_cat_count += canonicalize_stats.final_cat_count
+        counters.canonicalize_final_chunk_count += canonicalize_stats.final_chunk_count
+        counters.canonicalize_final_getitem_count += canonicalize_stats.final_getitem_count
+
+        temporal_graph_stats = analyze_temporal_graph(gm)
+        print_temporal_graph_summary(temporal_graph_stats)
+        dump_temporal_graph_validation(temporal_graph_stats, local_dir / "temporal_graph_validation.json")
+        counters.temporal_graph_getitem_count += temporal_graph_stats.getitem_count
+        counters.temporal_graph_getitem_from_temporal += temporal_graph_stats.getitem_from_temporal
+        counters.temporal_graph_materialized_timestep_tensors += temporal_graph_stats.materialized_timestep_tensors
+        counters.temporal_graph_fragmentation_paths += len(temporal_graph_stats.fragmentation_paths)
+
         fused_state_count = count_fused_conv_lif_state_nodes(gm)
         fused_temporal_state_count = count_fused_temporal_conv_lif_state_nodes(gm)
         fused_temporal_residual_state_count = count_fused_temporal_conv_add_lif_state_nodes(gm)
         fused_temporal_lif_state_count = count_fused_temporal_lif_state_nodes(gm)
+        fused_temporal_lif_avgpool_linear_count = count_fused_temporal_lif_avgpool_linear_nodes(gm)
         save_graph_files(gm, local_dir, "rewritten")
 
         counters.lif_state_nodes += lif_state_count
@@ -404,6 +547,8 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         counters.fused_temporal_state_nodes += fused_temporal_state_count
         counters.fused_temporal_residual_state_nodes += fused_temporal_residual_state_count
         counters.fused_temporal_lif_state_nodes += fused_temporal_lif_state_count
+        counters.fused_temporal_lif_avgpool_linear_nodes += fused_temporal_lif_avgpool_linear_count
+        counters.fused_temporal_lif_tail_nodes += fused_temporal_lif_avgpool_linear_count
         counters.single_step_replaced_patterns += direct_replaced + conv_bn_replaced
 
         if args.rewrite_backend_mode == "eager":
@@ -622,6 +767,13 @@ def parse_args():
     parser.add_argument("--strict-triton", action="store_true")
     parser.add_argument("--disable-rewrite", action="store_true")
     parser.add_argument("--disable-conv-bn-lif", action="store_true")
+    parser.add_argument("--disable-temporal-lif-avgpool-linear-rewrite", action="store_true")
+    parser.add_argument(
+        "--disable-temporal-lif-tail-rewrite",
+        action="store_true",
+        dest="disable_temporal_lif_avgpool_linear_rewrite",
+        help=argparse.SUPPRESS,
+    )
     parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
     parser.add_argument("--enable-temporal-rewrite", action="store_true")
     parser.add_argument("--temporal-fuse-window", type=int, default=1)
@@ -634,12 +786,12 @@ def parse_args():
     parser.add_argument(
         "--spatial-batching-ops",
         nargs="+",
-        default=["maxpool", "linear"],
-        choices=["maxpool", "linear", "flatten", "avgpool", "elementwise"],
+        default=["conv", "bn", "add", "maxpool", "avgpool", "flatten", "linear", "elementwise", "view"],
+        choices=["conv", "bn", "add", "maxpool", "linear", "flatten", "avgpool", "elementwise", "view"],
     )
     parser.add_argument("--spatial-batching-dump", action="store_true")
     parser.add_argument("--spatial-batching-strict", action="store_true")
-    parser.add_argument("--disable-spatial-batching-chain", action="store_true")
+    parser.add_argument("--disable-spatial-batching-chain", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--enable-cudagraphs", action="store_true")
     parser.add_argument("--cudagraph-mode", choices=("reduce-overhead", "triton-option", "both"), default="reduce-overhead")
     parser.add_argument("--max-patterns", type=int, default=1)

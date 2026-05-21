@@ -37,12 +37,12 @@ for MODEL in "${MODELS[@]}"; do
       --enable-temporal-rewrite \
       --enable-temporal-schedule \
       --enable-spatial-batching \
-      --spatial-batching-ops maxpool avgpool flatten linear \
+      --spatial-batching-ops conv bn add maxpool avgpool flatten linear \
       --enable-cudagraphs \
       --cudagraph-mode reduce-overhead \
       --temporal-fuse-window ${W} \
       --temporal-schedule-window ${W} \
-      --max-patterns 10000 \
+      --max-patterns 1000000 \
       --warmup 20 \
       --repeat 100 \
       --include-s-cases \
@@ -90,12 +90,12 @@ for MODEL in "${MODELS[@]}"; do
       --enable-temporal-rewrite \
       --enable-temporal-schedule \
       --enable-spatial-batching \
-      --spatial-batching-ops maxpool avgpool flatten linear \
+      --spatial-batching-ops conv bn add maxpool avgpool flatten linear \
       --enable-cudagraphs \
       --cudagraph-mode reduce-overhead \
       --temporal-fuse-window ${W} \
       --temporal-schedule-window ${W} \
-      --max-patterns 10000 \
+      --max-patterns 1000000 \
       --warmup 20 \
       --repeat 100 \
       --include-s-cases \

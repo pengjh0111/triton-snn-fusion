@@ -13,7 +13,7 @@ from runtime.triton_convlif_backend import (
     run_triton_fused_temporal_conv_lif_state,
 )
 from runtime.triton_temporal_lif_backend import run_triton_fused_temporal_lif_state
-from runtime.triton_temporal_lif_tail_backend import run_triton_fused_temporal_lif_tail
+from runtime.triton_temporal_lif_avgpool_linear_backend import run_triton_fused_temporal_lif_avgpool_linear
 
 
 TORCH_LIBRARY_HANDLES = []
@@ -46,9 +46,14 @@ _CALL_STATS: Dict[str, Any] = {
     "temporal_lif_total": 0,
     "temporal_lif_triton": 0,
     "temporal_lif_fallback": 0,
+    "temporal_lif_avgpool_linear_total": 0,
+    "temporal_lif_avgpool_linear_triton": 0,
+    "temporal_lif_avgpool_linear_fallback": 0,
+    # Deprecated compatibility fields; mirrors temporal_lif_avgpool_linear_*.
     "temporal_lif_tail_total": 0,
     "temporal_lif_tail_triton": 0,
     "temporal_lif_tail_fallback": 0,
+    "temporal_batched_output_total": 0,
     "kernel_temporal_configs": {},
 }
 
@@ -190,9 +195,14 @@ def reset_fused_op_call_stats():
         "temporal_lif_total": 0,
         "temporal_lif_triton": 0,
         "temporal_lif_fallback": 0,
+        "temporal_lif_avgpool_linear_total": 0,
+        "temporal_lif_avgpool_linear_triton": 0,
+        "temporal_lif_avgpool_linear_fallback": 0,
+        # Deprecated compatibility fields; mirrors temporal_lif_avgpool_linear_*.
         "temporal_lif_tail_total": 0,
         "temporal_lif_tail_triton": 0,
         "temporal_lif_tail_fallback": 0,
+        "temporal_batched_output_total": 0,
         "kernel_temporal_configs": {},
     }
     _FALLBACK_REASON_STATS.clear()
@@ -339,7 +349,7 @@ def fused_temporal_lif_state_torch(
     return torch.stack(spikes, dim=0), v
 
 
-def fused_temporal_lif_tail_torch(
+def fused_temporal_lif_avgpool_linear_torch(
     x_seq,
     v_init,
     fc_weight,
@@ -350,7 +360,7 @@ def fused_temporal_lif_tail_torch(
     detach_reset: bool,
 ):
     if x_seq.dim() != 5:
-        raise RuntimeError(f"fused_temporal_lif_tail requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
+        raise RuntimeError(f"fused_temporal_lif_avgpool_linear requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
     v = v_init
     out_sum = None
     for t in range(int(x_seq.shape[0])):
@@ -359,6 +369,10 @@ def fused_temporal_lif_tail_torch(
         logits = F.linear(pooled, fc_weight, fc_bias if isinstance(fc_bias, torch.Tensor) and fc_bias.numel() > 0 else None)
         out_sum = logits if out_sum is None else out_sum + logits
     return out_sum, v
+
+
+# Deprecated compatibility alias for older callers.
+fused_temporal_lif_tail_torch = fused_temporal_lif_avgpool_linear_torch
 
 
 def _conv2d_output_shape(x, weight, stride, padding, dilation) -> Tuple[int, int, int, int]:
@@ -416,6 +430,29 @@ def _fused_temporal_conv_lif_state_meta(
     return spike_stack, v_final
 
 
+def _fused_temporal_conv_lif_state_batched_tn_meta(
+    xs,
+    weight,
+    bias,
+    v_init,
+    stride,
+    padding,
+    dilation,
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if len(xs) == 0:
+        raise RuntimeError("fused_temporal_conv_lif_state_batched_tn requires at least one input tensor")
+    out_shape = _conv2d_output_shape(xs[0], weight, stride, padding, dilation)
+    n, c, h, w = tuple(out_shape)
+    spike_batched = xs[0].new_empty((len(xs) * n, c, h, w))
+    v_final = xs[0].new_empty(out_shape)
+    return spike_batched, v_final
+
+
 def _fused_temporal_conv_add_lif_state_meta(
     xs,
     residuals,
@@ -439,6 +476,30 @@ def _fused_temporal_conv_add_lif_state_meta(
     return spike_stack, v_final
 
 
+def _fused_temporal_conv_add_lif_state_batched_tn_meta(
+    xs,
+    residuals,
+    weight,
+    bias,
+    v_init,
+    stride,
+    padding,
+    dilation,
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    if len(xs) == 0:
+        raise RuntimeError("fused_temporal_conv_add_lif_state_batched_tn requires at least one input tensor")
+    out_shape = _conv2d_output_shape(xs[0], weight, stride, padding, dilation)
+    n, c, h, w = tuple(out_shape)
+    spike_batched = xs[0].new_empty((len(xs) * n, c, h, w))
+    v_final = xs[0].new_empty(out_shape)
+    return spike_batched, v_final
+
+
 def _fused_temporal_lif_state_meta(
     x_seq,
     v_init,
@@ -452,7 +513,7 @@ def _fused_temporal_lif_state_meta(
     return x_seq.new_empty(x_seq.shape), x_seq.new_empty(x_seq.shape[1:])
 
 
-def _fused_temporal_lif_tail_meta(
+def _fused_temporal_lif_avgpool_linear_meta(
     x_seq,
     v_init,
     fc_weight,
@@ -463,7 +524,7 @@ def _fused_temporal_lif_tail_meta(
     detach_reset: bool,
 ):
     if x_seq.dim() != 5:
-        raise RuntimeError(f"fused_temporal_lif_tail requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
+        raise RuntimeError(f"fused_temporal_lif_avgpool_linear requires x_seq [T,N,C,H,W], got dim={x_seq.dim()}")
     return x_seq.new_empty((x_seq.shape[1], fc_weight.shape[0])), x_seq.new_empty(x_seq.shape[1:])
 
 
@@ -666,6 +727,44 @@ def _fused_temporal_conv_lif_state_impl(
     )
 
 
+def _flatten_temporal_stack_to_batched_tn(spike_stack: torch.Tensor) -> torch.Tensor:
+    if spike_stack.dim() != 5:
+        raise RuntimeError(f"expected spike stack [T,N,C,H,W], got shape={tuple(spike_stack.shape)}")
+    return spike_stack.flatten(0, 1)
+
+
+def _fused_temporal_conv_lif_state_batched_tn_impl(
+    xs,
+    weight,
+    bias,
+    v_init,
+    stride,
+    padding,
+    dilation,
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    _CALL_STATS["temporal_batched_output_total"] += 1
+    spike_stack, v_final = _fused_temporal_conv_lif_state_impl(
+        xs,
+        weight,
+        bias,
+        v_init,
+        stride,
+        padding,
+        dilation,
+        groups,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+    )
+    return _flatten_temporal_stack_to_batched_tn(spike_stack), v_final
+
+
 def _fused_temporal_conv_add_lif_state_impl(
     xs,
     residuals,
@@ -769,6 +868,40 @@ def _fused_temporal_conv_add_lif_state_impl(
     )
 
 
+def _fused_temporal_conv_add_lif_state_batched_tn_impl(
+    xs,
+    residuals,
+    weight,
+    bias,
+    v_init,
+    stride,
+    padding,
+    dilation,
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+):
+    _CALL_STATS["temporal_batched_output_total"] += 1
+    spike_stack, v_final = _fused_temporal_conv_add_lif_state_impl(
+        xs,
+        residuals,
+        weight,
+        bias,
+        v_init,
+        stride,
+        padding,
+        dilation,
+        groups,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+    )
+    return _flatten_temporal_stack_to_batched_tn(spike_stack), v_final
+
+
 def _lif_shape_desc(x_seq, v_init):
     if not isinstance(x_seq, torch.Tensor):
         return "shape=<unknown>"
@@ -841,7 +974,7 @@ def _fused_temporal_lif_state_impl(
     )
 
 
-def _fused_temporal_lif_tail_impl(
+def _fused_temporal_lif_avgpool_linear_impl(
     x_seq,
     v_init,
     fc_weight,
@@ -853,11 +986,12 @@ def _fused_temporal_lif_tail_impl(
 ):
     _CALL_STATS["total"] += 1
     _CALL_STATS["temporal_total"] += 1
+    _CALL_STATS["temporal_lif_avgpool_linear_total"] += 1
     _CALL_STATS["temporal_lif_tail_total"] += 1
     shape_desc = _lif_shape_desc(x_seq, v_init)
     if _CONFIG.backend == "triton" and isinstance(x_seq, torch.Tensor) and x_seq.is_cuda:
         try:
-            result = run_triton_fused_temporal_lif_tail(
+            result = run_triton_fused_temporal_lif_avgpool_linear(
                 x_seq,
                 v_init,
                 fc_weight,
@@ -871,24 +1005,27 @@ def _fused_temporal_lif_tail_impl(
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
+            _CALL_STATS["temporal_lif_avgpool_linear_triton"] += 1
             _CALL_STATS["temporal_lif_tail_triton"] += 1
             if _CONFIG.verbose:
-                print(f"[TRITON][HIT][temporal_lif_tail] {result.kernel_diagnostics} {shape_desc}")
+                print(f"[TRITON][HIT][temporal_lif_avgpool_linear] {result.kernel_diagnostics} {shape_desc}")
             return result.out_sum, result.v_next
         except Exception as exc:
             _CALL_STATS["fallback"] += 1
             _CALL_STATS["temporal_fallback"] += 1
+            _CALL_STATS["temporal_lif_avgpool_linear_fallback"] += 1
             _CALL_STATS["temporal_lif_tail_fallback"] += 1
-            _record_fallback("temporal_lif_tail", [str(exc)], shape_desc)
+            _record_fallback("temporal_lif_avgpool_linear", [str(exc)], shape_desc)
             if _CONFIG.strict_triton:
                 raise
     else:
         _CALL_STATS["fallback"] += 1
         _CALL_STATS["temporal_fallback"] += 1
+        _CALL_STATS["temporal_lif_avgpool_linear_fallback"] += 1
         _CALL_STATS["temporal_lif_tail_fallback"] += 1
         reason = "backend is not triton" if _CONFIG.backend != "triton" else "x_seq is not CUDA"
-        _record_fallback("temporal_lif_tail_dispatch", [reason], shape_desc)
-    return fused_temporal_lif_tail_torch(
+        _record_fallback("temporal_lif_avgpool_linear_dispatch", [reason], shape_desc)
+    return fused_temporal_lif_avgpool_linear_torch(
         x_seq,
         v_init,
         fc_weight,
@@ -921,7 +1058,20 @@ def register_snn_custom_ops():
             ") -> (Tensor, Tensor)"
         )
         def_lib.define(
+            "fused_temporal_conv_lif_state_batched_tn("
+            "Tensor[] xs, Tensor weight, Tensor bias, Tensor v_init, int[] stride, int[] padding, int[] dilation, "
+            "int groups, float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
+        def_lib.define(
             "fused_temporal_conv_add_lif_state("
+            "Tensor[] xs, Tensor[] residuals, Tensor weight, Tensor bias, Tensor v_init, "
+            "int[] stride, int[] padding, int[] dilation, int groups, "
+            "float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
+        def_lib.define(
+            "fused_temporal_conv_add_lif_state_batched_tn("
             "Tensor[] xs, Tensor[] residuals, Tensor weight, Tensor bias, Tensor v_init, "
             "int[] stride, int[] padding, int[] dilation, int groups, "
             "float v_threshold, float v_reset, float tau, bool detach_reset"
@@ -932,6 +1082,13 @@ def register_snn_custom_ops():
             "Tensor x_seq, Tensor v_init, float v_threshold, float v_reset, float tau, bool detach_reset"
             ") -> (Tensor, Tensor)"
         )
+        def_lib.define(
+            "fused_temporal_lif_avgpool_linear("
+            "Tensor x_seq, Tensor v_init, Tensor fc_weight, Tensor fc_bias, "
+            "float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
+        # Deprecated compatibility schema for older scripts.
         def_lib.define(
             "fused_temporal_lif_tail("
             "Tensor x_seq, Tensor v_init, Tensor fc_weight, Tensor fc_bias, "
@@ -953,15 +1110,24 @@ def register_snn_custom_ops():
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CPU")
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CUDA")
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_meta, "Meta")
+        impl_lib.impl("fused_temporal_conv_lif_state_batched_tn", _fused_temporal_conv_lif_state_batched_tn_impl, "CPU")
+        impl_lib.impl("fused_temporal_conv_lif_state_batched_tn", _fused_temporal_conv_lif_state_batched_tn_impl, "CUDA")
+        impl_lib.impl("fused_temporal_conv_lif_state_batched_tn", _fused_temporal_conv_lif_state_batched_tn_meta, "Meta")
         impl_lib.impl("fused_temporal_conv_add_lif_state", _fused_temporal_conv_add_lif_state_impl, "CPU")
         impl_lib.impl("fused_temporal_conv_add_lif_state", _fused_temporal_conv_add_lif_state_impl, "CUDA")
         impl_lib.impl("fused_temporal_conv_add_lif_state", _fused_temporal_conv_add_lif_state_meta, "Meta")
+        impl_lib.impl("fused_temporal_conv_add_lif_state_batched_tn", _fused_temporal_conv_add_lif_state_batched_tn_impl, "CPU")
+        impl_lib.impl("fused_temporal_conv_add_lif_state_batched_tn", _fused_temporal_conv_add_lif_state_batched_tn_impl, "CUDA")
+        impl_lib.impl("fused_temporal_conv_add_lif_state_batched_tn", _fused_temporal_conv_add_lif_state_batched_tn_meta, "Meta")
         impl_lib.impl("fused_temporal_lif_state", _fused_temporal_lif_state_impl, "CPU")
         impl_lib.impl("fused_temporal_lif_state", _fused_temporal_lif_state_impl, "CUDA")
         impl_lib.impl("fused_temporal_lif_state", _fused_temporal_lif_state_meta, "Meta")
-        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_tail_impl, "CPU")
-        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_tail_impl, "CUDA")
-        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_tail_meta, "Meta")
+        impl_lib.impl("fused_temporal_lif_avgpool_linear", _fused_temporal_lif_avgpool_linear_impl, "CPU")
+        impl_lib.impl("fused_temporal_lif_avgpool_linear", _fused_temporal_lif_avgpool_linear_impl, "CUDA")
+        impl_lib.impl("fused_temporal_lif_avgpool_linear", _fused_temporal_lif_avgpool_linear_meta, "Meta")
+        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_avgpool_linear_impl, "CPU")
+        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_avgpool_linear_impl, "CUDA")
+        impl_lib.impl("fused_temporal_lif_tail", _fused_temporal_lif_avgpool_linear_meta, "Meta")
         TORCH_LIBRARY_HANDLES.append(impl_lib)
     except RuntimeError:
         pass

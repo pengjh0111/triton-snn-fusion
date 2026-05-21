@@ -541,15 +541,15 @@ def parse_args():
     parser.add_argument(
         "--spatial-batching-ops",
         nargs="+",
-        default=["maxpool", "linear"],
-        choices=["maxpool", "linear", "flatten", "avgpool", "elementwise"],
+        default=["conv", "bn", "add", "maxpool", "avgpool", "flatten", "linear", "elementwise", "view"],
+        choices=["conv", "bn", "add", "maxpool", "linear", "flatten", "avgpool", "elementwise", "view"],
     )
 
     parser.add_argument("--spatial-batching-dump", action="store_true")
 
     parser.add_argument("--spatial-batching-strict", action="store_true")
 
-    parser.add_argument("--disable-spatial-batching-chain", action="store_true")
+    parser.add_argument("--disable-spatial-batching-chain", action="store_true", help=argparse.SUPPRESS)
 
     parser.add_argument("--enable-cudagraphs", action="store_true")
 
@@ -574,6 +574,14 @@ def parse_args():
     parser.add_argument("--disable-rewrite", action="store_true")
 
     parser.add_argument("--disable-conv-bn-lif", action="store_true")
+
+    parser.add_argument("--disable-temporal-lif-avgpool-linear-rewrite", action="store_true")
+    parser.add_argument(
+        "--disable-temporal-lif-tail-rewrite",
+        action="store_true",
+        dest="disable_temporal_lif_avgpool_linear_rewrite",
+        help=argparse.SUPPRESS,
+    )
 
     parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
 

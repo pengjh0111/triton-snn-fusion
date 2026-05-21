@@ -115,6 +115,42 @@ class TemporalLifWindow:
 
 
 @dataclass
+class TemporalLifAvgPoolLinearPattern:
+    layer_id: str
+    timestep_index: int
+    window_id: int
+    lif_node: torch.fx.Node
+    input_node: torch.fx.Node
+    v_prev_node: torch.fx.Node
+    spike_getitem: torch.fx.Node
+    v_getitem: torch.fx.Node
+    v_next_node: torch.fx.Node
+    pool_node: torch.fx.Node
+    flatten_node: torch.fx.Node
+    linear_node: torch.fx.Node
+    acc_node: torch.fx.Node
+    acc_prev: Any
+    fc_weight: Any
+    fc_bias: Any
+    lif_params: Tuple[Any, Any, Any, Any]
+    occurrence: int
+    shape_key: str
+
+
+@dataclass
+class TemporalLifAvgPoolLinearGroup:
+    layer_id: str
+    patterns: List[TemporalLifAvgPoolLinearPattern]
+
+
+@dataclass
+class TemporalLifAvgPoolLinearWindow:
+    layer_id: str
+    window_id: int
+    patterns: List[TemporalLifAvgPoolLinearPattern]
+
+
+@dataclass
 class TemporalRewriteStats:
     temporal_groups: int = 0
     temporal_windows: int = 0
@@ -162,6 +198,25 @@ class TemporalLifRewriteStats:
         message = f"SKIP layer={window.layer_id} window={window.window_id}: {reason}"
         self.log.append(message)
         print(f"[SKIP][TEMPORAL_LIF] {message}")
+
+
+@dataclass
+class TemporalLifAvgPoolLinearRewriteStats:
+    temporal_lif_avgpool_linear_groups: int = 0
+    temporal_lif_avgpool_linear_windows: int = 0
+    temporal_lif_avgpool_linear_total_windows: int = 0
+    temporal_lif_avgpool_linear_rewritten_windows: int = 0
+    temporal_lif_avgpool_linear_replaced_patterns: int = 0
+    temporal_lif_avgpool_linear_skipped_windows: int = 0
+    temporal_lif_avgpool_linear_skip_reasons: Dict[str, int] = field(default_factory=dict)
+    log: List[str] = field(default_factory=list)
+
+    def skip(self, window: TemporalLifAvgPoolLinearWindow, reason: str):
+        self.temporal_lif_avgpool_linear_skipped_windows += 1
+        self.temporal_lif_avgpool_linear_skip_reasons[reason] = self.temporal_lif_avgpool_linear_skip_reasons.get(reason, 0) + 1
+        message = f"SKIP layer={window.layer_id} window={window.window_id}: {reason}"
+        self.log.append(message)
+        print(f"[SKIP][TEMPORAL_LIF_AVGPOOL_LINEAR] {message}")
 
 
 def _node_key(value) -> Optional[str]:
@@ -470,6 +525,136 @@ def collect_standalone_lif_state_patterns(
     return patterns
 
 
+def _is_adaptive_avg_pool_1x1(node: torch.fx.Node) -> bool:
+    if node.op != "call_function" or node.target is not F.adaptive_avg_pool2d:
+        return False
+    output_size = node.args[1] if len(node.args) > 1 else node.kwargs.get("output_size")
+    return output_size in ((1, 1), [1, 1], 1)
+
+
+def _is_flatten_batch_preserving(node: torch.fx.Node) -> bool:
+    if node.op == "call_function" and node.target is torch.flatten:
+        start_dim = node.args[1] if len(node.args) > 1 else node.kwargs.get("start_dim", 0)
+        end_dim = node.args[2] if len(node.args) > 2 else node.kwargs.get("end_dim", -1)
+        return int(start_dim) == 1 and int(end_dim) == -1
+    if node.op == "call_method" and node.target == "flatten":
+        start_dim = node.args[1] if len(node.args) > 1 else node.kwargs.get("start_dim", 0)
+        end_dim = node.args[2] if len(node.args) > 2 else node.kwargs.get("end_dim", -1)
+        return int(start_dim) == 1 and int(end_dim) == -1
+    return False
+
+
+def _is_linear_node(node: torch.fx.Node) -> bool:
+    if node.op != "call_function":
+        return False
+    return node.target in (torch._C._nn.linear, F.linear)
+
+
+def _single_user_node(node: torch.fx.Node) -> Optional[torch.fx.Node]:
+    users = list(node.users)
+    return users[0] if len(users) == 1 else None
+
+
+def _extract_linear_weight_bias(linear_node: torch.fx.Node) -> Tuple[Any, Any]:
+    weight = linear_node.args[1] if len(linear_node.args) > 1 else linear_node.kwargs.get("weight")
+    bias = linear_node.args[2] if len(linear_node.args) > 2 else linear_node.kwargs.get("bias", None)
+    return weight, bias
+
+
+def _find_accumulator_add_user(linear_node: torch.fx.Node) -> Tuple[Optional[torch.fx.Node], Any]:
+    add_users = [user for user in linear_node.users if _is_add_node(user)]
+    if len(add_users) != 1:
+        return None, None
+    add_node = add_users[0]
+    args = list(add_node.args)
+    if len(args) < 2:
+        return None, None
+    if args[0] is linear_node:
+        return add_node, args[1]
+    if args[1] is linear_node:
+        return add_node, args[0]
+    return None, None
+
+
+def collect_temporal_lif_avgpool_linear_patterns(
+    gm: torch.fx.GraphModule,
+    excluded_lif_nodes=None,
+) -> List[TemporalLifAvgPoolLinearPattern]:
+    excluded = set(excluded_lif_nodes or [])
+    fallback_counts: Dict[str, int] = {}
+    patterns: List[TemporalLifAvgPoolLinearPattern] = []
+    for node in gm.graph.nodes:
+        if node in excluded or not is_custom_lif_state_node(node):
+            continue
+        ok, reason = _lif_state_is_usable(node)
+        if not ok:
+            print(f"[SKIP][TEMPORAL_LIF_AVGPOOL_LINEAR] lif={node.name}: {reason}")
+            continue
+        if len(node.args) < 6 or not isinstance(node.args[0], torch.fx.Node):
+            print(f"[SKIP][TEMPORAL_LIF_AVGPOOL_LINEAR] lif={node.name}: unsupported lif args")
+            continue
+
+        getitems = find_tuple_getitems(node)
+        spike = getitems[0]
+        pool = _single_user_node(spike)
+        if pool is None or not _is_adaptive_avg_pool_1x1(pool):
+            continue
+        flatten = _single_user_node(pool)
+        if flatten is None or not _is_flatten_batch_preserving(flatten):
+            continue
+        linear = _single_user_node(flatten)
+        if linear is None or not _is_linear_node(linear):
+            continue
+        acc_node, acc_prev = _find_accumulator_add_user(linear)
+        if acc_node is None:
+            continue
+
+        timestep = _chronos_meta(node, "timestep", None)
+        window_id = _chronos_meta(node, "window_id", None)
+        occurrence = _chronos_meta(node, "occurrence", None)
+        if not isinstance(timestep, int):
+            fallback_key = "temporal_lif_avgpool_linear_fallback"
+            timestep = fallback_counts.get(fallback_key, 0)
+            fallback_counts[fallback_key] = timestep + 1
+        if not isinstance(window_id, int):
+            window_id = 0
+        if not isinstance(occurrence, int):
+            occurrence = 0
+
+        weight, bias = _extract_linear_weight_bias(linear)
+        input_node = node.args[0]
+        shape_key = _shape_key_from_node(input_node)
+        lif_params = tuple(node.args[2:6])
+        layer_id = (
+            f"lif_avgpool_linear|occurrence={occurrence}|{shape_key}|fc={_node_key(weight)}|"
+            f"bias={_node_key(bias)}|params={repr(lif_params)}"
+        )
+        patterns.append(
+            TemporalLifAvgPoolLinearPattern(
+                layer_id=layer_id,
+                timestep_index=int(timestep),
+                window_id=int(window_id),
+                lif_node=node,
+                input_node=input_node,
+                v_prev_node=node.args[1],
+                spike_getitem=spike,
+                v_getitem=getitems[1],
+                v_next_node=getitems[1],
+                pool_node=pool,
+                flatten_node=flatten,
+                linear_node=linear,
+                acc_node=acc_node,
+                acc_prev=acc_prev,
+                fc_weight=weight,
+                fc_bias=bias,
+                lif_params=lif_params,
+                occurrence=int(occurrence),
+                shape_key=shape_key,
+            )
+        )
+    return patterns
+
+
 def group_temporal_patterns(patterns: List[TemporalPattern]) -> List[TemporalGroup]:
     grouped: Dict[str, List[TemporalPattern]] = {}
     for pattern in patterns:
@@ -494,6 +679,16 @@ def group_temporal_lif_patterns(patterns: List[TemporalLifPattern]) -> List[Temp
     return groups
 
 
+def group_temporal_lif_avgpool_linear_patterns(patterns: List[TemporalLifAvgPoolLinearPattern]) -> List[TemporalLifAvgPoolLinearGroup]:
+    grouped: Dict[str, List[TemporalLifAvgPoolLinearPattern]] = {}
+    for pattern in patterns:
+        grouped.setdefault(pattern.layer_id, []).append(pattern)
+    groups = []
+    for layer_id, items in grouped.items():
+        groups.append(TemporalLifAvgPoolLinearGroup(layer_id=layer_id, patterns=sorted(items, key=lambda p: p.timestep_index)))
+    return groups
+
+
 def check_temporal_state_chain(patterns: List[TemporalPattern]) -> Tuple[bool, str]:
     for prev, nxt in zip(patterns, patterns[1:]):
         if nxt.v_prev_node is prev.v_getitem:
@@ -515,6 +710,15 @@ def check_temporal_lif_state_chain(patterns: List[TemporalLifPattern]) -> Tuple[
         if nxt.v_prev_node is prev.v_getitem:
             continue
         return False, f"{prev.v_getitem.name} does not feed {nxt.lif_node.name} v_prev"
+    return True, ""
+
+
+def check_temporal_lif_avgpool_linear_state_and_acc_chain(patterns: List[TemporalLifAvgPoolLinearPattern]) -> Tuple[bool, str]:
+    for prev, nxt in zip(patterns, patterns[1:]):
+        if nxt.v_prev_node is not prev.v_getitem:
+            return False, f"{prev.v_getitem.name} does not feed {nxt.lif_node.name} v_prev"
+        if nxt.acc_prev is not prev.acc_node:
+            return False, f"{prev.acc_node.name} does not feed {nxt.acc_node.name} accumulator"
     return True, ""
 
 
@@ -596,6 +800,38 @@ def make_temporal_lif_windows(
     return windows
 
 
+def make_temporal_lif_avgpool_linear_windows(
+    groups: List[TemporalLifAvgPoolLinearGroup],
+    window_size: int,
+    allow_tail: bool,
+) -> List[TemporalLifAvgPoolLinearWindow]:
+    if window_size < 1:
+        return []
+    windows: List[TemporalLifAvgPoolLinearWindow] = []
+    for group in groups:
+        by_window: Dict[int, List[TemporalLifAvgPoolLinearPattern]] = {}
+        for pattern in group.patterns:
+            by_window.setdefault(pattern.window_id, []).append(pattern)
+        for window_id, items in sorted(by_window.items()):
+            items = sorted(items, key=lambda pattern: pattern.timestep_index)
+            if len(items) < window_size and not allow_tail:
+                print(f"[SKIP][TEMPORAL_LIF_AVGPOOL_LINEAR] layer={group.layer_id}: tail size={len(items)} < window={window_size}")
+                continue
+            if len(items) <= 1:
+                continue
+            expected = list(range(items[0].timestep_index, items[0].timestep_index + len(items)))
+            actual = [pattern.timestep_index for pattern in items]
+            if actual != expected:
+                print(f"[SKIP][TEMPORAL_LIF_AVGPOOL_LINEAR] layer={group.layer_id}: timesteps not continuous: {actual}")
+                continue
+            ok, reason = check_temporal_lif_avgpool_linear_state_and_acc_chain(items)
+            if not ok:
+                print(f"[SKIP][TEMPORAL_LIF_AVGPOOL_LINEAR] layer={group.layer_id}: chain not continuous: {reason}")
+                continue
+            windows.append(TemporalLifAvgPoolLinearWindow(layer_id=group.layer_id, window_id=window_id, patterns=items))
+    return windows
+
+
 def _same_lif_params(patterns: List[TemporalPattern]) -> bool:
     first = patterns[0].lif_params
     return all(pattern.lif_params == first for pattern in patterns)
@@ -627,6 +863,21 @@ def _same_standalone_lif_params(patterns: List[TemporalLifPattern]) -> bool:
 
 
 def _same_standalone_lif_shapes(patterns: List[TemporalLifPattern]) -> bool:
+    first = patterns[0].shape_key
+    return all(pattern.shape_key == first for pattern in patterns)
+
+
+def _same_lif_avgpool_linear_params(patterns: List[TemporalLifAvgPoolLinearPattern]) -> bool:
+    first = patterns[0]
+    return all(
+        pattern.lif_params == first.lif_params
+        and _node_key(pattern.fc_weight) == _node_key(first.fc_weight)
+        and _node_key(pattern.fc_bias) == _node_key(first.fc_bias)
+        for pattern in patterns
+    )
+
+
+def _same_lif_avgpool_linear_shapes(patterns: List[TemporalLifAvgPoolLinearPattern]) -> bool:
     first = patterns[0].shape_key
     return all(pattern.shape_key == first for pattern in patterns)
 
@@ -808,6 +1059,105 @@ def _cleanup_lif_window_nodes(gm: torch.fx.GraphModule, window: TemporalLifWindo
     candidates = []
     for pattern in window.patterns:
         candidates.extend([pattern.spike_getitem, pattern.v_getitem, pattern.lif_node])
+    unique = []
+    seen = set()
+    for node in candidates:
+        if isinstance(node, torch.fx.Node) and node not in seen and node in order:
+            unique.append(node)
+            seen.add(node)
+    for node in sorted(unique, key=lambda n: order[n], reverse=True):
+        _erase_if_unused(gm, node)
+
+
+def _replaceable_lif_avgpool_linear_window_nodes(window: TemporalLifAvgPoolLinearWindow) -> set:
+    nodes = set()
+    for pattern in window.patterns:
+        nodes.update(
+            [
+                pattern.lif_node,
+                pattern.spike_getitem,
+                pattern.v_getitem,
+                pattern.pool_node,
+                pattern.flatten_node,
+                pattern.linear_node,
+                pattern.acc_node,
+            ]
+        )
+    return nodes
+
+
+def _external_lif_avgpool_linear_window_users(window: TemporalLifAvgPoolLinearWindow) -> List[torch.fx.Node]:
+    replaceable = _replaceable_lif_avgpool_linear_window_nodes(window)
+    users: List[torch.fx.Node] = []
+    for pattern in window.patterns:
+        for node in (pattern.spike_getitem, pattern.pool_node, pattern.flatten_node, pattern.linear_node):
+            for user in node.users:
+                if user not in replaceable:
+                    users.append(user)
+    for user in window.patterns[-1].v_getitem.users:
+        if user not in replaceable:
+            users.append(user)
+    for user in window.patterns[-1].acc_node.users:
+        if user not in replaceable:
+            users.append(user)
+    return users
+
+
+def _lif_avgpool_linear_middle_nodes_have_no_external_uses(window: TemporalLifAvgPoolLinearWindow) -> Tuple[bool, str]:
+    replaceable = _replaceable_lif_avgpool_linear_window_nodes(window)
+    for pattern in window.patterns[:-1]:
+        for user in pattern.v_getitem.users:
+            if user not in replaceable:
+                return False, f"middle v_next {pattern.v_getitem.name} has external user {user.name}"
+        for user in pattern.acc_node.users:
+            if user not in replaceable:
+                return False, f"middle accumulator {pattern.acc_node.name} has external user {user.name}"
+    return True, ""
+
+
+def _select_lif_avgpool_linear_temporal_insert_anchor(
+    gm: torch.fx.GraphModule,
+    window: TemporalLifAvgPoolLinearWindow,
+    inputs: List[Any],
+) -> Tuple[Optional[torch.fx.Node], str, str]:
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    first = window.patterns[0].lif_node
+    first_order = order[first]
+    replaceable = _replaceable_lif_avgpool_linear_window_nodes(window)
+    input_nodes = [value for value in inputs if isinstance(value, torch.fx.Node)]
+    for node in input_nodes:
+        if node in replaceable:
+            return None, "skip", f"input {node.name} is produced by nodes being replaced"
+    late_inputs = [node for node in input_nodes if order.get(node, -1) >= first_order]
+    if not late_inputs:
+        return first, "before", ""
+    anchor = max(late_inputs, key=lambda node: order[node])
+    anchor_order = order[anchor]
+    early_users = [
+        user.name
+        for user in _external_lif_avgpool_linear_window_users(window)
+        if order.get(user, anchor_order + 1) <= anchor_order
+    ]
+    if early_users:
+        return None, "skip", f"external users {early_users} appear before latest input {anchor.name}"
+    return anchor, "after", ""
+
+
+def _cleanup_lif_avgpool_linear_window_nodes(gm: torch.fx.GraphModule, window: TemporalLifAvgPoolLinearWindow):
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    candidates = []
+    for pattern in window.patterns:
+        candidates.extend(
+            [
+                pattern.acc_node,
+                pattern.linear_node,
+                pattern.flatten_node,
+                pattern.pool_node,
+                pattern.spike_getitem,
+                pattern.v_getitem,
+                pattern.lif_node,
+            ]
+        )
     unique = []
     seen = set()
     for node in candidates:
@@ -1246,6 +1596,135 @@ def rewrite_temporal_lif_state_to_fused(
     return stats
 
 
+def rewrite_temporal_lif_avgpool_linear_to_fused(
+    gm: torch.fx.GraphModule,
+    temporal_windows: List[TemporalLifAvgPoolLinearWindow],
+    max_patterns: int,
+) -> TemporalLifAvgPoolLinearRewriteStats:
+    stats = TemporalLifAvgPoolLinearRewriteStats(
+        temporal_lif_avgpool_linear_groups=len({window.layer_id for window in temporal_windows}),
+        temporal_lif_avgpool_linear_windows=len(temporal_windows),
+        temporal_lif_avgpool_linear_total_windows=len(temporal_windows),
+    )
+    replaced_patterns = 0
+    for window in temporal_windows:
+        patterns = window.patterns
+        if replaced_patterns + len(patterns) > max_patterns:
+            stats.skip(window, "max_patterns")
+            continue
+        try:
+            if not _same_lif_avgpool_linear_params(patterns):
+                stats.skip(window, "lif avgpool-linear params differ inside window")
+                continue
+            if not _same_lif_avgpool_linear_shapes(patterns):
+                stats.skip(window, "lif avgpool-linear input shapes differ inside window")
+                continue
+            ok, reason = check_temporal_lif_avgpool_linear_state_and_acc_chain(patterns)
+            if not ok:
+                stats.skip(window, f"state/accumulator chain not continuous: {reason}")
+                continue
+            ok, reason = _lif_avgpool_linear_middle_nodes_have_no_external_uses(window)
+            if not ok:
+                stats.skip(window, reason)
+                continue
+
+            first = patterns[0]
+            last = patterns[-1]
+            xs = [pattern.input_node for pattern in patterns]
+            v_init = first.v_prev_node
+            fc_bias = first.fc_bias
+            fc_inputs = [first.fc_weight]
+            if isinstance(fc_bias, torch.fx.Node):
+                fc_inputs.append(fc_bias)
+            acc_prev = first.acc_prev
+            inputs = xs + [v_init] + fc_inputs
+            if isinstance(acc_prev, torch.fx.Node):
+                inputs.append(acc_prev)
+            anchor, insert_mode, reason = _select_lif_avgpool_linear_temporal_insert_anchor(gm, window, inputs)
+            if anchor is None:
+                stats.skip(window, "cannot find legal temporal lif avgpool-linear insertion point; " + reason)
+                continue
+            v_threshold, v_reset, tau, detach_reset = first.lif_params
+
+            insert_ctx = gm.graph.inserting_before(anchor) if insert_mode == "before" else gm.graph.inserting_after(anchor)
+            with insert_ctx:
+                x_seq = gm.graph.call_function(torch.stack, args=(xs,), kwargs={"dim": 0})
+                x_seq.name = f"{first.lif_node.name}_temporal_lif_avgpool_linear_x_seq"
+            with gm.graph.inserting_after(x_seq):
+                temporal_tuple = gm.graph.call_function(
+                    torch.ops.snn_custom.fused_temporal_lif_avgpool_linear.default,
+                    args=(x_seq, v_init, first.fc_weight, fc_bias, v_threshold, v_reset, tau, detach_reset),
+                )
+                temporal_tuple.name = f"{first.lif_node.name}_temporal_fused_lif_avgpool_linear"
+
+            ok, reason = _all_inputs_available_for_node(gm, xs, x_seq)
+            if not ok:
+                gm.graph.erase_node(temporal_tuple)
+                gm.graph.erase_node(x_seq)
+                stats.skip(window, "cannot find legal temporal lif avgpool-linear insertion point; " + reason)
+                continue
+            ok, reason = _all_inputs_available_for_node(gm, [x_seq, v_init, first.fc_weight, fc_bias], temporal_tuple)
+            if not ok:
+                gm.graph.erase_node(temporal_tuple)
+                gm.graph.erase_node(x_seq)
+                stats.skip(window, "cannot find legal temporal lif avgpool-linear insertion point; " + reason)
+                continue
+
+            with gm.graph.inserting_after(temporal_tuple):
+                out_sum = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 0))
+                out_sum.name = f"{temporal_tuple.name}_out_sum"
+            with gm.graph.inserting_after(out_sum):
+                v_final = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 1))
+                v_final.name = f"{temporal_tuple.name}_v_final"
+
+            final_acc = out_sum
+            if isinstance(acc_prev, torch.fx.Node):
+                with gm.graph.inserting_after(v_final):
+                    final_acc = gm.graph.call_function(operator.add, args=(acc_prev, out_sum))
+                    final_acc.name = f"{temporal_tuple.name}_accumulated"
+                ok, reason = _all_inputs_available_for_node(gm, [acc_prev, out_sum], final_acc)
+                if not ok:
+                    gm.graph.erase_node(final_acc)
+                    gm.graph.erase_node(v_final)
+                    gm.graph.erase_node(out_sum)
+                    gm.graph.erase_node(temporal_tuple)
+                    gm.graph.erase_node(x_seq)
+                    stats.skip(window, "cannot find legal temporal lif avgpool-linear insertion point; " + reason)
+                    continue
+            elif acc_prev not in (0, 0.0, None):
+                with gm.graph.inserting_after(v_final):
+                    final_acc = gm.graph.call_function(operator.add, args=(acc_prev, out_sum))
+                    final_acc.name = f"{temporal_tuple.name}_accumulated"
+
+            last.acc_node.replace_all_uses_with(final_acc)
+            last.v_getitem.replace_all_uses_with(v_final)
+            _cleanup_lif_avgpool_linear_window_nodes(gm, window)
+
+            stats.temporal_lif_avgpool_linear_rewritten_windows += 1
+            stats.temporal_lif_avgpool_linear_replaced_patterns += len(patterns)
+            replaced_patterns += len(patterns)
+            message = (
+                f"[REWRITE][TEMPORAL_LIF_AVGPOOL_LINEAR] layer={window.layer_id}, window={window.window_id}, "
+                f"size={len(patterns)}, first={patterns[0].lif_node.name}, last={patterns[-1].lif_node.name}"
+            )
+            stats.log.append(message)
+            print(message)
+        except Exception as exc:
+            reason = str(exc)
+            stats.skip(window, reason)
+            if not isinstance(exc, ValueError):
+                traceback.print_exc()
+
+    try:
+        gm.graph.lint()
+        gm.recompile()
+    except Exception:
+        print("[WARN][TEMPORAL_LIF_AVGPOOL_LINEAR] graph lint/recompile failed after temporal LIF avgpool linear rewrite")
+        traceback.print_exc()
+        raise
+    return stats
+
+
 def dump_temporal_patterns(groups: List[TemporalGroup], path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = []
@@ -1272,6 +1751,37 @@ def dump_temporal_windows(windows: List[TemporalWindow], path: Path):
         lines.append(f"  window_id={window.window_id}")
         lines.append(f"  size={len(window.patterns)}")
         lines.append(f"  patterns={[pattern.lif_node.name for pattern in window.patterns]}")
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def dump_temporal_lif_avgpool_linear_patterns(groups: List[TemporalLifAvgPoolLinearGroup], path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for group in groups:
+        lines.append(f"layer_id: {group.layer_id}")
+        lines.append(f"  count={len(group.patterns)}")
+        for pattern in group.patterns:
+            lines.append(
+                "  "
+                f"pattern_{pattern.timestep_index}: lif={pattern.lif_node.name}, pool={pattern.pool_node.name}, "
+                f"flatten={pattern.flatten_node.name}, linear={pattern.linear_node.name}, acc={pattern.acc_node.name}, "
+                f"v={pattern.v_getitem.name}, v_prev={getattr(pattern.v_prev_node, 'name', pattern.v_prev_node)}"
+            )
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def dump_temporal_lif_avgpool_linear_windows(windows: List[TemporalLifAvgPoolLinearWindow], path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for index, window in enumerate(windows):
+        lines.append(f"window_{index}:")
+        lines.append(f"  layer_id={window.layer_id}")
+        lines.append(f"  window_id={window.window_id}")
+        lines.append(f"  size={len(window.patterns)}")
+        lines.append(f"  patterns={[pattern.lif_node.name for pattern in window.patterns]}")
+        lines.append(f"  acc_nodes={[pattern.acc_node.name for pattern in window.patterns]}")
         lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -1303,3 +1813,26 @@ def count_fused_temporal_lif_state_nodes(gm: torch.fx.GraphModule) -> int:
         for node in gm.graph.nodes
         if node.op == "call_function" and str(node.target) == "snn_custom.fused_temporal_lif_state.default"
     )
+
+
+def count_fused_temporal_lif_avgpool_linear_nodes(gm: torch.fx.GraphModule) -> int:
+    return sum(
+        1
+        for node in gm.graph.nodes
+        if node.op == "call_function" and str(node.target) == "snn_custom.fused_temporal_lif_avgpool_linear.default"
+    )
+
+
+# Deprecated compatibility aliases for downstream scripts that still import the
+# old classifier-tail names. New code should use the avgpool-linear names above.
+TemporalLifTailPattern = TemporalLifAvgPoolLinearPattern
+TemporalLifTailGroup = TemporalLifAvgPoolLinearGroup
+TemporalLifTailWindow = TemporalLifAvgPoolLinearWindow
+TemporalLifTailRewriteStats = TemporalLifAvgPoolLinearRewriteStats
+collect_temporal_lif_tail_patterns = collect_temporal_lif_avgpool_linear_patterns
+group_temporal_lif_tail_patterns = group_temporal_lif_avgpool_linear_patterns
+make_temporal_lif_tail_windows = make_temporal_lif_avgpool_linear_windows
+rewrite_temporal_lif_tail_to_fused = rewrite_temporal_lif_avgpool_linear_to_fused
+dump_temporal_lif_tail_patterns = dump_temporal_lif_avgpool_linear_patterns
+dump_temporal_lif_tail_windows = dump_temporal_lif_avgpool_linear_windows
+count_fused_temporal_lif_tail_nodes = count_fused_temporal_lif_avgpool_linear_nodes
