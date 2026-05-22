@@ -23,6 +23,7 @@ import runtime.snn_custom_ops as snn_custom_ops
 from compiler.chronos_compile import build_chronos_compile_config, compile_with_chronos_options
 from test.models_for_fx_test import reset_custom_stateful_lif_modules
 from benchmarks.validate_chronos_baselines import (
+    CHRONOS_MODEL_CHOICES,
     MultiStepModeWrapper,
     SingleStepModeLoopWrapper,
     RewriteCounters,
@@ -205,11 +206,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         model_name,
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="s",
+        model_channels=args.model_channels,
     )
     base_layer_m = make_resnet_layer(
         model_name,
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="m",
+        model_channels=args.model_channels,
     )
 
     base_layer_s = base_layer_s.to(
@@ -441,6 +444,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             args.height,
             args.width,
         ],
+        "model_channels": args.model_channels,
         "T": args.T,
         "dtype": args.dtype,
         "warmup": args.warmup,
@@ -483,7 +487,14 @@ def parse_args():
         "--models",
         nargs="+",
         default=["resnet18"],
-        choices=["resnet18", "resnet34", "resnet32"],
+        choices=CHRONOS_MODEL_CHOICES,
+    )
+
+    parser.add_argument(
+        "--model-channels",
+        type=int,
+        default=64,
+        help="Base channel width for handcrafted alexnet/zfnet models.",
     )
 
     parser.add_argument("--T", type=int, default=16)

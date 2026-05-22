@@ -15,7 +15,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import torch
 import torch.nn as nn
 from spikingjelly.activation_based import functional, surrogate
-from spikingjelly.activation_based.model import spiking_resnet
+from spikingjelly.activation_based.model import spiking_resnet, spiking_vgg
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -109,6 +109,8 @@ class RewriteCounters:
     temporal_residual_rewritten_windows: int = 0
     temporal_residual_replaced_patterns: int = 0
     temporal_residual_skipped_windows: int = 0
+    temporal_residual_remapped_spike_external_users: int = 0
+    temporal_residual_unremappable_external_users: int = 0
     temporal_residual_skip_reasons: Dict[str, int] = field(default_factory=dict)
     residual_fuse_skip_reasons: Dict[str, int] = field(default_factory=dict)
     temporal_lif_windows: int = 0
@@ -116,6 +118,8 @@ class RewriteCounters:
     temporal_lif_rewritten_windows: int = 0
     temporal_lif_replaced_patterns: int = 0
     temporal_lif_skipped_windows: int = 0
+    temporal_lif_remapped_spike_external_users: int = 0
+    temporal_lif_unremappable_external_users: int = 0
     temporal_lif_skip_reasons: Dict[str, int] = field(default_factory=dict)
     temporal_lif_avgpool_linear_windows: int = 0
     temporal_lif_avgpool_linear_total_windows: int = 0
@@ -212,7 +216,128 @@ SingleStepWrapper = SingleStepModeLoopWrapper
 MultiStepWrapper = MultiStepModeWrapper
 
 
-def make_resnet_layer(model_name: str, allow_resnet32_fallback: bool, step_mode: str = "s") -> nn.Module:
+CHRONOS_MODEL_CHOICES = [
+    "resnet18",
+    "resnet34",
+    "resnet32",
+    "alexnet",
+    "zfnet",
+    "vgg11",
+    "vgg16",
+]
+
+
+class ChronosAlexZFNet(nn.Module):
+    def __init__(
+        self,
+        *,
+        kind: str,
+        channels: int = 64,
+        num_classes: int = 10,
+        input_channels: int = 3,
+        step_mode: str = "s",
+    ):
+        super().__init__()
+        self.kind = kind
+        self.step_mode = step_mode
+        c = int(channels)
+
+        if kind == "alexnet":
+            conv_specs = [
+                (input_channels, c, 11, 4, 2, False),
+                (c, 3 * c, 5, 1, 2, False),
+                (3 * c, 6 * c, 3, 1, 1, False),
+                (6 * c, 4 * c, 3, 1, 1, False),
+                (4 * c, 4 * c, 3, 1, 1, False),
+            ]
+            pool_specs = {
+                0: nn.MaxPool2d(3, stride=2),
+                1: nn.MaxPool2d(3, stride=2),
+                4: nn.MaxPool2d(3, stride=2),
+            }
+            avgpool = nn.AdaptiveAvgPool2d((6, 6))
+            classifier_in = 4 * c * 6 * 6
+        elif kind == "zfnet":
+            conv_specs = [
+                (input_channels, c, 7, 2, 3, False),
+                (c, 3 * c, 5, 1, 2, False),
+                (3 * c, 6 * c, 3, 1, 1, False),
+                (6 * c, 4 * c, 3, 1, 1, False),
+                (4 * c, 4 * c, 3, 1, 1, False),
+            ]
+            pool_specs = {
+                0: nn.MaxPool2d(3, stride=2, padding=1),
+                1: nn.MaxPool2d(3, stride=2, padding=1),
+                4: nn.MaxPool2d(3, stride=2, padding=1),
+            }
+            avgpool = nn.AdaptiveAvgPool2d((1, 1))
+            classifier_in = 4 * c
+        else:
+            raise ValueError(f"unsupported Alex/ZF kind: {kind}")
+
+        features = []
+        for idx, (cin, cout, kernel_size, stride, padding, bias) in enumerate(conv_specs):
+            features.extend([
+                nn.Conv2d(cin, cout, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
+                nn.BatchNorm2d(cout),
+                CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+            ])
+            if idx in pool_specs:
+                features.append(pool_specs[idx])
+
+        self.features = nn.Sequential(*features)
+        self.avgpool = avgpool
+        self.flatten = nn.Flatten(1)
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(classifier_in, 64 * c, bias=False),
+            CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+            nn.Dropout(0.5),
+            nn.Linear(64 * c, 64 * c, bias=False),
+            CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+            nn.Linear(64 * c, num_classes, bias=False),
+            CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+        )
+
+    def _forward_single(self, x):
+        x = self.features(x)
+        x = self.avgpool(x)
+        x = self.flatten(x)
+        return self.classifier(x)
+
+    def forward(self, x):
+        if x.dim() == 5:
+            return torch.stack([self._forward_single(x[t]) for t in range(x.shape[0])], dim=0)
+        return self._forward_single(x)
+
+
+def _make_vgg_layer(model_name: str, step_mode: str) -> nn.Module:
+    if model_name == "vgg11":
+        layer = spiking_vgg.spiking_vgg11_bn(
+            pretrained=False,
+            num_classes=10,
+            spiking_neuron=CustomStatefulIFNode,
+            surrogate_function=surrogate.ATan(),
+        )
+    elif model_name == "vgg16":
+        layer = spiking_vgg.spiking_vgg16_bn(
+            pretrained=False,
+            num_classes=10,
+            spiking_neuron=CustomStatefulIFNode,
+            surrogate_function=surrogate.ATan(),
+        )
+    else:
+        raise ValueError(f"unsupported VGG model: {model_name}")
+    functional.set_step_mode(layer, step_mode=step_mode)
+    return layer
+
+
+def make_resnet_layer(
+    model_name: str,
+    allow_resnet32_fallback: bool,
+    step_mode: str = "s",
+    model_channels: int = 64,
+) -> nn.Module:
     if model_name == "resnet18":
         layer = spiking_resnet.spiking_resnet18(
             pretrained=False,
@@ -227,6 +352,15 @@ def make_resnet_layer(model_name: str, allow_resnet32_fallback: bool, step_mode:
             spiking_neuron=CustomStatefulIFNode,
             surrogate_function=surrogate.ATan(),
         )
+    elif model_name in ("alexnet", "zfnet"):
+        return ChronosAlexZFNet(
+            kind=model_name,
+            channels=model_channels,
+            num_classes=10,
+            step_mode=step_mode,
+        )
+    elif model_name in ("vgg11", "vgg16"):
+        return _make_vgg_layer(model_name, step_mode)
     else:
         raise ValueError(f"unsupported model: {model_name}")
 
@@ -360,6 +494,12 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                 counters.temporal_residual_rewritten_windows += residual_stats.temporal_residual_replaced_windows
                 counters.temporal_residual_replaced_patterns += residual_stats.temporal_residual_replaced_patterns
                 counters.temporal_residual_skipped_windows += residual_stats.temporal_residual_skipped_windows
+                counters.temporal_residual_remapped_spike_external_users += (
+                    residual_stats.temporal_residual_remapped_spike_external_users
+                )
+                counters.temporal_residual_unremappable_external_users += (
+                    residual_stats.temporal_residual_unremappable_external_users
+                )
                 for reason, count in residual_stats.residual_fuse_skip_reasons.items():
                     counters.temporal_residual_skip_reasons[reason] = (
                         counters.temporal_residual_skip_reasons.get(reason, 0) + count
@@ -425,6 +565,12 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                     counters.temporal_lif_rewritten_windows += lif_stats.temporal_lif_rewritten_windows
                     counters.temporal_lif_replaced_patterns += lif_stats.temporal_lif_replaced_patterns
                     counters.temporal_lif_skipped_windows += lif_stats.temporal_lif_skipped_windows
+                    counters.temporal_lif_remapped_spike_external_users += (
+                        lif_stats.temporal_lif_remapped_spike_external_users
+                    )
+                    counters.temporal_lif_unremappable_external_users += (
+                        lif_stats.temporal_lif_unremappable_external_users
+                    )
                     for reason, count in lif_stats.temporal_lif_skip_reasons.items():
                         counters.temporal_lif_skip_reasons[reason] = (
                             counters.temporal_lif_skip_reasons.get(reason, 0) + count
@@ -635,11 +781,13 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         model_name,
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="s",
+        model_channels=args.model_channels,
     ).to(device=args.device, dtype=dtype).eval()
     base_layer_m = make_resnet_layer(
         model_name,
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="m",
+        model_channels=args.model_channels,
     ).to(device=args.device, dtype=dtype).eval()
     x = torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=dtype)
 
@@ -714,6 +862,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     payload = {
         "model": model_name,
         "input_shape": [args.batch_size, 3, args.height, args.width],
+        "model_channels": args.model_channels,
         "dtype": args.dtype,
         "T": args.T,
         "temporal_fuse_window": args.temporal_fuse_window,
@@ -755,7 +904,8 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Validate Chronos FX Conv+BN+LIF rewrite against baseline s/m eager/compile.")
-    parser.add_argument("--models", nargs="+", default=["resnet18", "resnet34"], choices=["resnet18", "resnet34", "resnet32"])
+    parser.add_argument("--models", nargs="+", default=["resnet18", "resnet34"], choices=CHRONOS_MODEL_CHOICES)
+    parser.add_argument("--model-channels", type=int, default=64, help="Base channel width for handcrafted alexnet/zfnet models.")
     parser.add_argument("--T", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--height", type=int, default=64)

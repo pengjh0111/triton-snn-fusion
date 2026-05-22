@@ -170,6 +170,8 @@ class TemporalResidualRewriteStats:
     temporal_residual_rewritten_windows: int = 0
     temporal_residual_replaced_patterns: int = 0
     temporal_residual_skipped_windows: int = 0
+    temporal_residual_remapped_spike_external_users: int = 0
+    temporal_residual_unremappable_external_users: int = 0
     residual_fuse_skip_reasons: Dict[str, int] = field(default_factory=dict)
     log: List[str] = field(default_factory=list)
 
@@ -189,6 +191,8 @@ class TemporalLifRewriteStats:
     temporal_lif_rewritten_windows: int = 0
     temporal_lif_replaced_patterns: int = 0
     temporal_lif_skipped_windows: int = 0
+    temporal_lif_remapped_spike_external_users: int = 0
+    temporal_lif_unremappable_external_users: int = 0
     temporal_lif_skip_reasons: Dict[str, int] = field(default_factory=dict)
     log: List[str] = field(default_factory=list)
 
@@ -465,6 +469,13 @@ def _shape_key_from_node(node: torch.fx.Node) -> str:
     return "shape=<unknown>"
 
 
+def _is_linear_output_node(node: torch.fx.Node) -> bool:
+    if node.op != "call_function":
+        return False
+    target_text = str(node.target)
+    return node.target is F.linear or "linear" in target_text
+
+
 def collect_standalone_lif_state_patterns(
     gm: torch.fx.GraphModule,
     excluded_lif_nodes=None,
@@ -487,6 +498,12 @@ def collect_standalone_lif_state_patterns(
             "snn_custom.fused_temporal_conv_add_lif_state.default",
             "snn_custom.fused_temporal_lif_state.default",
         ):
+            continue
+        if _is_linear_output_node(node.args[0]):
+            print(
+                f"[SKIP][TEMPORAL_LIF] lif={node.name}: "
+                "linear-output LIF is rank-2 and fused_temporal_lif_state currently requires [T,N,C,H,W]"
+            )
             continue
 
         timestep = _chronos_meta(node, "timestep", None)
@@ -911,6 +928,101 @@ def _all_inputs_available_for_node(gm: torch.fx.GraphModule, inputs: List[Any], 
     return True, ""
 
 
+def _iter_arg_nodes(value):
+    if isinstance(value, torch.fx.Node):
+        yield value
+    elif isinstance(value, (tuple, list)):
+        for item in value:
+            yield from _iter_arg_nodes(item)
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _iter_arg_nodes(item)
+
+
+def _node_reaches_any_input(source: torch.fx.Node, inputs: List[Any]) -> bool:
+    stack = [node for value in inputs for node in _iter_arg_nodes(value)]
+    seen = set()
+    while stack:
+        node = stack.pop()
+        if node is source:
+            return True
+        if node in seen:
+            continue
+        seen.add(node)
+        stack.extend(_iter_arg_nodes(node.args))
+        stack.extend(_iter_arg_nodes(node.kwargs))
+    return False
+
+
+def _unique_nodes(nodes: List[torch.fx.Node]) -> List[torch.fx.Node]:
+    out = []
+    seen = set()
+    for node in nodes:
+        if node not in seen:
+            out.append(node)
+            seen.add(node)
+    return out
+
+
+def _resolved_replacement_node(node):
+    seen = set()
+    while isinstance(node, torch.fx.Node) and "chronos_replacement_node" in node.meta:
+        if node in seen:
+            break
+        seen.add(node)
+        replacement = node.meta.get("chronos_replacement_node")
+        if not isinstance(replacement, torch.fx.Node):
+            break
+        node = replacement
+    return node
+
+
+def _external_spike_users_by_pattern(patterns, replaceable: set) -> Dict[torch.fx.Node, List[torch.fx.Node]]:
+    out: Dict[torch.fx.Node, List[torch.fx.Node]] = {}
+    for pattern in patterns:
+        users = [user for user in pattern.spike_getitem.users if user not in replaceable]
+        out[pattern.spike_getitem] = _unique_nodes(users)
+    return out
+
+
+def _unremappable_spike_external_user_reason(
+    spike_external_users: Dict[torch.fx.Node, List[torch.fx.Node]],
+    inputs: List[Any],
+) -> str:
+    for spike_node, users in spike_external_users.items():
+        for user in users:
+            if _node_reaches_any_input(user, inputs):
+                return (
+                    f"replacement would create cycle: external spike user {user.name} "
+                    f"from {spike_node.name} produces a fused-op input"
+                )
+    return ""
+
+
+def _move_early_remapped_users_after(
+    gm: torch.fx.GraphModule,
+    users: List[torch.fx.Node],
+    anchor: torch.fx.Node,
+):
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    anchor_order = order[anchor]
+    to_move = set()
+    stack = [user for user in users if order.get(user, anchor_order + 1) <= anchor_order]
+    while stack:
+        node = stack.pop()
+        if node in to_move or node is anchor or node.op == "output":
+            continue
+        to_move.add(node)
+        for user in node.users:
+            if order.get(user, anchor_order + 1) <= anchor_order:
+                stack.append(user)
+
+    prev = anchor
+    for node in sorted(to_move, key=lambda item: order[item]):
+        prev.append(node)
+        prev = node
+
+
 def _replaceable_residual_window_nodes(window: TemporalResidualWindow) -> set:
     nodes = set()
     for pattern in window.patterns:
@@ -933,10 +1045,6 @@ def _replaceable_residual_window_nodes(window: TemporalResidualWindow) -> set:
 def _external_residual_window_users(window: TemporalResidualWindow) -> List[torch.fx.Node]:
     replaceable = _replaceable_residual_window_nodes(window)
     users: List[torch.fx.Node] = []
-    for pattern in window.patterns:
-        for user in pattern.spike_getitem.users:
-            if user not in replaceable:
-                users.append(user)
     for user in window.patterns[-1].v_getitem.users:
         if user not in replaceable:
             users.append(user)
@@ -953,9 +1061,9 @@ def _select_residual_temporal_insert_anchor(
     Residual-add windows often consume upstream temporal-fused spike getitems
     that are materialized after the first conv in this window.  In that case
     inserting before the first conv would violate FX topological order.  This
-    helper moves the fused op just after the latest real input, but only when
-    all external consumers of the replaced spike/v outputs are still after that
-    point.
+    helper moves the fused op just after the latest real input.  External
+    v_next users remain strict; external spike users are handled later by
+    remapping them to fused spike_stack[t] and moving early consumers.
     """
     order = {node: index for index, node in enumerate(gm.graph.nodes)}
     first = window.patterns[0].conv_node
@@ -966,6 +1074,10 @@ def _select_residual_temporal_insert_anchor(
     for node in input_nodes:
         if node in replaceable:
             return None, "skip", f"input {node.name} is produced by nodes being replaced"
+    spike_external_users = _external_spike_users_by_pattern(window.patterns, replaceable)
+    unremappable = _unremappable_spike_external_user_reason(spike_external_users, inputs)
+    if unremappable:
+        return None, "skip", unremappable
 
     late_inputs = [node for node in input_nodes if order.get(node, -1) >= first_order]
     if not late_inputs:
@@ -1016,10 +1128,6 @@ def _replaceable_lif_window_nodes(window: TemporalLifWindow) -> set:
 def _external_lif_window_users(window: TemporalLifWindow) -> List[torch.fx.Node]:
     replaceable = _replaceable_lif_window_nodes(window)
     users: List[torch.fx.Node] = []
-    for pattern in window.patterns:
-        for user in pattern.spike_getitem.users:
-            if user not in replaceable:
-                users.append(user)
     for user in window.patterns[-1].v_getitem.users:
         if user not in replaceable:
             users.append(user)
@@ -1039,6 +1147,10 @@ def _select_lif_temporal_insert_anchor(
     for node in input_nodes:
         if node in replaceable:
             return None, "skip", f"input {node.name} is produced by nodes being replaced"
+    spike_external_users = _external_spike_users_by_pattern(window.patterns, replaceable)
+    unremappable = _unremappable_spike_external_user_reason(spike_external_users, inputs)
+    if unremappable:
+        return None, "skip", unremappable
     late_inputs = [node for node in input_nodes if order.get(node, -1) >= first_order]
     if not late_inputs:
         return first, "before", ""
@@ -1216,7 +1328,7 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
                 eps,
             )
 
-            v_init = first.lif_node.args[1]
+            v_init = _resolved_replacement_node(first.lif_node.args[1])
             if isinstance(v_init, torch.fx.Node) and _is_zeros_like_of(v_init, first.bn_node):
                 v_init = _materialize_scalar_zero_v_init(gm, first.conv_node, folded_weight)
 
@@ -1258,8 +1370,10 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
                 with gm.graph.inserting_before(pattern.spike_getitem):
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
                     spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
+                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
+            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
             patterns[-1].v_getitem.replace_all_uses_with(v_final)
             _cleanup_window_nodes(gm, window)
 
@@ -1362,6 +1476,13 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
             if not ok:
                 stats.skip(window, reason)
                 continue
+            spike_external_users = _external_spike_users_by_pattern(
+                patterns,
+                _replaceable_residual_window_nodes(window),
+            )
+            remappable_spike_users = _unique_nodes(
+                [user for users in spike_external_users.values() for user in users]
+            )
 
             first = patterns[0]
             conv_input, conv_weight, conv_bias, stride, padding, dilation, groups = extract_conv2d_tensors(
@@ -1383,12 +1504,12 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
                 eps,
             )
 
-            v_init = first.lif_node.args[1]
+            v_init = _resolved_replacement_node(first.lif_node.args[1])
             if isinstance(v_init, torch.fx.Node) and _is_zeros_like_of(v_init, first.add_node):
                 v_init = _materialize_scalar_zero_v_init(gm, first.conv_node, folded_weight)
 
-            xs = [pattern.conv_input for pattern in patterns]
-            residuals = [pattern.residual_node for pattern in patterns]
+            xs = [_resolved_replacement_node(pattern.conv_input) for pattern in patterns]
+            residuals = [_resolved_replacement_node(pattern.residual_node) for pattern in patterns]
             anchor, insert_mode, reason = _select_residual_temporal_insert_anchor(
                 gm,
                 window,
@@ -1408,6 +1529,8 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
                 xs + residuals + [v_init, weight_node, bias_node],
             )
             if anchor is None:
+                if "replacement would create cycle" in reason:
+                    stats.temporal_residual_unremappable_external_users += len(remappable_spike_users)
                 stats.skip(window, "cannot find legal temporal residual insertion point; " + reason)
                 continue
             v_threshold, v_reset, tau, detach_reset = first.lif_params
@@ -1457,9 +1580,14 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
                     spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
                 prev_insert = spike_k
+                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
+            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
             patterns[-1].v_getitem.replace_all_uses_with(v_final)
+            if remappable_spike_users:
+                _move_early_remapped_users_after(gm, remappable_spike_users, prev_insert)
+                stats.temporal_residual_remapped_spike_external_users += len(remappable_spike_users)
             _cleanup_residual_window_nodes(gm, window)
 
             stats.temporal_residual_replaced_windows += 1
@@ -1519,12 +1647,21 @@ def rewrite_temporal_lif_state_to_fused(
             if not ok:
                 stats.skip(window, reason)
                 continue
+            spike_external_users = _external_spike_users_by_pattern(
+                patterns,
+                _replaceable_lif_window_nodes(window),
+            )
+            remappable_spike_users = _unique_nodes(
+                [user for users in spike_external_users.values() for user in users]
+            )
 
             first = patterns[0]
-            xs = [pattern.input_node for pattern in patterns]
-            v_init = first.v_prev_node
+            xs = [_resolved_replacement_node(pattern.input_node) for pattern in patterns]
+            v_init = _resolved_replacement_node(first.v_prev_node)
             anchor, insert_mode, reason = _select_lif_temporal_insert_anchor(gm, window, xs + [v_init])
             if anchor is None:
+                if "replacement would create cycle" in reason:
+                    stats.temporal_lif_unremappable_external_users += len(remappable_spike_users)
                 stats.skip(window, "cannot find legal temporal lif insertion point; " + reason)
                 continue
             v_threshold, v_reset, tau, detach_reset = first.lif_params
@@ -1566,9 +1703,14 @@ def rewrite_temporal_lif_state_to_fused(
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
                     spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
                 prev_insert = spike_k
+                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
+            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
             patterns[-1].v_getitem.replace_all_uses_with(v_final)
+            if remappable_spike_users:
+                _move_early_remapped_users_after(gm, remappable_spike_users, prev_insert)
+                stats.temporal_lif_remapped_spike_external_users += len(remappable_spike_users)
             _cleanup_lif_window_nodes(gm, window)
 
             stats.temporal_lif_rewritten_windows += 1

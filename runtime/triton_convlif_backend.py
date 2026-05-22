@@ -62,9 +62,30 @@ def classify_conv_lif_config(weight, stride, padding, dilation, groups) -> str:
         return "k3_s1_p1"
     if kernel_pair == (3, 3) and stride_pair == (2, 2) and padding_pair == (1, 1):
         return "k3_s2_p1"
+    if kernel_pair == (5, 5) and stride_pair == (1, 1) and padding_pair == (2, 2):
+        return "k5_s1_p2"
     if kernel_pair == (7, 7) and stride_pair == (2, 2) and padding_pair == (3, 3):
         return "k7_s2_p3"
+    if kernel_pair == (11, 11) and stride_pair == (4, 4) and padding_pair == (2, 2):
+        return "k11_s4_p2"
     return "unsupported"
+
+
+SUPPORTED_CONV_LIF_CONFIGS = {
+    (3, 3): {
+        ((1, 1), (1, 1)): "k3_s1_p1",
+        ((2, 2), (1, 1)): "k3_s2_p1",
+    },
+    (5, 5): {
+        ((1, 1), (2, 2)): "k5_s1_p2",
+    },
+    (7, 7): {
+        ((2, 2), (3, 3)): "k7_s2_p3",
+    },
+    (11, 11): {
+        ((4, 4), (2, 2)): "k11_s4_p2",
+    },
+}
 
 
 def check_triton_support(
@@ -107,16 +128,28 @@ def check_triton_support(
     stride_pair = tuple(_as_pair(stride))
     padding_pair = tuple(_as_pair(padding))
     kernel_pair = tuple(weight.shape[-2:]) if weight.dim() == 4 else None
-    if stride_pair not in ((1, 1), (2, 2)):
-        reasons.append(f"unsupported_stride: stride must be (1, 1) or (2, 2), got {stride_pair}")
-    if kernel_pair is not None and kernel_pair not in ((3, 3), (7, 7)):
-        reasons.append(f"unsupported_kernel: kernel must be (3, 3) or (7, 7), got {kernel_pair}")
-    if kernel_pair == (7, 7) and stride_pair != (2, 2):
-        reasons.append(f"unsupported_stride: 7x7 kernel requires stride (2, 2), got {stride_pair}")
-    if kernel_pair == (3, 3) and padding_pair != (1, 1):
-        reasons.append(f"unsupported_padding: 3x3 kernel requires padding (1, 1), got {padding_pair}")
-    if kernel_pair == (7, 7) and padding_pair != (3, 3):
-        reasons.append(f"unsupported_padding: 7x7 kernel requires padding (3, 3), got {padding_pair}")
+    if kernel_pair is not None:
+        supported_for_kernel = SUPPORTED_CONV_LIF_CONFIGS.get(kernel_pair)
+        if supported_for_kernel is None:
+            reasons.append(
+                "unsupported_kernel: kernel must be one of "
+                f"{tuple(SUPPORTED_CONV_LIF_CONFIGS)}, got {kernel_pair}"
+            )
+        elif (stride_pair, padding_pair) not in supported_for_kernel:
+            supported_strides = sorted({config[0] for config in supported_for_kernel})
+            supported_paddings_for_stride = sorted(
+                {config[1] for config in supported_for_kernel if config[0] == stride_pair}
+            )
+            if not supported_paddings_for_stride:
+                reasons.append(
+                    f"unsupported_stride: {kernel_pair[0]}x{kernel_pair[1]} kernel supports "
+                    f"stride {supported_strides}, got {stride_pair}"
+                )
+            else:
+                reasons.append(
+                    f"unsupported_padding: {kernel_pair[0]}x{kernel_pair[1]} kernel with stride {stride_pair} "
+                    f"supports padding {supported_paddings_for_stride}, got {padding_pair}"
+                )
     if bool(detach_reset):
         reasons.append("unsupported_detach_reset: detach_reset=True is not supported by existing Triton kernel")
     if abs(float(v_threshold) - 1.0) > 1e-6:
@@ -178,7 +211,7 @@ def _run_triton_temporal_by_key(
     use_autotune: bool = True,
     v_init: torch.Tensor = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    if kernel_key in ("k3_s1_p1", "k3_s2_p1", "k7_s2_p3"):
+    if kernel_key in ("k3_s1_p1", "k3_s2_p1", "k5_s1_p2", "k7_s2_p3", "k11_s4_p2"):
         return _run_triton_temporal_framework(kernel_key, x_seq, weight, bias, use_autotune=use_autotune, v_init=v_init)
     raise RuntimeError(f"unsupported dispatch key: {kernel_key}")
 

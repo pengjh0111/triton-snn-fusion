@@ -8,7 +8,7 @@ OUT_ROOT=test/full_validation
 mkdir -p ${OUT_ROOT}
 
 WINDOWS=(1 2 4 8 16)
-MODELS=("resnet18" "resnet34")
+MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet")
 
 ############################################
 # FP32 FULL VALIDATION
@@ -21,7 +21,7 @@ for MODEL in "${MODELS[@]}"; do
     echo "[FP32] MODEL=${MODEL} WINDOW=${W}"
     echo "========================================="
 
-    OUT_DIR=${OUT_ROOT}/fp32_${MODEL}_w${W}
+    OUT_DIR=${OUT_ROOT}/${MODEL}/fp32_w${W}
     mkdir -p ${OUT_DIR}
 
     python3 benchmarks/benchmark_chronos_runtime.py \
@@ -46,7 +46,7 @@ for MODEL in "${MODELS[@]}"; do
       --warmup 20 \
       --repeat 100 \
       --include-s-cases \
-      --print-fused-op-calls \
+      # --print-fused-op-calls \
       --out-dir ${OUT_DIR} \
       2>&1 | tee ${OUT_DIR}/runtime.log
 
@@ -74,7 +74,7 @@ for MODEL in "${MODELS[@]}"; do
     echo "[FP16] MODEL=${MODEL} WINDOW=${W}"
     echo "========================================="
 
-    OUT_DIR=${OUT_ROOT}/fp16_${MODEL}_w${W}
+    OUT_DIR=${OUT_ROOT}/${MODEL}/fp16_w${W}
     mkdir -p ${OUT_DIR}
 
     python3 benchmarks/benchmark_chronos_runtime.py \
@@ -99,7 +99,7 @@ for MODEL in "${MODELS[@]}"; do
       --warmup 20 \
       --repeat 100 \
       --include-s-cases \
-      --print-fused-op-calls \
+      # --print-fused-op-calls \
       --out-dir ${OUT_DIR} \
       2>&1 | tee ${OUT_DIR}/runtime.log
 

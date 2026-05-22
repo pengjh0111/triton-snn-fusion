@@ -312,7 +312,9 @@ def _alloc_outputs(
 KERNEL_VARIANTS = {
     "k3_s1_p1": {"function": "_fused_conv_lif_temporal_general_kernel_k3_s1_p1_impl", "kernel": 3, "stride": 1, "pad": 1},
     "k3_s2_p1": {"function": "_fused_conv_lif_temporal_general_kernel_k3_s2_p1_impl", "kernel": 3, "stride": 2, "pad": 1},
+    "k5_s1_p2": {"function": "_fused_conv_lif_temporal_general_kernel_k5_s1_p2_impl", "kernel": 5, "stride": 1, "pad": 2},
     "k7_s2_p3": {"function": "_fused_conv_lif_temporal_general_kernel_k7_s2_p3_impl", "kernel": 7, "stride": 2, "pad": 3},
+    "k11_s4_p2": {"function": "_fused_conv_lif_temporal_general_kernel_k11_s4_p2_impl", "kernel": 11, "stride": 4, "pad": 2},
 }
 
 
