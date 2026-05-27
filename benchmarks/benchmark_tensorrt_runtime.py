@@ -16,8 +16,14 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from benchmarks.validate_chronos_baselines import SingleStepModeLoopWrapper, make_resnet_layer
-from test.models_for_fx_test import CustomStatefulIFNode, reset_custom_stateful_lif_modules
+from benchmarks.validate_chronos_baselines import (
+    CHRONOS_MODEL_CHOICES,
+    LIF_IMPL_CHOICES,
+    SingleStepModeLoopWrapper,
+    make_resnet_layer,
+    reset_lif_modules,
+)
+from test.models_for_fx_test import CustomStatefulIFNode
 
 
 ################################################################################
@@ -100,6 +106,8 @@ def export_onnx(
     model_name: str,
     execution_mode: str,
     precision: str,
+    model_channels: int,
+    lif_impl: str,
     T: int,
     batch_size: int,
     height: int,
@@ -118,10 +126,12 @@ def export_onnx(
         "onnx_export_ok": False,
         "onnx_path": str(onnx_path),
         "precision": precision,
-        "custom_lif": True,
+        "model_channels": model_channels,
+        "lif_impl": lif_impl,
+        "custom_lif": lif_impl == "chronos",
         "wrapper": "SingleStepModeLoopWrapper",
         "graph_contains_custom_lif": False,
-        "export_rewrite_custom_lif": True,
+        "export_rewrite_custom_lif": lif_impl == "chronos",
         "export_custom_lif_replaced": 0,
         "export_graph_contains_custom_op": None,
         "error": "",
@@ -133,6 +143,8 @@ def export_onnx(
             model_name=model_name,
             allow_resnet32_fallback=True,
             step_mode="s",
+            model_channels=model_channels,
+            lif_impl=lif_impl,
         )
         model = SingleStepModeLoopWrapper(
             layer=layer,
@@ -170,10 +182,10 @@ def export_onnx(
         dtype=dtype,
     )
 
-    reset_custom_stateful_lif_modules(model)
+    reset_lif_modules(model)
     model_for_export = copy.deepcopy(model)
     replaced = replace_custom_lif_for_export(model_for_export)
-    reset_custom_stateful_lif_modules(model_for_export)
+    reset_lif_modules(model_for_export)
     result["export_custom_lif_replaced"] = replaced
     result["export_graph_contains_custom_op"] = any(
         module.__class__.__name__ == "CustomStatefulIFNode"
@@ -289,7 +301,7 @@ def run_trtexec(
         f"--memPoolSize=workspace:{workspace_mb}",
         f"--warmUp={warmup_ms}",
         f"--duration={duration_sec}",
-        "--builderOptimizationLevel=1",
+        # "--builderOptimizationLevel=1",
         "--separateProfileRun",
     ]
 
@@ -361,7 +373,7 @@ def main():
         "--models",
         nargs="+",
         default=["resnet18"],
-        choices=["resnet18", "resnet34"],
+        choices=CHRONOS_MODEL_CHOICES,
     )
 
     parser.add_argument(
@@ -391,6 +403,20 @@ def main():
     )
 
     parser.add_argument("--T", type=int, default=16)
+
+    parser.add_argument(
+        "--model-channels",
+        type=int,
+        default=64,
+        help="Base channel width for handcrafted alexnet/zfnet models.",
+    )
+
+    parser.add_argument(
+        "--lif-impl",
+        choices=LIF_IMPL_CHOICES,
+        default="chronos",
+        help="LIF implementation used when constructing benchmark models.",
+    )
 
     parser.add_argument("--batch-size", type=int, default=16)
 
@@ -461,6 +487,8 @@ def main():
                     model_name=model_name,
                     execution_mode=execution_mode,
                     precision=precision,
+                    model_channels=args.model_channels,
+                    lif_impl=args.lif_impl,
                     T=args.T,
                     batch_size=args.batch_size,
                     height=args.height,
@@ -509,6 +537,8 @@ def main():
                     **trt_result,
                     "onnx_export_ok": export_result["onnx_export_ok"],
                     "custom_lif": export_result["custom_lif"],
+                    "model_channels": export_result["model_channels"],
+                    "lif_impl": export_result["lif_impl"],
                     "wrapper": export_result["wrapper"],
                     "graph_contains_custom_lif": export_result["graph_contains_custom_lif"],
                     "export_rewrite_custom_lif": export_result["export_rewrite_custom_lif"],
