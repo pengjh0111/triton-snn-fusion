@@ -1997,80 +1997,35 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
 
             insert_ctx = gm.graph.inserting_before(anchor) if insert_mode == "before" else gm.graph.inserting_after(anchor)
             with insert_ctx:
-                x_seq = gm.graph.call_function(torch.stack, args=(xs, 0))
-                x_seq.name = f"{first.conv_node.name}_temporal_conv_lif_x_seq"
-                x_seq.meta["chronos_temporal_layout"] = "stack"
-                x_seq.meta["chronos_origin"] = "temporal_conv_lif_packed_out_input"
-                x_seq.meta["chronos_T"] = len(xs)
-
-            spike_stack, v_final = _insert_temporal_conv_lif_out_buffers(
-                gm,
-                x_seq,
-                T=len(xs),
-                out_channels=int(folded_weight.shape[0]),
-                kernel_hw=tuple(folded_weight.shape[-2:]),
-                stride=stride,
-                padding=padding,
-                dilation=dilation,
-            )
-            spike_stack.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state_spike_stack"
-            v_final.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state_v_final"
-
-            with gm.graph.inserting_after(v_final):
-                temporal_op = gm.graph.call_function(
-                    torch.ops.snn_custom.fused_temporal_conv_lif_state_packed_out.default,
-                    args=(
-                        x_seq,
-                        weight_node,
-                        bias_node,
-                        v_init,
-                        stride,
-                        padding,
-                        dilation,
-                        groups,
-                        v_threshold,
-                        v_reset,
-                        tau,
-                        detach_reset,
-                        spike_stack,
-                        v_final,
-                    ),
+                temporal_tuple = gm.graph.call_function(
+                    torch.ops.snn_custom.fused_temporal_conv_lif_state.default,
+                    args=(xs, weight_node, bias_node, v_init, stride, padding, dilation, groups, v_threshold, v_reset, tau, detach_reset),
                 )
-                temporal_op.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state_out"
-            v_final_for_users = _clone_temporal_state_after(
-                gm,
-                v_final,
-                temporal_op,
-                name=f"{v_final.name}_pool_safe",
-            )
+                temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state"
 
-            ok, reason = _all_inputs_available_for_node(gm, xs, x_seq)
+            ok, reason = _all_inputs_available_for_node(gm, xs + [v_init, weight_node, bias_node], temporal_tuple)
             if not ok:
-                if len(temporal_op.users) == 0:
-                    gm.graph.erase_node(temporal_op)
-                raise ValueError("cannot find legal temporal conv lif insertion point; " + reason)
-            ok, reason = _all_inputs_available_for_node(
-                gm,
-                [x_seq, v_init, weight_node, bias_node],
-                temporal_op,
-            )
-            if not ok:
-                if len(temporal_op.users) == 0:
-                    gm.graph.erase_node(temporal_op)
+                gm.graph.erase_node(temporal_tuple)
                 raise ValueError("cannot find legal temporal conv lif insertion point; " + reason)
 
+            with gm.graph.inserting_after(temporal_tuple):
+                spike_stack = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 0))
+                spike_stack.name = f"{temporal_tuple.name}_spike_stack"
+            with gm.graph.inserting_after(spike_stack):
+                v_final = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 1))
+                v_final.name = f"{temporal_tuple.name}_v_final"
+
+            prev_insert = v_final
             for index, pattern in enumerate(patterns):
-                ok, reason = _all_inputs_available_before(gm, [spike_stack], pattern.spike_getitem)
-                if not ok:
-                    raise ValueError("cannot place fused spike before original spike users; " + reason)
-                with gm.graph.inserting_before(pattern.spike_getitem):
+                with gm.graph.inserting_after(prev_insert):
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
-                    spike_k.name = f"{temporal_op.name}_spike_t{index}"
+                    spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
+                prev_insert = spike_k
                 pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
-            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final_for_users
-            patterns[-1].v_getitem.replace_all_uses_with(v_final_for_users)
+            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
+            patterns[-1].v_getitem.replace_all_uses_with(v_final)
             _cleanup_window_nodes(gm, window)
 
             stats.temporal_replaced_windows += 1
