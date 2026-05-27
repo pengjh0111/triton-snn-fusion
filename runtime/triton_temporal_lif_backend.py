@@ -12,6 +12,7 @@ class TritonTemporalLIFResult:
     used_triton: bool
     kernel_key: str = "temporal_lif"
     fallback_reason: str = ""
+    kernel_temporal_config: Optional[Dict] = None
     kernel_diagnostics: Optional[Dict] = None
 
 
@@ -73,7 +74,10 @@ def run_triton_fused_temporal_lif_state(
         raise RuntimeError("; ".join(reasons))
 
     try:
-        from kernels.generated_temporal_lif_kernel import run_fused_temporal_lif_state_kernel
+        from kernels.generated_temporal_lif_kernel import (
+            get_temporal_lif_best_config,
+            run_fused_temporal_lif_state_kernel,
+        )
 
         spikes, v_next = run_fused_temporal_lif_state_kernel(
             x_seq,
@@ -83,6 +87,11 @@ def run_triton_fused_temporal_lif_state(
             tau,
             detach_reset,
         )
+        kernel_temporal_config = get_temporal_lif_best_config(
+            T=int(x_seq.shape[0]),
+            total_elements=int(x_seq[0].numel()),
+            dtype=x_seq.dtype,
+        )
         diagnostics = {
             "kernel_kind": "standalone_temporal_lif",
             "compute_dtype": "float16" if x_seq.dtype == torch.float16 else "float32",
@@ -90,12 +99,14 @@ def run_triton_fused_temporal_lif_state(
             "spike_dtype": str(x_seq.dtype),
             "T": int(x_seq.shape[0]),
             "numel_per_step": int(x_seq[0].numel()),
+            "kernel_temporal_config": kernel_temporal_config,
         }
         return TritonTemporalLIFResult(
             spikes=spikes,
             v_next=v_next,
             used_triton=True,
             kernel_key="temporal_lif",
+            kernel_temporal_config=kernel_temporal_config,
             kernel_diagnostics=diagnostics,
         )
     except Exception as exc:

@@ -5,6 +5,57 @@ import triton
 import triton.language as tl
 
 
+def _make_autotune_configs():
+    configs = []
+    for block_size, num_warps in (
+        (128, 4),
+        (256, 4),
+        (512, 4),
+        (1024, 4),
+    ):
+        configs.append(
+            triton.Config(
+                {"BLOCK_SIZE": block_size},
+                num_warps=num_warps,
+                num_stages=2,
+            )
+        )
+    return configs
+
+
+def _prune_temporal_lif_configs(configs, named_args, **kwargs):
+    T = int(named_args.get("T", 1))
+    total_elements = int(named_args.get("total_elements", 1))
+    valid = []
+    for config in configs:
+        values = config.all_kwargs()
+        if total_elements < 64 * 1024 and int(values["BLOCK_SIZE"]) > 512:
+            continue
+        valid.append(config)
+    return valid or configs[:1]
+
+
+def _temporal_lif_config_dict(best_config, *, T, total_elements, dtype):
+    if best_config is None:
+        return None
+    values = best_config.all_kwargs()
+    return {
+        "kernel_key": "temporal_lif",
+        "BLOCK_SIZE": values.get("BLOCK_SIZE"),
+        "num_warps": values.get("num_warps"),
+        "num_stages": values.get("num_stages"),
+        "T": int(T),
+        "total_elements": int(total_elements),
+        "dtype": str(dtype),
+    }
+
+
+@triton.autotune(
+    configs=_make_autotune_configs(),
+    key=["total_elements", "T"],
+    prune_configs_by={"early_config_prune": _prune_temporal_lif_configs},
+    cache_results=True,
+)
 @triton.jit
 def _fused_temporal_lif_state_kernel(
     x_seq,
@@ -44,14 +95,6 @@ def _fused_temporal_lif_state_kernel(
     tl.store(v_last + offsets, v, mask=mask)
 
 
-def _select_block_size(total_elements: int) -> int:
-    if total_elements < 64 * 1024:
-        return 256
-    if total_elements < 512 * 1024:
-        return 512
-    return 1024
-
-
 def run_fused_temporal_lif_state_kernel(
     x_seq: torch.Tensor,
     v_init: torch.Tensor,
@@ -88,10 +131,12 @@ def run_fused_temporal_lif_state_kernel(
     if T not in (1, 2, 4, 8, 16):
         raise RuntimeError(f"unsupported temporal length T={T}; expected one of 1,2,4,8,16")
 
-    block_size = int(block_size or _select_block_size(total_elements))
     tau_value = float(tau)
     tau_inv = 1.0 if tau_value == 0.0 else 1.0 / tau_value
-    grid = (triton.cdiv(total_elements, block_size),)
+    grid = lambda meta: (triton.cdiv(total_elements, meta["BLOCK_SIZE"]),)
+    kwargs = {}
+    if block_size is not None:
+        kwargs["BLOCK_SIZE"] = int(block_size)
     _fused_temporal_lif_state_kernel[grid](
         x_seq,
         v_init,
@@ -102,8 +147,18 @@ def run_fused_temporal_lif_state_kernel(
         float(v_reset),
         float(tau_inv),
         T=T,
-        BLOCK_SIZE=block_size,
         TAU_LE_ONE=tau_value <= 1.0,
         SOFT_RESET=float(v_reset) < 0.0,
+        **kwargs,
     )
     return spike_seq, v_last
+
+
+def get_temporal_lif_best_config(*, T: int = None, total_elements: int = None, dtype=None):
+    best_config = getattr(_fused_temporal_lif_state_kernel, "best_config", None)
+    return _temporal_lif_config_dict(
+        best_config,
+        T=T or 0,
+        total_elements=total_elements or 0,
+        dtype=dtype,
+    )

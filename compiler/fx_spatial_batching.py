@@ -305,7 +305,8 @@ def _is_view_like_node(node: torch.fx.Node) -> bool:
 
 def _is_flatten_node(node: torch.fx.Node) -> bool:
     if node.op == "call_function":
-        return node.target is torch.flatten or "flatten" in _target_text(node.target)
+        text = _target_text(node.target)
+        return node.target is torch.flatten or ("flatten" in text and "unflatten" not in text)
     if node.op == "call_method":
         return str(node.target) == "flatten"
     return False
@@ -474,6 +475,20 @@ def _extract_candidate(
         item for item in (_match_batched_chunk_getitem(input_item) for input_item in tensor_inputs) if item is not None
     )
     if kind == "add":
+        if len(tensor_inputs) != 2:
+            stats.skip("add_requires_two_tensor_inputs", f"node={node.name} add must have two tensor inputs")
+            return None
+        for input_item in tensor_inputs:
+            if (
+                _is_generated_spatial_batching_node(input_item)
+                and _match_temporal_stack_getitem(input_item) is None
+                and _match_batched_chunk_getitem(input_item) is None
+            ):
+                stats.skip(
+                    "add_direct_generated_batched_input",
+                    f"node={node.name} add input {input_item.name} is already batched but not chunk-indexed",
+                )
+                return None
         if temporal_stack_inputs and previous_batched_inputs:
             stats.skip("add_mixed_batched_source_kinds", f"node={node.name} add mixes temporal stack and previous batched inputs")
             return None
@@ -750,6 +765,18 @@ def _previous_batched_nodes_for_group(group: SpatialBatchGroup) -> Tuple[torch.f
     return ()
 
 
+def _plain_add_operand_inputs_for_group(group: SpatialBatchGroup) -> Tuple[Tuple[torch.fx.Node, ...], ...]:
+    if group.kind != "add":
+        return ()
+    first = group.candidates[0]
+    if first.temporal_stack_inputs or first.previous_batched_inputs:
+        return ()
+    per_candidate_inputs = [_candidate_tensor_inputs(candidate.node, "add") for candidate in group.candidates]
+    if any(len(inputs) != 2 for inputs in per_candidate_inputs):
+        return ()
+    return tuple(tuple(inputs[index] for inputs in per_candidate_inputs) for index in range(2))
+
+
 def _group_uses_temporal_stack_getitems(group: SpatialBatchGroup) -> bool:
     return bool(_temporal_stack_nodes_for_group(group))
 
@@ -777,10 +804,13 @@ def rewrite_spatial_batch_group(
     first_node = group.candidates[0].node
     temporal_stack_nodes = _temporal_stack_nodes_for_group(group)
     previous_batched_nodes = _previous_batched_nodes_for_group(group)
+    plain_add_operand_inputs = _plain_add_operand_inputs_for_group(group)
     if temporal_stack_nodes:
         input_nodes = list(temporal_stack_nodes)
     elif previous_batched_nodes:
         input_nodes = list(previous_batched_nodes)
+    elif plain_add_operand_inputs:
+        input_nodes = [node for operand_inputs in plain_add_operand_inputs for node in operand_inputs]
     else:
         input_nodes = [candidate.input_node for candidate in group.candidates]
     ok, reason = _all_inputs_available_before(gm, input_nodes, first_node)
@@ -816,6 +846,13 @@ def rewrite_spatial_batch_group(
                 stats.spatial_previous_batched_groups += 1
                 stats.spatial_reused_previous_batched_inputs += len(batched_inputs)
                 stats.spatial_chunk_cat_avoided += 1
+        elif plain_add_operand_inputs:
+            batched_inputs = []
+            for operand_index, operand_inputs in enumerate(plain_add_operand_inputs):
+                cat_node = gm.graph.call_function(torch.cat, args=(list(operand_inputs), 0))
+                cat_node.name = f"{first_node.name}_spatial_batch_add_operand{operand_index}_cat"
+                batched_inputs.append(cat_node)
+            batched_inputs = tuple(batched_inputs)
         else:
             cat_node = gm.graph.call_function(torch.cat, args=([candidate.input_node for candidate in group.candidates], 0))
             cat_node.name = f"{first_node.name}_spatial_batch_cat"

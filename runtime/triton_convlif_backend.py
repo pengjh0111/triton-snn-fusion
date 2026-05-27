@@ -50,14 +50,25 @@ def _is_fast_legacy_shape(weight, stride, padding, dilation) -> bool:
 def classify_conv_lif_config(weight, stride, padding, dilation, groups) -> str:
     if weight is None or not isinstance(weight, torch.Tensor) or weight.dim() != 4:
         return "unsupported"
-    if int(groups) != 1:
-        return "unsupported"
     if tuple(_as_pair(dilation)) != (1, 1):
         return "unsupported"
 
     stride_pair = tuple(_as_pair(stride))
     padding_pair = tuple(_as_pair(padding))
     kernel_pair = tuple(weight.shape[-2:])
+    groups = int(groups)
+    out_channels = int(weight.shape[0])
+    weight_in_channels = int(weight.shape[1])
+    if groups == out_channels and weight_in_channels == 1:
+        if kernel_pair == (3, 3) and stride_pair == (1, 1) and padding_pair == (1, 1):
+            return "depthwise_k3_s1_p1"
+        if kernel_pair == (3, 3) and stride_pair == (2, 2) and padding_pair == (1, 1):
+            return "depthwise_k3_s2_p1"
+        return "unsupported"
+    if groups != 1:
+        return "unsupported"
+    if kernel_pair == (1, 1) and stride_pair == (1, 1) and padding_pair == (0, 0):
+        return "k1_s1_p0"
     if kernel_pair == (3, 3) and stride_pair == (1, 1) and padding_pair == (1, 1):
         return "k3_s1_p1"
     if kernel_pair == (3, 3) and stride_pair == (2, 2) and padding_pair == (1, 1):
@@ -72,9 +83,14 @@ def classify_conv_lif_config(weight, stride, padding, dilation, groups) -> str:
 
 
 SUPPORTED_CONV_LIF_CONFIGS = {
+    (1, 1): {
+        ((1, 1), (0, 0)): "k1_s1_p0",
+    },
     (3, 3): {
         ((1, 1), (1, 1)): "k3_s1_p1",
         ((2, 2), (1, 1)): "k3_s2_p1",
+        ((1, 1), (1, 1), "depthwise"): "depthwise_k3_s1_p1",
+        ((2, 2), (1, 1), "depthwise"): "depthwise_k3_s2_p1",
     },
     (5, 5): {
         ((1, 1), (2, 2)): "k5_s1_p2",
@@ -121,8 +137,18 @@ def check_triton_support(
         reasons.append(f"unsupported_rank: x.dim must be 4, got {x.dim()}")
     if weight.dim() != 4:
         reasons.append(f"unsupported_rank: weight.dim must be 4, got {weight.dim()}")
-    if int(groups) != 1:
-        reasons.append(f"unsupported_groups: groups must be 1, got {groups}")
+    groups = int(groups)
+    in_channels = int(x.shape[1]) if x.dim() == 4 else None
+    out_channels = int(weight.shape[0]) if weight.dim() == 4 else None
+    weight_in_channels = int(weight.shape[1]) if weight.dim() == 4 else None
+    is_depthwise = (
+        in_channels is not None
+        and out_channels is not None
+        and weight_in_channels == 1
+        and groups == in_channels == out_channels
+    )
+    if groups != 1 and not is_depthwise:
+        reasons.append(f"unsupported_groups: groups must be 1 or depthwise, got {groups}")
     if tuple(_as_pair(dilation)) != (1, 1):
         reasons.append(f"unsupported_dilation: dilation must be (1, 1), got {tuple(_as_pair(dilation))}")
     stride_pair = tuple(_as_pair(stride))
@@ -135,7 +161,10 @@ def check_triton_support(
                 "unsupported_kernel: kernel must be one of "
                 f"{tuple(SUPPORTED_CONV_LIF_CONFIGS)}, got {kernel_pair}"
             )
-        elif (stride_pair, padding_pair) not in supported_for_kernel:
+        elif (
+            (stride_pair, padding_pair) not in supported_for_kernel
+            and not (is_depthwise and (stride_pair, padding_pair, "depthwise") in supported_for_kernel)
+        ):
             supported_strides = sorted({config[0] for config in supported_for_kernel})
             supported_paddings_for_stride = sorted(
                 {config[1] for config in supported_for_kernel if config[0] == stride_pair}
@@ -178,6 +207,8 @@ def _run_triton_temporal_framework(
     bias: torch.Tensor,
     use_autotune: bool = True,
     v_init: torch.Tensor = None,
+    spikes_out: torch.Tensor = None,
+    v_out: torch.Tensor = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     if use_autotune:
         from kernels.benchmark_conv_lif_temporal_general import run_fused_temporal_general_autotuned
@@ -188,6 +219,8 @@ def _run_triton_temporal_framework(
             bias.contiguous(),
             kernel_key=kernel_key,
             v_init=v_init,
+            spikes_out=spikes_out,
+            membrane_out=v_out,
         )
 
     from kernels.benchmark_conv_lif_temporal_general import run_fused_temporal_general
@@ -200,6 +233,8 @@ def _run_triton_temporal_framework(
         reuse_groups=1,
         kernel_key=kernel_key,
         v_init=v_init,
+        spikes_out=spikes_out,
+        membrane_out=v_out,
     )
 
 
@@ -210,9 +245,29 @@ def _run_triton_temporal_by_key(
     bias: torch.Tensor,
     use_autotune: bool = True,
     v_init: torch.Tensor = None,
+    spikes_out: torch.Tensor = None,
+    v_out: torch.Tensor = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    if kernel_key in ("k3_s1_p1", "k3_s2_p1", "k5_s1_p2", "k7_s2_p3", "k11_s4_p2"):
-        return _run_triton_temporal_framework(kernel_key, x_seq, weight, bias, use_autotune=use_autotune, v_init=v_init)
+    if kernel_key in (
+        "k1_s1_p0",
+        "k3_s1_p1",
+        "k3_s2_p1",
+        "k5_s1_p2",
+        "k7_s2_p3",
+        "k11_s4_p2",
+        "depthwise_k3_s1_p1",
+        "depthwise_k3_s2_p1",
+    ):
+        return _run_triton_temporal_framework(
+            kernel_key,
+            x_seq,
+            weight,
+            bias,
+            use_autotune=use_autotune,
+            v_init=v_init,
+            spikes_out=spikes_out,
+            v_out=v_out,
+        )
     raise RuntimeError(f"unsupported dispatch key: {kernel_key}")
 
 
@@ -377,6 +432,94 @@ def run_triton_fused_temporal_conv_lif_state(
         reason = f"temporal Triton kernel call failed: {exc}"
         if verbose:
             print(f"[TRITON][FALLBACK][temporal] {reason}")
+        raise
+
+
+def run_triton_fused_temporal_conv_lif_state_packed_out(
+    x_seq,
+    weight,
+    bias,
+    v_init,
+    stride: Sequence[int],
+    padding: Sequence[int],
+    dilation: Sequence[int],
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+    spike_out,
+    v_out,
+    strict: bool = False,
+    verbose: bool = False,
+    use_autotune: bool = True,
+    compute_dtype: str = None,
+) -> TritonConvLIFResult:
+    reasons: List[str] = []
+    if not isinstance(x_seq, torch.Tensor):
+        reasons.append("x_seq must be a tensor")
+    elif x_seq.dim() != 5:
+        reasons.append(f"x_seq must have rank 5 [T,N,C,H,W], got {x_seq.dim()}")
+    elif not x_seq.is_contiguous():
+        reasons.append("x_seq must be contiguous; create the packed stack in FX before calling the out op")
+    if not isinstance(spike_out, torch.Tensor) or not isinstance(v_out, torch.Tensor):
+        reasons.append("spike_out and v_out must be tensors")
+    if reasons:
+        _unsupported(reasons, strict=strict, verbose=verbose)
+        raise RuntimeError("; ".join(reasons))
+
+    first = x_seq[0]
+    reasons.extend(
+        check_triton_support(
+            first,
+            weight,
+            bias,
+            v_init,
+            stride,
+            padding,
+            dilation,
+            groups,
+            v_threshold,
+            v_reset,
+            tau,
+            detach_reset,
+        )
+    )
+    if reasons:
+        _unsupported(reasons, strict=strict, verbose=verbose)
+        raise RuntimeError("; ".join(reasons))
+    expected_compute_dtype = "float16" if x_seq.dtype == torch.float16 else "float32"
+    if compute_dtype is not None and compute_dtype != expected_compute_dtype:
+        raise RuntimeError(
+            f"compute_dtype={compute_dtype} does not match input dtype path {expected_compute_dtype}"
+        )
+
+    try:
+        kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
+        if kernel_key == "unsupported":
+            raise RuntimeError("unsupported dispatch key after support check")
+        spikes, membrane = _run_triton_temporal_by_key(
+            kernel_key,
+            x_seq,
+            weight,
+            bias,
+            use_autotune=use_autotune,
+            v_init=v_init,
+            spikes_out=spike_out,
+            v_out=v_out,
+        )
+        return TritonConvLIFResult(
+            spikes,
+            membrane,
+            True,
+            kernel_key=kernel_key,
+            kernel_temporal_config=_get_kernel_temporal_config(kernel_key),
+            kernel_diagnostics=_get_kernel_diagnostics(x_seq.dtype),
+        )
+    except Exception as exc:
+        reason = f"temporal Triton out kernel call failed: {exc}"
+        if verbose:
+            print(f"[TRITON][FALLBACK][temporal_out] {reason}")
         raise
 
 

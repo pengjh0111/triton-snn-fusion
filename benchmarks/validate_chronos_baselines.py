@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import torch
 import torch.nn as nn
-from spikingjelly.activation_based import functional, surrogate
+from spikingjelly.activation_based import functional, layer, neuron, surrogate
 from spikingjelly.activation_based.model import spiking_resnet, spiking_vgg
 
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -35,27 +35,34 @@ from compiler.fx_lif_temporal_rewrite import (
     collect_conv_bn_lif_state_patterns,
     collect_conv_bn_add_lif_state_patterns,
     collect_standalone_lif_state_patterns,
+    collect_temporal_linear_lif_state_patterns,
     collect_temporal_lif_avgpool_linear_patterns,
     count_fused_temporal_conv_add_lif_state_nodes,
     count_fused_temporal_conv_lif_state_nodes,
     count_fused_temporal_lif_state_nodes,
+    count_fused_temporal_linear_lif_state_nodes,
     count_fused_temporal_lif_avgpool_linear_nodes,
     dump_temporal_patterns,
     dump_temporal_lif_avgpool_linear_patterns,
     dump_temporal_lif_avgpool_linear_windows,
+    dump_temporal_linear_lif_patterns,
+    dump_temporal_linear_lif_windows,
     dump_temporal_rewrite_log,
     dump_temporal_windows,
     group_temporal_patterns,
     group_temporal_residual_patterns,
     group_temporal_lif_patterns,
+    group_temporal_linear_lif_patterns,
     group_temporal_lif_avgpool_linear_patterns,
     make_temporal_windows,
     make_temporal_residual_windows,
     make_temporal_lif_windows,
+    make_temporal_linear_lif_windows,
     make_temporal_lif_avgpool_linear_windows,
     rewrite_temporal_conv_bn_add_lif_state_to_fused,
     rewrite_temporal_conv_bn_lif_state_to_fused,
     rewrite_temporal_lif_state_to_fused,
+    rewrite_temporal_linear_lif_state_to_fused,
     rewrite_temporal_lif_avgpool_linear_to_fused,
 )
 from compiler.fx_spatial_batching import apply_spatial_batching
@@ -68,6 +75,9 @@ from compiler.fx_temporal_graph_validation import (
 from compiler.fx_temporal_scheduler import reorder_fx_graph_by_temporal_windows
 from compiler.fx_temporal_spatial_canonicalize import canonicalize_temporal_spatial_ir
 from test.models_for_fx_test import CustomStatefulIFNode, reset_custom_stateful_lif_modules
+
+
+LIF_IMPL_CHOICES = ("chronos", "spikingjelly")
 
 
 @dataclass
@@ -95,6 +105,7 @@ class RewriteCounters:
     fused_temporal_state_nodes: int = 0
     fused_temporal_residual_state_nodes: int = 0
     fused_temporal_lif_state_nodes: int = 0
+    fused_temporal_linear_lif_state_nodes: int = 0
     fused_temporal_lif_avgpool_linear_nodes: int = 0
     fused_temporal_lif_tail_nodes: int = 0
     temporal_groups: int = 0
@@ -121,6 +132,15 @@ class RewriteCounters:
     temporal_lif_remapped_spike_external_users: int = 0
     temporal_lif_unremappable_external_users: int = 0
     temporal_lif_skip_reasons: Dict[str, int] = field(default_factory=dict)
+    linear_lif_patterns: int = 0
+    temporal_linear_lif_windows: int = 0
+    temporal_linear_lif_total_windows: int = 0
+    temporal_linear_lif_rewritten_windows: int = 0
+    temporal_linear_lif_replaced_patterns: int = 0
+    temporal_linear_lif_skipped_windows: int = 0
+    temporal_linear_lif_remapped_spike_external_users: int = 0
+    temporal_linear_lif_unremappable_external_users: int = 0
+    temporal_linear_lif_skip_reasons: Dict[str, int] = field(default_factory=dict)
     temporal_lif_avgpool_linear_windows: int = 0
     temporal_lif_avgpool_linear_total_windows: int = 0
     temporal_lif_avgpool_linear_rewritten_windows: int = 0
@@ -224,7 +244,43 @@ CHRONOS_MODEL_CHOICES = [
     "zfnet",
     "vgg11",
     "vgg16",
+    "mobilenetv1",
+    "mobilenetv2",
 ]
+
+
+def _lif_node_class(lif_impl: str):
+    if lif_impl == "chronos":
+        return CustomStatefulIFNode
+    if lif_impl == "spikingjelly":
+        return neuron.LIFNode
+    raise ValueError(f"unsupported lif_impl={lif_impl}, expected one of {LIF_IMPL_CHOICES}")
+
+
+def _make_lif_node(lif_impl: str = "chronos") -> nn.Module:
+    if lif_impl == "chronos":
+        return CustomStatefulIFNode(
+            v_threshold=1.0,
+            v_reset=0.0,
+            tau=2.0,
+            surrogate_function=surrogate.ATan(),
+        )
+    if lif_impl == "spikingjelly":
+        return neuron.LIFNode(
+            tau=2.0,
+            v_threshold=1.0,
+            v_reset=0.0,
+            surrogate_function=surrogate.ATan(),
+        )
+    raise ValueError(f"unsupported lif_impl={lif_impl}, expected one of {LIF_IMPL_CHOICES}")
+
+
+def reset_lif_modules(model: nn.Module):
+    reset_custom_stateful_lif_modules(model)
+    try:
+        functional.reset_net(model)
+    except Exception:
+        pass
 
 
 class ChronosAlexZFNet(nn.Module):
@@ -236,6 +292,7 @@ class ChronosAlexZFNet(nn.Module):
         num_classes: int = 10,
         input_channels: int = 3,
         step_mode: str = "s",
+        lif_impl: str = "chronos",
     ):
         super().__init__()
         self.kind = kind
@@ -280,7 +337,7 @@ class ChronosAlexZFNet(nn.Module):
             features.extend([
                 nn.Conv2d(cin, cout, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias),
                 nn.BatchNorm2d(cout),
-                CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+                _make_lif_node(lif_impl),
             ])
             if idx in pool_specs:
                 features.append(pool_specs[idx])
@@ -291,12 +348,12 @@ class ChronosAlexZFNet(nn.Module):
         self.classifier = nn.Sequential(
             nn.Dropout(0.5),
             nn.Linear(classifier_in, 64 * c, bias=False),
-            CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+            _make_lif_node(lif_impl),
             nn.Dropout(0.5),
             nn.Linear(64 * c, 64 * c, bias=False),
-            CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+            _make_lif_node(lif_impl),
             nn.Linear(64 * c, num_classes, bias=False),
-            CustomStatefulIFNode(v_threshold=1.0, v_reset=0.0, tau=2.0, surrogate_function=surrogate.ATan()),
+            _make_lif_node(lif_impl),
         )
 
     def _forward_single(self, x):
@@ -311,19 +368,218 @@ class ChronosAlexZFNet(nn.Module):
         return self._forward_single(x)
 
 
-def _make_vgg_layer(model_name: str, step_mode: str) -> nn.Module:
+def _chronos_if_node() -> CustomStatefulIFNode:
+    return _make_lif_node("chronos")
+
+
+def _scaled_channels(base_channels: int, channels: int) -> int:
+    return max(1, int(base_channels * channels / 32))
+
+
+class ChronosMobileNetV1(nn.Module):
+    def __init__(
+        self,
+        *,
+        channels: int = 64,
+        num_classes: int = 10,
+        input_channels: int = 3,
+        step_mode: str = "s",
+        lif_impl: str = "chronos",
+    ):
+        super().__init__()
+        self.step_mode = step_mode
+
+        ch_32 = _scaled_channels(32, channels)
+        ch_64 = _scaled_channels(64, channels)
+        ch_128 = _scaled_channels(128, channels)
+        ch_256 = _scaled_channels(256, channels)
+        ch_512 = _scaled_channels(512, channels)
+        ch_1024 = _scaled_channels(1024, channels)
+
+        modules = [
+            layer.Conv2d(input_channels, ch_32, kernel_size=3, stride=2, padding=1, bias=False),
+            layer.BatchNorm2d(ch_32),
+            _make_lif_node(lif_impl),
+        ]
+
+        def add_depthwise_pointwise(in_ch: int, out_ch: int, stride: int):
+            modules.extend(
+                [
+                    layer.Conv2d(
+                        in_ch,
+                        in_ch,
+                        kernel_size=3,
+                        stride=stride,
+                        padding=1,
+                        groups=in_ch,
+                        bias=False,
+                    ),
+                    layer.BatchNorm2d(in_ch),
+                    _make_lif_node(lif_impl),
+                    layer.Conv2d(in_ch, out_ch, kernel_size=1, stride=1, padding=0, bias=False),
+                    layer.BatchNorm2d(out_ch),
+                    _make_lif_node(lif_impl),
+                ]
+            )
+
+        add_depthwise_pointwise(ch_32, ch_64, stride=1)
+        add_depthwise_pointwise(ch_64, ch_128, stride=2)
+        add_depthwise_pointwise(ch_128, ch_128, stride=1)
+        add_depthwise_pointwise(ch_128, ch_256, stride=2)
+        add_depthwise_pointwise(ch_256, ch_256, stride=1)
+        add_depthwise_pointwise(ch_256, ch_512, stride=2)
+        for _ in range(5):
+            add_depthwise_pointwise(ch_512, ch_512, stride=1)
+        add_depthwise_pointwise(ch_512, ch_1024, stride=2)
+        add_depthwise_pointwise(ch_1024, ch_1024, stride=1)
+
+        modules.extend(
+            [
+                layer.AdaptiveAvgPool2d((1, 1)),
+                layer.Flatten(),
+                layer.Dropout(0.2),
+                layer.Linear(ch_1024, num_classes, bias=False),
+                _make_lif_node(lif_impl),
+            ]
+        )
+        self.layer = nn.Sequential(*modules)
+        functional.set_step_mode(self.layer, step_mode=step_mode)
+
+    def forward(self, x: torch.Tensor):
+        return self.layer(x)
+
+
+class ChronosSpikingInvertedResidual(nn.Module):
+    def __init__(self, in_ch: int, out_ch: int, stride: int, expand_ratio: int, step_mode: str = "s", lif_impl: str = "chronos"):
+        super().__init__()
+        if stride not in (1, 2):
+            raise ValueError(f"unsupported MobileNetV2 stride: {stride}")
+        hidden_dim = int(in_ch * expand_ratio)
+        self.use_res_connect = stride == 1 and in_ch == out_ch
+
+        modules = []
+        if expand_ratio != 1:
+            modules.extend(
+                [
+                    layer.Conv2d(in_ch, hidden_dim, kernel_size=1, bias=False),
+                    layer.BatchNorm2d(hidden_dim),
+                    _make_lif_node(lif_impl),
+                ]
+            )
+        modules.extend(
+            [
+                layer.Conv2d(
+                    hidden_dim,
+                    hidden_dim,
+                    kernel_size=3,
+                    stride=stride,
+                    padding=1,
+                    groups=hidden_dim,
+                    bias=False,
+                ),
+                layer.BatchNorm2d(hidden_dim),
+                _make_lif_node(lif_impl),
+                layer.Conv2d(hidden_dim, out_ch, kernel_size=1, bias=False),
+                layer.BatchNorm2d(out_ch),
+            ]
+        )
+        self.conv = nn.Sequential(*modules)
+        functional.set_step_mode(self.conv, step_mode=step_mode)
+
+    def forward(self, x: torch.Tensor):
+        out = self.conv(x)
+        if self.use_res_connect:
+            return x + out
+        return out
+
+
+class ChronosMobileNetV2(nn.Module):
+    def __init__(
+        self,
+        *,
+        channels: int = 64,
+        num_classes: int = 10,
+        input_channels: int = 3,
+        step_mode: str = "s",
+        lif_impl: str = "chronos",
+    ):
+        super().__init__()
+        self.step_mode = step_mode
+
+        ch_32 = _scaled_channels(32, channels)
+        ch_16 = _scaled_channels(16, channels)
+        ch_24 = _scaled_channels(24, channels)
+        ch_32b = _scaled_channels(32, channels)
+        ch_64 = _scaled_channels(64, channels)
+        ch_96 = _scaled_channels(96, channels)
+        ch_160 = _scaled_channels(160, channels)
+        ch_320 = _scaled_channels(320, channels)
+        ch_1280 = _scaled_channels(1280, channels)
+
+        modules = [
+            layer.Conv2d(input_channels, ch_32, kernel_size=3, stride=2, padding=1, bias=False),
+            layer.BatchNorm2d(ch_32),
+            _make_lif_node(lif_impl),
+        ]
+
+        cfg = [
+            (1, ch_16, 1, 1),
+            (6, ch_24, 2, 2),
+            (6, ch_32b, 3, 2),
+            (6, ch_64, 4, 2),
+            (6, ch_96, 3, 1),
+            (6, ch_160, 3, 2),
+            (6, ch_320, 1, 1),
+        ]
+        in_ch = ch_32
+        for expand_ratio, out_ch, repeats, first_stride in cfg:
+            for idx in range(repeats):
+                stride = first_stride if idx == 0 else 1
+                modules.append(
+                    ChronosSpikingInvertedResidual(
+                        in_ch,
+                        out_ch,
+                        stride,
+                        expand_ratio,
+                        step_mode=step_mode,
+                        lif_impl=lif_impl,
+                    )
+                )
+                in_ch = out_ch
+
+        modules.extend(
+            [
+                layer.Conv2d(in_ch, ch_1280, kernel_size=1, bias=False),
+                layer.BatchNorm2d(ch_1280),
+                _make_lif_node(lif_impl),
+                layer.AdaptiveAvgPool2d((1, 1)),
+                layer.Flatten(),
+                layer.Dropout(0.2),
+                layer.Linear(ch_1280, num_classes, bias=False),
+                _make_lif_node(lif_impl),
+            ]
+        )
+        self.layer = nn.Sequential(*modules)
+        functional.set_step_mode(self.layer, step_mode=step_mode)
+
+    def forward(self, x: torch.Tensor):
+        return self.layer(x)
+
+
+def _make_vgg_layer(model_name: str, step_mode: str, lif_impl: str = "chronos") -> nn.Module:
+    spiking_neuron = _lif_node_class(lif_impl)
     if model_name == "vgg11":
         layer = spiking_vgg.spiking_vgg11_bn(
             pretrained=False,
             num_classes=10,
-            spiking_neuron=CustomStatefulIFNode,
+            spiking_neuron=spiking_neuron,
             surrogate_function=surrogate.ATan(),
         )
     elif model_name == "vgg16":
         layer = spiking_vgg.spiking_vgg16_bn(
             pretrained=False,
             num_classes=10,
-            spiking_neuron=CustomStatefulIFNode,
+            spiking_neuron=spiking_neuron,
             surrogate_function=surrogate.ATan(),
         )
     else:
@@ -337,11 +593,13 @@ def make_resnet_layer(
     allow_resnet32_fallback: bool,
     step_mode: str = "s",
     model_channels: int = 64,
+    lif_impl: str = "chronos",
 ) -> nn.Module:
+    spiking_neuron = _lif_node_class(lif_impl)
     if model_name == "resnet18":
         layer = spiking_resnet.spiking_resnet18(
             pretrained=False,
-            spiking_neuron=CustomStatefulIFNode,
+            spiking_neuron=spiking_neuron,
             surrogate_function=surrogate.ATan(),
         )
     elif model_name in ("resnet34", "resnet32"):
@@ -349,7 +607,7 @@ def make_resnet_layer(
             print("[WARN] resnet32 is deprecated typo; using spiking_resnet34 instead.")
         layer = spiking_resnet.spiking_resnet34(
             pretrained=False,
-            spiking_neuron=CustomStatefulIFNode,
+            spiking_neuron=spiking_neuron,
             surrogate_function=surrogate.ATan(),
         )
     elif model_name in ("alexnet", "zfnet"):
@@ -358,9 +616,24 @@ def make_resnet_layer(
             channels=model_channels,
             num_classes=10,
             step_mode=step_mode,
+            lif_impl=lif_impl,
+        )
+    elif model_name == "mobilenetv1":
+        return ChronosMobileNetV1(
+            channels=model_channels,
+            num_classes=10,
+            step_mode=step_mode,
+            lif_impl=lif_impl,
+        )
+    elif model_name == "mobilenetv2":
+        return ChronosMobileNetV2(
+            channels=model_channels,
+            num_classes=10,
+            step_mode=step_mode,
+            lif_impl=lif_impl,
         )
     elif model_name in ("vgg11", "vgg16"):
-        return _make_vgg_layer(model_name, step_mode)
+        return _make_vgg_layer(model_name, step_mode, lif_impl=lif_impl)
     else:
         raise ValueError(f"unsupported model: {model_name}")
 
@@ -506,8 +779,49 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                     )
                     counters.residual_fuse_skip_reasons[reason] = (
                         counters.residual_fuse_skip_reasons.get(reason, 0) + count
-                    )
+                )
                 temporal_log.extend(residual_stats.log)
+
+            if not args.disable_temporal_linear_lif_rewrite:
+                linear_lif_patterns = collect_temporal_linear_lif_state_patterns(gm)
+                linear_lif_groups = group_temporal_linear_lif_patterns(linear_lif_patterns)
+                linear_lif_windows = make_temporal_linear_lif_windows(
+                    linear_lif_groups,
+                    args.temporal_fuse_window,
+                    args.temporal_allow_tail,
+                )
+                dump_temporal_linear_lif_patterns(linear_lif_groups, local_dir / "temporal_linear_lif_patterns.txt")
+                dump_temporal_linear_lif_windows(linear_lif_windows, local_dir / "temporal_linear_lif_windows.txt")
+                counters.linear_lif_patterns += len(linear_lif_patterns)
+                counters.temporal_linear_lif_windows += len(linear_lif_windows)
+                counters.temporal_linear_lif_total_windows += len(linear_lif_windows)
+                if not args.disable_rewrite and linear_lif_windows:
+                    linear_lif_stats = rewrite_temporal_linear_lif_state_to_fused(
+                        gm,
+                        linear_lif_windows,
+                        max(0, args.max_patterns - temporal_replaced_patterns),
+                    )
+                    temporal_replaced_patterns += linear_lif_stats.temporal_linear_lif_replaced_patterns
+                    counters.temporal_linear_lif_rewritten_windows += (
+                        linear_lif_stats.temporal_linear_lif_rewritten_windows
+                    )
+                    counters.temporal_linear_lif_replaced_patterns += (
+                        linear_lif_stats.temporal_linear_lif_replaced_patterns
+                    )
+                    counters.temporal_linear_lif_skipped_windows += (
+                        linear_lif_stats.temporal_linear_lif_skipped_windows
+                    )
+                    counters.temporal_linear_lif_remapped_spike_external_users += (
+                        linear_lif_stats.temporal_linear_lif_remapped_spike_external_users
+                    )
+                    counters.temporal_linear_lif_unremappable_external_users += (
+                        linear_lif_stats.temporal_linear_lif_unremappable_external_users
+                    )
+                    for reason, count in linear_lif_stats.temporal_linear_lif_skip_reasons.items():
+                        counters.temporal_linear_lif_skip_reasons[reason] = (
+                            counters.temporal_linear_lif_skip_reasons.get(reason, 0) + count
+                        )
+                    temporal_log.extend(linear_lif_stats.log)
 
             if not args.disable_temporal_lif_avgpool_linear_rewrite:
                 avgpool_linear_patterns = collect_temporal_lif_avgpool_linear_patterns(gm)
@@ -681,6 +995,7 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         fused_temporal_state_count = count_fused_temporal_conv_lif_state_nodes(gm)
         fused_temporal_residual_state_count = count_fused_temporal_conv_add_lif_state_nodes(gm)
         fused_temporal_lif_state_count = count_fused_temporal_lif_state_nodes(gm)
+        fused_temporal_linear_lif_state_count = count_fused_temporal_linear_lif_state_nodes(gm)
         fused_temporal_lif_avgpool_linear_count = count_fused_temporal_lif_avgpool_linear_nodes(gm)
         save_graph_files(gm, local_dir, "rewritten")
 
@@ -693,6 +1008,7 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         counters.fused_temporal_state_nodes += fused_temporal_state_count
         counters.fused_temporal_residual_state_nodes += fused_temporal_residual_state_count
         counters.fused_temporal_lif_state_nodes += fused_temporal_lif_state_count
+        counters.fused_temporal_linear_lif_state_nodes += fused_temporal_linear_lif_state_count
         counters.fused_temporal_lif_avgpool_linear_nodes += fused_temporal_lif_avgpool_linear_count
         counters.fused_temporal_lif_tail_nodes += fused_temporal_lif_avgpool_linear_count
         counters.single_step_replaced_patterns += direct_replaced + conv_bn_replaced
@@ -719,7 +1035,7 @@ def synchronize_if_needed(device: str):
 def run_model(name: str, model: nn.Module, x: torch.Tensor, device: str, compile_mode: bool, args, backend=None) -> RunResult:
     try:
         model.eval()
-        reset_custom_stateful_lif_modules(model)
+        reset_lif_modules(model)
         runnable = model
         if compile_mode:
             runnable = compile_with_chronos_options(
@@ -782,12 +1098,14 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="s",
         model_channels=args.model_channels,
+        lif_impl=args.lif_impl,
     ).to(device=args.device, dtype=dtype).eval()
     base_layer_m = make_resnet_layer(
         model_name,
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="m",
         model_channels=args.model_channels,
+        lif_impl=args.lif_impl,
     ).to(device=args.device, dtype=dtype).eval()
     x = torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=dtype)
 
@@ -863,6 +1181,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         "model": model_name,
         "input_shape": [args.batch_size, 3, args.height, args.width],
         "model_channels": args.model_channels,
+        "lif_impl": args.lif_impl,
         "dtype": args.dtype,
         "T": args.T,
         "temporal_fuse_window": args.temporal_fuse_window,
@@ -906,6 +1225,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Validate Chronos FX Conv+BN+LIF rewrite against baseline s/m eager/compile.")
     parser.add_argument("--models", nargs="+", default=["resnet18", "resnet34"], choices=CHRONOS_MODEL_CHOICES)
     parser.add_argument("--model-channels", type=int, default=64, help="Base channel width for handcrafted alexnet/zfnet models.")
+    parser.add_argument("--lif-impl", choices=LIF_IMPL_CHOICES, default="chronos", help="LIF implementation used when constructing benchmark models.")
     parser.add_argument("--T", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--height", type=int, default=64)
@@ -925,6 +1245,7 @@ def parse_args():
         help=argparse.SUPPRESS,
     )
     parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
+    parser.add_argument("--disable-temporal-linear-lif-rewrite", action="store_true")
     parser.add_argument("--enable-temporal-rewrite", action="store_true")
     parser.add_argument("--temporal-fuse-window", type=int, default=1)
     parser.add_argument("--temporal-allow-tail", action="store_true")

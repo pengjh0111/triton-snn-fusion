@@ -85,6 +85,18 @@ AUTOTUNE_SPATIAL_CONFIGS = [
     {"BLOCK_M": 32, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
 ]
 
+DWCONV_AUTOTUNE_CONFIGS = [
+    # Depthwise conv is a stencil kernel, not a GEMM kernel. Tune spatial
+    # rectangle and channel tile directly so the runtime key does not inherit
+    # ordinary ConvLIF's reduction-oriented BLOCK_M/BLOCK_K schedule.
+    {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_H": 4, "BLOCK_W": 16, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 64, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 64, "PIXELS_PER_THREAD": 2, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 2, "num_warps": 4, "num_stages": 2},
+]
+
 
 def _make_autotune_configs():
     configs = []
@@ -96,6 +108,27 @@ def _make_autotune_configs():
                         "BLOCK_M": spatial_config["BLOCK_M"],
                         "BLOCK_OC": spatial_config["BLOCK_OC"],
                         "BLOCK_K": spatial_config["BLOCK_K"],
+                        "BTILE_T": btile_t,
+                        "REUSE_GROUPS": reuse_groups,
+                    },
+                    num_warps=spatial_config["num_warps"],
+                    num_stages=spatial_config["num_stages"],
+                )
+            )
+    return configs
+
+
+def _make_dwconv_autotune_configs():
+    configs = []
+    for spatial_config in DWCONV_AUTOTUNE_CONFIGS:
+        for btile_t, reuse_groups in TEMPORAL_AUTOTUNE_SCHEDULES:
+            configs.append(
+                triton.Config(
+                    {
+                        "BLOCK_C": spatial_config["BLOCK_C"],
+                        "BLOCK_H": spatial_config["BLOCK_H"],
+                        "BLOCK_W": spatial_config["BLOCK_W"],
+                        "PIXELS_PER_THREAD": spatial_config["PIXELS_PER_THREAD"],
                         "BTILE_T": btile_t,
                         "REUSE_GROUPS": reuse_groups,
                     },
@@ -309,13 +342,68 @@ def _alloc_outputs(
     return spikes, membrane
 
 
+def _check_output_buffers(
+    x_seq: torch.Tensor,
+    spikes: torch.Tensor,
+    membrane: torch.Tensor,
+    out_channels: int,
+    out_height: int,
+    out_width: int,
+    v_init: torch.Tensor = None,
+):
+    timesteps, batch, _, _, _ = x_seq.shape
+    expected_spikes = (timesteps, batch, out_channels, out_height, out_width)
+    expected_membrane = (batch, out_channels, out_height, out_width)
+    if tuple(spikes.shape) != expected_spikes:
+        raise ValueError(f"spikes shape {tuple(spikes.shape)} does not match expected {expected_spikes}")
+    if tuple(membrane.shape) != expected_membrane:
+        raise ValueError(f"membrane shape {tuple(membrane.shape)} does not match expected {expected_membrane}")
+    if spikes.device != x_seq.device or membrane.device != x_seq.device:
+        raise ValueError("output buffers must be on the same device as x_seq")
+    if spikes.dtype != x_seq.dtype or membrane.dtype != x_seq.dtype:
+        raise ValueError("output buffers must have the same dtype as x_seq")
+    if v_init is None or (isinstance(v_init, torch.Tensor) and v_init.dim() == 0):
+        membrane.zero_()
+    else:
+        if tuple(v_init.shape) != expected_membrane:
+            raise ValueError(f"v_init shape {tuple(v_init.shape)} does not match expected {expected_membrane}")
+        if v_init.device != x_seq.device or v_init.dtype != x_seq.dtype:
+            raise ValueError("v_init must have the same device and dtype as x_seq")
+        membrane.copy_(v_init)
+
+
 KERNEL_VARIANTS = {
+    "k1_s1_p0": {"function": "_fused_conv_lif_temporal_general_kernel_k1_s1_p0_impl", "kernel": 1, "stride": 1, "pad": 0},
     "k3_s1_p1": {"function": "_fused_conv_lif_temporal_general_kernel_k3_s1_p1_impl", "kernel": 3, "stride": 1, "pad": 1},
     "k3_s2_p1": {"function": "_fused_conv_lif_temporal_general_kernel_k3_s2_p1_impl", "kernel": 3, "stride": 2, "pad": 1},
     "k5_s1_p2": {"function": "_fused_conv_lif_temporal_general_kernel_k5_s1_p2_impl", "kernel": 5, "stride": 1, "pad": 2},
     "k7_s2_p3": {"function": "_fused_conv_lif_temporal_general_kernel_k7_s2_p3_impl", "kernel": 7, "stride": 2, "pad": 3},
     "k11_s4_p2": {"function": "_fused_conv_lif_temporal_general_kernel_k11_s4_p2_impl", "kernel": 11, "stride": 4, "pad": 2},
+    "depthwise_k3_s1_p1": {
+        "function": "_fused_depthwise_conv_lif_temporal_kernel_k3_s1_p1_impl",
+        "kernel": 3,
+        "stride": 1,
+        "pad": 1,
+        "depthwise": True,
+    },
+    "depthwise_k3_s2_p1": {
+        "function": "_fused_depthwise_conv_lif_temporal_kernel_k3_s2_p1_impl",
+        "kernel": 3,
+        "stride": 2,
+        "pad": 1,
+        "depthwise": True,
+    },
 }
+
+
+def _is_depthwise_kernel_key(kernel_key: str) -> bool:
+    return bool(KERNEL_VARIANTS.get(kernel_key, {}).get("depthwise", False))
+
+
+def _default_config_for_key(kernel_key: str) -> Dict[str, int]:
+    if _is_depthwise_kernel_key(kernel_key):
+        return {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2}
+    return {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
 
 
 def _emit_general_kernel_source(
@@ -470,9 +558,125 @@ def _emit_general_kernel_source(
     return "\n".join(lines)
 
 
+def _emit_depthwise_kernel_source(
+    function_name: str,
+    stride: int,
+    pad: int,
+    residual_add: bool = False,
+) -> str:
+    lines: List[str] = []
+    lines.append(f"def {function_name}(")
+    if residual_add:
+        lines.append("    x_ptr, residual_ptr, w_ptr, b_ptr, v_ptr, spike_ptr,")
+    else:
+        lines.append("    x_ptr, w_ptr, b_ptr, v_ptr, spike_ptr,")
+    lines.append("    num_batches, in_channels: tl.constexpr, out_channels, height, width, out_height, out_width,")
+    lines.append("    v_threshold, v_reset, tau_inv,")
+    lines.append("    T_STEPS: tl.constexpr,")
+    lines.append("    BLOCK_H: tl.constexpr, BLOCK_W: tl.constexpr, BLOCK_C: tl.constexpr,")
+    lines.append("    PIXELS_PER_THREAD: tl.constexpr,")
+    lines.append("    BTILE_T: tl.constexpr, REUSE_GROUPS: tl.constexpr,")
+    lines.append("    USE_TF32: tl.constexpr,")
+    lines.append("):")
+    lines.append("    pid_w = tl.program_id(0)")
+    lines.append("    pid_hn = tl.program_id(1)")
+    lines.append("    pid_c = tl.program_id(2)")
+    lines.append("    BLOCK_W_ELEMS: tl.constexpr = BLOCK_W * PIXELS_PER_THREAD")
+    lines.append("    w_offsets = pid_w * BLOCK_W_ELEMS + tl.arange(0, BLOCK_W_ELEMS)")
+    lines.append("    hn_offsets = pid_hn * BLOCK_H + tl.arange(0, BLOCK_H)")
+    lines.append("    c_offsets = pid_c * BLOCK_C + tl.arange(0, BLOCK_C)")
+    lines.append("    pix_n = hn_offsets // out_height")
+    lines.append("    pix_h = hn_offsets % out_height")
+    lines.append("    pix_w = w_offsets")
+    lines.append("    spatial_mask = (pix_n[:, None] < num_batches) & (pix_w[None, :] < out_width)")
+    lines.append("    c_mask = c_offsets < out_channels")
+    lines.append("    out_hw = pix_h[:, None] * out_width + pix_w[None, :]")
+    lines.append("    WINDOW_T: tl.constexpr = BTILE_T * REUSE_GROUPS")
+    lines.append("    if USE_TF32:")
+    lines.append("        bias = tl.load(b_ptr + c_offsets, mask=c_mask, other=0.0).to(tl.float32)")
+    lines.append("    else:")
+    lines.append("        bias = tl.load(b_ptr + c_offsets, mask=c_mask, other=0.0).to(tl.float16)")
+    lines.append("    v_offsets = pix_n[:, None, None] * (out_channels * out_height * out_width) + c_offsets[None, None, :] * (out_height * out_width) + out_hw[:, :, None]")
+    lines.append("    if USE_TF32:")
+    lines.append("        v_state = tl.load(v_ptr + v_offsets, mask=spatial_mask[:, :, None] & c_mask[None, None, :], other=0.0).to(tl.float32)")
+    lines.append("    else:")
+    lines.append("        v_state = tl.load(v_ptr + v_offsets, mask=spatial_mask[:, :, None] & c_mask[None, None, :], other=0.0).to(tl.float16)")
+    lines.append("    for temporal_base in range(0, T_STEPS, WINDOW_T):")
+    for g in range(MAX_REUSE_GROUPS):
+        lines.append(f"        if REUSE_GROUPS >= {g + 1}:")
+        for bt in range(max(TEMPORAL_POW2_CANDIDATES)):
+            lines.append(f"            if BTILE_T >= {bt + 1}:")
+            lines.append(f"                step = temporal_base + {g} * BTILE_T + {bt}")
+            lines.append("                if step < T_STEPS:")
+            lines.append("                    if USE_TF32:")
+            lines.append("                        acc = tl.zeros((BLOCK_H, BLOCK_W_ELEMS, BLOCK_C), dtype=tl.float32)")
+            lines.append("                    else:")
+            lines.append("                        acc = tl.zeros((BLOCK_H, BLOCK_W_ELEMS, BLOCK_C), dtype=tl.float16)")
+            for ky in range(3):
+                for kx in range(3):
+                    lines.append(f"                    ih_{ky}_{kx} = pix_h[:, None, None] * {stride} + {ky} - {pad}")
+                    lines.append(f"                    iw_{ky}_{kx} = pix_w[None, :, None] * {stride} + {kx} - {pad}")
+                    lines.append(
+                        f"                    in_bounds_{ky}_{kx} = "
+                        f"(ih_{ky}_{kx} >= 0) & (ih_{ky}_{kx} < height) & "
+                        f"(iw_{ky}_{kx} >= 0) & (iw_{ky}_{kx} < width)"
+                    )
+                    lines.append(
+                        f"                    x_offsets_{ky}_{kx} = "
+                        f"(step * num_batches + pix_n[:, None, None]) * in_channels * height * width + "
+                        f"c_offsets[None, None, :] * height * width + ih_{ky}_{kx} * width + iw_{ky}_{kx}"
+                    )
+                    lines.append(f"                    w_offsets_{ky}_{kx} = c_offsets * 9 + {ky * 3 + kx}")
+                    lines.append(
+                        f"                    x_{ky}_{kx} = tl.load("
+                        f"x_ptr + x_offsets_{ky}_{kx}, "
+                        f"mask=spatial_mask[:, :, None] & c_mask[None, None, :] & in_bounds_{ky}_{kx}, other=0.0, cache_modifier='.ca')"
+                    )
+                    lines.append(
+                        f"                    w_{ky}_{kx} = tl.load("
+                        f"w_ptr + w_offsets_{ky}_{kx}, mask=c_mask, other=0.0)"
+                    )
+                    lines.append(f"                    acc += x_{ky}_{kx} * w_{ky}_{kx}[None, None, :]")
+            if residual_add:
+                lines.append("                    residual_offsets = (step * num_batches + pix_n[:, None, None]) * out_channels * out_height * out_width + c_offsets[None, None, :] * (out_height * out_width) + out_hw[:, :, None]")
+                lines.append("                    if USE_TF32:")
+                lines.append("                        residual_t = tl.load(residual_ptr + residual_offsets, mask=spatial_mask[:, :, None] & c_mask[None, None, :], other=0.0).to(tl.float32)")
+                lines.append("                    else:")
+                lines.append("                        residual_t = tl.load(residual_ptr + residual_offsets, mask=spatial_mask[:, :, None] & c_mask[None, None, :], other=0.0).to(tl.float16)")
+            lines.append("                    if USE_TF32:")
+            if residual_add:
+                lines.append("                        acc_t = acc + bias[None, None, :] + residual_t")
+            else:
+                lines.append("                        acc_t = acc + bias[None, None, :]")
+            lines.append("                        v_new = v_state + (acc_t - (v_state - v_reset)) * tau_inv")
+            lines.append("                        spike = (v_new >= v_threshold).to(tl.float32)")
+            lines.append("                        v_state = tl.where(spike > 0.5, v_reset, v_new)")
+            lines.append("                    else:")
+            if residual_add:
+                lines.append("                        acc_t = (acc + bias[None, None, :] + residual_t).to(tl.float16)")
+            else:
+                lines.append("                        acc_t = (acc + bias[None, None, :]).to(tl.float16)")
+            lines.append("                        v_new = (v_state + (acc_t - (v_state - v_reset)) * tau_inv).to(tl.float16)")
+            lines.append("                        spike = (v_new >= v_threshold).to(tl.float16)")
+            lines.append("                        v_state = tl.where(spike > 0.5, v_new * 0.0, v_new)")
+            lines.append("                    spike_offsets = (step * num_batches + pix_n[:, None, None]) * out_channels * out_height * out_width + c_offsets[None, None, :] * (out_height * out_width) + out_hw[:, :, None]")
+            lines.append("                    tl.store(spike_ptr + spike_offsets, spike, mask=spatial_mask[:, :, None] & c_mask[None, None, :])")
+    lines.append("    tl.store(v_ptr + v_offsets, v_state, mask=spatial_mask[:, :, None] & c_mask[None, None, :])")
+    return "\n".join(lines)
+
+
 _kernel_namespace = {"tl": tl}
 _kernel_sources = []
 for _variant in KERNEL_VARIANTS.values():
+    if _variant.get("depthwise"):
+        _kernel_sources.append(
+            _emit_depthwise_kernel_source(
+                function_name=_variant["function"],
+                stride=_variant["stride"],
+                pad=_variant["pad"],
+            )
+        )
+        continue
     _kernel_sources.append(
         _emit_general_kernel_source(
             function_name=_variant["function"],
@@ -482,6 +686,16 @@ for _variant in KERNEL_VARIANTS.values():
         )
     )
 for _variant in KERNEL_VARIANTS.values():
+    if _variant.get("depthwise"):
+        _kernel_sources.append(
+            _emit_depthwise_kernel_source(
+                function_name=f"{_variant['function']}_resadd",
+                stride=_variant["stride"],
+                pad=_variant["pad"],
+                residual_add=True,
+            )
+        )
+        continue
     _kernel_sources.append(
         _emit_general_kernel_source(
             function_name=f"{_variant['function']}_resadd",
@@ -522,7 +736,7 @@ _residual_specialized_kernels = {
 }
 _autotuned_kernels = {
     kernel_key: triton.autotune(
-        configs=_make_autotune_configs(),
+        configs=_make_dwconv_autotune_configs() if KERNEL_VARIANTS[kernel_key].get("depthwise") else _make_autotune_configs(),
         key=[
             "num_batches",
             "in_channels",
@@ -542,7 +756,7 @@ _autotuned_kernels = {
 }
 _residual_autotuned_kernels = {
     kernel_key: triton.autotune(
-        configs=_make_autotune_configs(),
+        configs=_make_dwconv_autotune_configs() if KERNEL_VARIANTS[kernel_key].get("depthwise") else _make_autotune_configs(),
         key=[
             "num_batches",
             "in_channels",
@@ -583,6 +797,8 @@ def run_fused_temporal_general(
     spatial_config: Dict[str, int] = None,
     kernel_key: str = "k3_s1_p1",
     v_init: torch.Tensor = None,
+    spikes_out: torch.Tensor = None,
+    membrane_out: torch.Tensor = None,
 ):
     if temporal_batch_size not in TEMPORAL_POW2_CANDIDATES:
         raise ValueError(f"temporal_batch_size must be one of {TEMPORAL_POW2_CANDIDATES}, got {temporal_batch_size}")
@@ -599,50 +815,89 @@ def run_fused_temporal_general(
         )
 
     if spatial_config is None:
-        spatial_config = {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
+        spatial_config = _default_config_for_key(kernel_key)
     if kernel_key not in KERNEL_VARIANTS:
         raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
 
-    in_channels = weight.shape[1]
+    in_channels = x_seq.shape[2] if _is_depthwise_kernel_key(kernel_key) else weight.shape[1]
     out_channels = weight.shape[0]
     variant = KERNEL_VARIANTS[kernel_key]
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
     x_flat = x_seq.reshape(timesteps * batch, in_channels, height, width).contiguous()
-    spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
+    if spikes_out is None or membrane_out is None:
+        spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
+    else:
+        spikes, membrane = spikes_out, membrane_out
+        _check_output_buffers(x_seq, spikes, membrane, out_channels, out_height, out_width, v_init=v_init)
     kernel = _specialized_kernels[kernel_key]
 
     def grid(meta):
+        if _is_depthwise_kernel_key(kernel_key):
+            return (
+                triton.cdiv(out_width, meta["BLOCK_W"] * meta["PIXELS_PER_THREAD"]),
+                triton.cdiv(batch * out_height, meta["BLOCK_H"]),
+                triton.cdiv(out_channels, meta["BLOCK_C"]),
+            )
         return (
             triton.cdiv(batch * out_height * out_width, meta["BLOCK_M"]),
             triton.cdiv(out_channels, meta["BLOCK_OC"]),
         )
 
-    kernel[grid](
-        x_flat,
-        weight,
-        bias,
-        membrane,
-        spikes,
-        batch,
-        in_channels,
-        out_channels,
-        height,
-        width,
-        out_height,
-        out_width,
-        V_THRESHOLD,
-        V_RESET,
-        TAU_INV,
-        timesteps,
-        BTILE_T=temporal_batch_size,
-        REUSE_GROUPS=reuse_groups,
-        BLOCK_M=spatial_config["BLOCK_M"],
-        BLOCK_OC=spatial_config["BLOCK_OC"],
-        BLOCK_K=spatial_config["BLOCK_K"],
-        USE_TF32=(x_seq.dtype == torch.float32),
-        num_warps=spatial_config["num_warps"],
-        num_stages=spatial_config["num_stages"],
-    )
+    if _is_depthwise_kernel_key(kernel_key):
+        kernel[grid](
+            x_flat,
+            weight,
+            bias,
+            membrane,
+            spikes,
+            batch,
+            in_channels,
+            out_channels,
+            height,
+            width,
+            out_height,
+            out_width,
+            V_THRESHOLD,
+            V_RESET,
+            TAU_INV,
+            timesteps,
+            BTILE_T=temporal_batch_size,
+            REUSE_GROUPS=reuse_groups,
+            BLOCK_H=spatial_config["BLOCK_H"],
+            BLOCK_W=spatial_config["BLOCK_W"],
+            BLOCK_C=spatial_config["BLOCK_C"],
+            PIXELS_PER_THREAD=spatial_config.get("PIXELS_PER_THREAD", 1),
+            USE_TF32=(x_seq.dtype == torch.float32),
+            num_warps=spatial_config["num_warps"],
+            num_stages=spatial_config["num_stages"],
+        )
+    else:
+        kernel[grid](
+            x_flat,
+            weight,
+            bias,
+            membrane,
+            spikes,
+            batch,
+            in_channels,
+            out_channels,
+            height,
+            width,
+            out_height,
+            out_width,
+            V_THRESHOLD,
+            V_RESET,
+            TAU_INV,
+            timesteps,
+            BTILE_T=temporal_batch_size,
+            REUSE_GROUPS=reuse_groups,
+            BLOCK_M=spatial_config["BLOCK_M"],
+            BLOCK_OC=spatial_config["BLOCK_OC"],
+            BLOCK_K=spatial_config["BLOCK_K"],
+            USE_TF32=(x_seq.dtype == torch.float32),
+            num_warps=spatial_config["num_warps"],
+            num_stages=spatial_config["num_stages"],
+        )
     return spikes, membrane
 
 
@@ -680,11 +935,11 @@ def run_fused_temporal_general_residual(
             f"{temporal_batch_size} * {reuse_groups} > {timesteps}"
         )
     if spatial_config is None:
-        spatial_config = {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
+        spatial_config = _default_config_for_key(kernel_key)
     if kernel_key not in KERNEL_VARIANTS:
         raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
 
-    in_channels = weight.shape[1]
+    in_channels = x_seq.shape[2] if _is_depthwise_kernel_key(kernel_key) else weight.shape[1]
     out_channels = weight.shape[0]
     variant = KERNEL_VARIANTS[kernel_key]
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
@@ -695,38 +950,74 @@ def run_fused_temporal_general_residual(
     kernel = _residual_specialized_kernels[kernel_key]
 
     def grid(meta):
+        if _is_depthwise_kernel_key(kernel_key):
+            return (
+                triton.cdiv(out_width, meta["BLOCK_W"] * meta["PIXELS_PER_THREAD"]),
+                triton.cdiv(batch * out_height, meta["BLOCK_H"]),
+                triton.cdiv(out_channels, meta["BLOCK_C"]),
+            )
         return (
             triton.cdiv(batch * out_height * out_width, meta["BLOCK_M"]),
             triton.cdiv(out_channels, meta["BLOCK_OC"]),
         )
 
-    kernel[grid](
-        x_flat,
-        residual_flat,
-        weight,
-        bias,
-        membrane,
-        spikes,
-        batch,
-        in_channels,
-        out_channels,
-        height,
-        width,
-        out_height,
-        out_width,
-        V_THRESHOLD,
-        V_RESET,
-        TAU_INV,
-        timesteps,
-        BTILE_T=temporal_batch_size,
-        REUSE_GROUPS=reuse_groups,
-        BLOCK_M=spatial_config["BLOCK_M"],
-        BLOCK_OC=spatial_config["BLOCK_OC"],
-        BLOCK_K=spatial_config["BLOCK_K"],
-        USE_TF32=(x_seq.dtype == torch.float32),
-        num_warps=spatial_config["num_warps"],
-        num_stages=spatial_config["num_stages"],
-    )
+    if _is_depthwise_kernel_key(kernel_key):
+        kernel[grid](
+            x_flat,
+            residual_flat,
+            weight,
+            bias,
+            membrane,
+            spikes,
+            batch,
+            in_channels,
+            out_channels,
+            height,
+            width,
+            out_height,
+            out_width,
+            V_THRESHOLD,
+            V_RESET,
+            TAU_INV,
+            timesteps,
+            BTILE_T=temporal_batch_size,
+            REUSE_GROUPS=reuse_groups,
+            BLOCK_H=spatial_config["BLOCK_H"],
+            BLOCK_W=spatial_config["BLOCK_W"],
+            BLOCK_C=spatial_config["BLOCK_C"],
+            PIXELS_PER_THREAD=spatial_config.get("PIXELS_PER_THREAD", 1),
+            USE_TF32=(x_seq.dtype == torch.float32),
+            num_warps=spatial_config["num_warps"],
+            num_stages=spatial_config["num_stages"],
+        )
+    else:
+        kernel[grid](
+            x_flat,
+            residual_flat,
+            weight,
+            bias,
+            membrane,
+            spikes,
+            batch,
+            in_channels,
+            out_channels,
+            height,
+            width,
+            out_height,
+            out_width,
+            V_THRESHOLD,
+            V_RESET,
+            TAU_INV,
+            timesteps,
+            BTILE_T=temporal_batch_size,
+            REUSE_GROUPS=reuse_groups,
+            BLOCK_M=spatial_config["BLOCK_M"],
+            BLOCK_OC=spatial_config["BLOCK_OC"],
+            BLOCK_K=spatial_config["BLOCK_K"],
+            USE_TF32=(x_seq.dtype == torch.float32),
+            num_warps=spatial_config["num_warps"],
+            num_stages=spatial_config["num_stages"],
+        )
     return spikes, membrane
 
 
@@ -736,19 +1027,31 @@ def run_fused_temporal_general_autotuned(
     bias: torch.Tensor,
     kernel_key: str = "k3_s1_p1",
     v_init: torch.Tensor = None,
+    spikes_out: torch.Tensor = None,
+    membrane_out: torch.Tensor = None,
 ):
     timesteps, batch, _, height, width = x_seq.shape
     if kernel_key not in KERNEL_VARIANTS:
         raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
-    in_channels = weight.shape[1]
+    in_channels = x_seq.shape[2] if _is_depthwise_kernel_key(kernel_key) else weight.shape[1]
     out_channels = weight.shape[0]
     variant = KERNEL_VARIANTS[kernel_key]
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
     x_flat = x_seq.reshape(timesteps * batch, in_channels, height, width).contiguous()
-    spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
+    if spikes_out is None or membrane_out is None:
+        spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
+    else:
+        spikes, membrane = spikes_out, membrane_out
+        _check_output_buffers(x_seq, spikes, membrane, out_channels, out_height, out_width, v_init=v_init)
     kernel = _autotuned_kernels[kernel_key]
 
     def grid(meta):
+        if _is_depthwise_kernel_key(kernel_key):
+            return (
+                triton.cdiv(out_width, meta["BLOCK_W"] * meta["PIXELS_PER_THREAD"]),
+                triton.cdiv(batch * out_height, meta["BLOCK_H"]),
+                triton.cdiv(out_channels, meta["BLOCK_C"]),
+            )
         return (
             triton.cdiv(batch * out_height * out_width, meta["BLOCK_M"]),
             triton.cdiv(out_channels, meta["BLOCK_OC"]),
@@ -787,7 +1090,7 @@ def run_fused_temporal_general_residual_autotuned(
     timesteps, batch, _, height, width = x_seq.shape
     if kernel_key not in KERNEL_VARIANTS:
         raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
-    in_channels = weight.shape[1]
+    in_channels = x_seq.shape[2] if _is_depthwise_kernel_key(kernel_key) else weight.shape[1]
     out_channels = weight.shape[0]
     variant = KERNEL_VARIANTS[kernel_key]
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
@@ -798,6 +1101,12 @@ def run_fused_temporal_general_residual_autotuned(
     kernel = _residual_autotuned_kernels[kernel_key]
 
     def grid(meta):
+        if _is_depthwise_kernel_key(kernel_key):
+            return (
+                triton.cdiv(out_width, meta["BLOCK_W"] * meta["PIXELS_PER_THREAD"]),
+                triton.cdiv(batch * out_height, meta["BLOCK_H"]),
+                triton.cdiv(out_channels, meta["BLOCK_C"]),
+            )
         return (
             triton.cdiv(batch * out_height * out_width, meta["BLOCK_M"]),
             triton.cdiv(out_channels, meta["BLOCK_OC"]),
@@ -852,6 +1161,10 @@ def get_autotune_best_config(kernel_key: str = "k3_s1_p1", residual_add: bool = 
         "BLOCK_M": all_kwargs.get("BLOCK_M"),
         "BLOCK_OC": all_kwargs.get("BLOCK_OC"),
         "BLOCK_K": all_kwargs.get("BLOCK_K"),
+        "BLOCK_H": all_kwargs.get("BLOCK_H"),
+        "BLOCK_W": all_kwargs.get("BLOCK_W"),
+        "BLOCK_C": all_kwargs.get("BLOCK_C"),
+        "PIXELS_PER_THREAD": all_kwargs.get("PIXELS_PER_THREAD"),
         "BTILE_T": btile_t,
         "REUSE_GROUPS": reuse_groups,
         "kernel_temporal_window": kernel_temporal_window,

@@ -152,19 +152,21 @@ def run_case(T: int, shape: Tuple[int, int, int, int], args) -> Dict:
         "triton_hit": int(stats.get("temporal_lif_triton", 0)),
         "fallback": int(stats.get("temporal_lif_fallback", 0)),
         "fallback_reasons": stats.get("fallback_reasons", {}),
+        "kernel_temporal_configs": stats.get("kernel_temporal_configs", {}),
     }
 
 
 def _print_table(rows: List[Dict]):
-    print("| T | shape | dtype | eager_loop_ms | compile_loop_ms | temporal_lif_triton_ms | speedup eager | speedup compile | allclose | triton_hit | fallback |")
-    print("|---:|---|---|---:|---:|---:|---:|---:|---|---:|---:|")
+    print("| T | shape | dtype | eager_loop_ms | compile_loop_ms | temporal_lif_triton_ms | speedup eager | speedup compile | allclose | triton_hit | fallback | config |")
+    print("|---:|---|---|---:|---:|---:|---:|---:|---|---:|---:|---|")
     for row in rows:
         print(
             f"| {row['T']} | {row['shape']} | {row['dtype']} | "
             f"{row['eager_loop']['mean_ms']:.4f} | {row['compile_loop']['mean_ms']:.4f} | "
             f"{row['temporal_lif_triton']['mean_ms']:.4f} | "
             f"{row['speedup_vs_eager_loop']:.3f} | {row['speedup_vs_compile_loop']:.3f} | "
-            f"{row['allclose']} | {row['triton_hit']} | {row['fallback']} |"
+            f"{row['allclose']} | {row['triton_hit']} | {row['fallback']} | "
+            f"{row['kernel_temporal_configs']} |"
         )
 
 

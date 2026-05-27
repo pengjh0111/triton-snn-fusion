@@ -90,6 +90,10 @@ def run_triton_fused_temporal_lif_avgpool_linear(
         )
         diagnostics = {
             "kernel_kind": "standalone_temporal_lif_avgpool_linear",
+            "fuse_organization": "two_stage_fused_pipeline",
+            "stage_0": "lif_recurrence_plus_global_avgpool",
+            "stage_1": "linear_temporal_accumulation",
+            "intermediate_materialization": "pooled[T,N,C]",
             "compute_dtype": "float16" if x_seq.dtype == torch.float16 else "float32",
             "T": int(x_seq.shape[0]),
             "shape": tuple(x_seq.shape),

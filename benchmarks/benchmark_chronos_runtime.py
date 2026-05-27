@@ -21,14 +21,15 @@ torch.set_float32_matmul_precision("high")
 
 import runtime.snn_custom_ops as snn_custom_ops
 from compiler.chronos_compile import build_chronos_compile_config, compile_with_chronos_options
-from test.models_for_fx_test import reset_custom_stateful_lif_modules
 from benchmarks.validate_chronos_baselines import (
     CHRONOS_MODEL_CHOICES,
+    LIF_IMPL_CHOICES,
     MultiStepModeWrapper,
     SingleStepModeLoopWrapper,
     RewriteCounters,
     make_resnet_layer,
     make_rewrite_backend,
+    reset_lif_modules,
     synchronize_if_needed,
 )
 
@@ -64,7 +65,7 @@ def resolve_dtype(dtype_name: str) -> torch.dtype:
 
 def prepare_runnable(name, model, compile_mode, backend, device, args):
     model.eval()
-    reset_custom_stateful_lif_modules(model)
+    reset_lif_modules(model)
 
     if compile_mode:
         runnable = compile_with_chronos_options(
@@ -81,8 +82,17 @@ def prepare_runnable(name, model, compile_mode, backend, device, args):
     return runnable
 
 
-def compile_and_warmup(runnable, model, x, device, warmup):
-    reset_custom_stateful_lif_modules(model)
+def _mark_cudagraph_step(args):
+    if not getattr(args, "enable_cudagraphs", False):
+        return
+    mark_step = getattr(torch.compiler, "cudagraph_mark_step_begin", None)
+    if mark_step is not None:
+        mark_step()
+
+
+def compile_and_warmup(runnable, model, x, device, warmup, args):
+    _mark_cudagraph_step(args)
+    reset_lif_modules(model)
 
     synchronize_if_needed(device)
     with torch.no_grad():
@@ -90,7 +100,8 @@ def compile_and_warmup(runnable, model, x, device, warmup):
     synchronize_if_needed(device)
 
     for _ in range(warmup):
-        reset_custom_stateful_lif_modules(model)
+        _mark_cudagraph_step(args)
+        reset_lif_modules(model)
 
         synchronize_if_needed(device)
         with torch.no_grad():
@@ -98,12 +109,13 @@ def compile_and_warmup(runnable, model, x, device, warmup):
         synchronize_if_needed(device)
 
 
-def benchmark_runnable(name, runnable, model, x, device, repeat):
+def benchmark_runnable(name, runnable, model, x, device, repeat, args):
     times = []
 
     try:
         for _ in range(repeat):
-            reset_custom_stateful_lif_modules(model)
+            _mark_cudagraph_step(args)
+            reset_lif_modules(model)
 
             synchronize_if_needed(device)
 
@@ -157,6 +169,7 @@ def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat,
             x,
             device,
             warmup,
+            args,
         )
 
         return benchmark_runnable(
@@ -166,6 +179,7 @@ def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat,
             x,
             device,
             repeat,
+            args,
         )
 
     except Exception:
@@ -207,12 +221,14 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="s",
         model_channels=args.model_channels,
+        lif_impl=args.lif_impl,
     )
     base_layer_m = make_resnet_layer(
         model_name,
         allow_resnet32_fallback=not args.require_direct_resnet32_api,
         step_mode="m",
         model_channels=args.model_channels,
+        lif_impl=args.lif_impl,
     )
 
     base_layer_s = base_layer_s.to(
@@ -239,7 +255,8 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         verbose=args.print_fused_op_calls,
     )
 
-    out_dir = Path(args.out_dir) / model_name
+    # out_dir = Path(args.out_dir) / model_name
+    out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cases = {}
@@ -445,6 +462,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             args.width,
         ],
         "model_channels": args.model_channels,
+        "lif_impl": args.lif_impl,
         "T": args.T,
         "dtype": args.dtype,
         "warmup": args.warmup,
@@ -495,6 +513,13 @@ def parse_args():
         type=int,
         default=64,
         help="Base channel width for handcrafted alexnet/zfnet models.",
+    )
+
+    parser.add_argument(
+        "--lif-impl",
+        choices=LIF_IMPL_CHOICES,
+        default="chronos",
+        help="LIF implementation used when constructing benchmark models.",
     )
 
     parser.add_argument("--T", type=int, default=16)
@@ -595,6 +620,7 @@ def parse_args():
     )
 
     parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
+    parser.add_argument("--disable-temporal-linear-lif-rewrite", action="store_true")
 
     parser.add_argument("--max-patterns", type=int, default=1000)
 

@@ -115,6 +115,39 @@ class TemporalLifWindow:
 
 
 @dataclass
+class TemporalLinearLifPattern:
+    layer_id: str
+    timestep_index: int
+    window_id: int
+    linear_node: torch.fx.Node
+    linear_input: torch.fx.Node
+    weight: Any
+    bias: Any
+    lif_node: torch.fx.Node
+    v_prev_node: torch.fx.Node
+    spike_getitem: torch.fx.Node
+    v_getitem: torch.fx.Node
+    v_next_node: torch.fx.Node
+    lif_params: Tuple[Any, Any, Any, Any]
+    occurrence: int
+    input_shape_key: str
+    output_shape_key: str
+
+
+@dataclass
+class TemporalLinearLifGroup:
+    layer_id: str
+    patterns: List[TemporalLinearLifPattern]
+
+
+@dataclass
+class TemporalLinearLifWindow:
+    layer_id: str
+    window_id: int
+    patterns: List[TemporalLinearLifPattern]
+
+
+@dataclass
 class TemporalLifAvgPoolLinearPattern:
     layer_id: str
     timestep_index: int
@@ -202,6 +235,27 @@ class TemporalLifRewriteStats:
         message = f"SKIP layer={window.layer_id} window={window.window_id}: {reason}"
         self.log.append(message)
         print(f"[SKIP][TEMPORAL_LIF] {message}")
+
+
+@dataclass
+class TemporalLinearLifRewriteStats:
+    temporal_linear_lif_groups: int = 0
+    temporal_linear_lif_windows: int = 0
+    temporal_linear_lif_total_windows: int = 0
+    temporal_linear_lif_rewritten_windows: int = 0
+    temporal_linear_lif_replaced_patterns: int = 0
+    temporal_linear_lif_skipped_windows: int = 0
+    temporal_linear_lif_remapped_spike_external_users: int = 0
+    temporal_linear_lif_unremappable_external_users: int = 0
+    temporal_linear_lif_skip_reasons: Dict[str, int] = field(default_factory=dict)
+    log: List[str] = field(default_factory=list)
+
+    def skip(self, window: TemporalLinearLifWindow, reason: str):
+        self.temporal_linear_lif_skipped_windows += 1
+        self.temporal_linear_lif_skip_reasons[reason] = self.temporal_linear_lif_skip_reasons.get(reason, 0) + 1
+        message = f"SKIP layer={window.layer_id} window={window.window_id}: {reason}"
+        self.log.append(message)
+        print(f"[SKIP][TEMPORAL_LINEAR_LIF] {message}")
 
 
 @dataclass
@@ -564,7 +618,55 @@ def _is_flatten_batch_preserving(node: torch.fx.Node) -> bool:
 def _is_linear_node(node: torch.fx.Node) -> bool:
     if node.op != "call_function":
         return False
-    return node.target in (torch._C._nn.linear, F.linear)
+    if node.target in (torch._C._nn.linear, F.linear):
+        return True
+    target_text = str(node.target)
+    return "aten.linear" in target_text or target_text.endswith(".linear.default")
+
+
+def _getitem_index(node: torch.fx.Node):
+    if node.op != "call_function" or node.target is not operator.getitem or len(node.args) < 2:
+        return None
+    index = node.args[1]
+    if isinstance(index, slice):
+        return None
+    try:
+        return int(index)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_temporal_stack_tensor(node: torch.fx.Node) -> bool:
+    if not isinstance(node, torch.fx.Node):
+        return False
+    if node.meta.get("chronos_temporal_layout") == "stack":
+        return True
+    if node.op != "call_function" or node.target is not operator.getitem:
+        return False
+    if _getitem_index(node) != 0 or not node.args or not isinstance(node.args[0], torch.fx.Node):
+        return False
+    producer = node.args[0]
+    if producer.op != "call_function":
+        return False
+    return "snn_custom.fused_temporal_" in str(producer.target)
+
+
+def _match_temporal_stack_avgpool_flatten(node: torch.fx.Node) -> Optional[Tuple[torch.fx.Node, torch.fx.Node, torch.fx.Node, int]]:
+    if not isinstance(node, torch.fx.Node) or not _is_flatten_batch_preserving(node):
+        return None
+    pool_node = node.args[0] if node.args and isinstance(node.args[0], torch.fx.Node) else None
+    if pool_node is None or not _is_adaptive_avg_pool_1x1(pool_node):
+        return None
+    spike_t = pool_node.args[0] if pool_node.args and isinstance(pool_node.args[0], torch.fx.Node) else None
+    if spike_t is None or spike_t.op != "call_function" or spike_t.target is not operator.getitem:
+        return None
+    timestep = _getitem_index(spike_t)
+    if timestep is None:
+        return None
+    stack_node = spike_t.args[0] if spike_t.args and isinstance(spike_t.args[0], torch.fx.Node) else None
+    if stack_node is None or not _is_temporal_stack_tensor(stack_node):
+        return None
+    return stack_node, spike_t, pool_node, int(timestep)
 
 
 def _single_user_node(node: torch.fx.Node) -> Optional[torch.fx.Node]:
@@ -576,6 +678,94 @@ def _extract_linear_weight_bias(linear_node: torch.fx.Node) -> Tuple[Any, Any]:
     weight = linear_node.args[1] if len(linear_node.args) > 1 else linear_node.kwargs.get("weight")
     bias = linear_node.args[2] if len(linear_node.args) > 2 else linear_node.kwargs.get("bias", None)
     return weight, bias
+
+
+def _extract_linear_input(linear_node: torch.fx.Node):
+    if len(linear_node.args) > 0:
+        return linear_node.args[0]
+    return linear_node.kwargs.get("input")
+
+
+def collect_temporal_linear_lif_state_patterns(
+    gm: torch.fx.GraphModule,
+    excluded_lif_nodes=None,
+) -> List[TemporalLinearLifPattern]:
+    excluded = set(excluded_lif_nodes or [])
+    fallback_counts: Dict[str, int] = {}
+    patterns: List[TemporalLinearLifPattern] = []
+    for node in gm.graph.nodes:
+        if node in excluded or not is_custom_lif_state_node(node):
+            continue
+        ok, reason = _lif_state_is_usable(node)
+        if not ok:
+            print(f"[SKIP][TEMPORAL_LINEAR_LIF] lif={node.name}: {reason}")
+            continue
+        if len(node.args) < 6 or not isinstance(node.args[0], torch.fx.Node):
+            print(f"[SKIP][TEMPORAL_LINEAR_LIF] lif={node.name}: unsupported lif args")
+            continue
+        linear_node = node.args[0]
+        if not isinstance(linear_node, torch.fx.Node) or not _is_linear_node(linear_node):
+            continue
+        linear_input = _extract_linear_input(linear_node)
+        if not isinstance(linear_input, torch.fx.Node):
+            print(f"[SKIP][TEMPORAL_LINEAR_LIF] linear={linear_node.name}: unsupported linear input")
+            continue
+        linear_external = []
+        for user in linear_node.users:
+            if user is node:
+                continue
+            if _is_zeros_like_of(user, linear_node) and len(node.args) > 1 and node.args[1] is user:
+                continue
+            linear_external.append(user.name)
+        if linear_external:
+            print(
+                f"[SKIP][TEMPORAL_LINEAR_LIF] linear={linear_node.name}: "
+                f"linear output has external users {linear_external}"
+            )
+            continue
+
+        timestep = _chronos_meta(node, "timestep", None)
+        window_id = _chronos_meta(node, "window_id", None)
+        occurrence = _chronos_meta(node, "occurrence", None)
+        if not isinstance(timestep, int):
+            fallback_key = f"linear_lif|{_node_key(_extract_linear_weight_bias(linear_node)[0])}"
+            timestep = fallback_counts.get(fallback_key, 0)
+            fallback_counts[fallback_key] = timestep + 1
+        if not isinstance(window_id, int):
+            window_id = 0
+        if not isinstance(occurrence, int):
+            occurrence = 0
+
+        weight, bias = _extract_linear_weight_bias(linear_node)
+        getitems = find_tuple_getitems(node)
+        lif_params = tuple(node.args[2:6])
+        input_shape_key = _shape_key_from_node(linear_input)
+        output_shape_key = _shape_key_from_node(linear_node)
+        layer_id = (
+            f"linear_lif|occurrence={occurrence}|weight={_node_key(weight)}|bias={_node_key(bias)}|"
+            f"input={input_shape_key}|output={output_shape_key}|params={repr(lif_params)}"
+        )
+        patterns.append(
+            TemporalLinearLifPattern(
+                layer_id=layer_id,
+                timestep_index=int(timestep),
+                window_id=int(window_id),
+                linear_node=linear_node,
+                linear_input=linear_input,
+                weight=weight,
+                bias=bias,
+                lif_node=node,
+                v_prev_node=node.args[1],
+                spike_getitem=getitems[0],
+                v_getitem=getitems[1],
+                v_next_node=getitems[1],
+                lif_params=lif_params,
+                occurrence=int(occurrence),
+                input_shape_key=input_shape_key,
+                output_shape_key=output_shape_key,
+            )
+        )
+    return patterns
 
 
 def _find_accumulator_add_user(linear_node: torch.fx.Node) -> Tuple[Optional[torch.fx.Node], Any]:
@@ -696,6 +886,16 @@ def group_temporal_lif_patterns(patterns: List[TemporalLifPattern]) -> List[Temp
     return groups
 
 
+def group_temporal_linear_lif_patterns(patterns: List[TemporalLinearLifPattern]) -> List[TemporalLinearLifGroup]:
+    grouped: Dict[str, List[TemporalLinearLifPattern]] = {}
+    for pattern in patterns:
+        grouped.setdefault(pattern.layer_id, []).append(pattern)
+    groups = []
+    for layer_id, items in grouped.items():
+        groups.append(TemporalLinearLifGroup(layer_id=layer_id, patterns=sorted(items, key=lambda p: p.timestep_index)))
+    return groups
+
+
 def group_temporal_lif_avgpool_linear_patterns(patterns: List[TemporalLifAvgPoolLinearPattern]) -> List[TemporalLifAvgPoolLinearGroup]:
     grouped: Dict[str, List[TemporalLifAvgPoolLinearPattern]] = {}
     for pattern in patterns:
@@ -723,6 +923,14 @@ def check_temporal_residual_state_chain(patterns: List[TemporalResidualPattern])
 
 
 def check_temporal_lif_state_chain(patterns: List[TemporalLifPattern]) -> Tuple[bool, str]:
+    for prev, nxt in zip(patterns, patterns[1:]):
+        if nxt.v_prev_node is prev.v_getitem:
+            continue
+        return False, f"{prev.v_getitem.name} does not feed {nxt.lif_node.name} v_prev"
+    return True, ""
+
+
+def check_temporal_linear_lif_state_chain(patterns: List[TemporalLinearLifPattern]) -> Tuple[bool, str]:
     for prev, nxt in zip(patterns, patterns[1:]):
         if nxt.v_prev_node is prev.v_getitem:
             continue
@@ -817,6 +1025,38 @@ def make_temporal_lif_windows(
     return windows
 
 
+def make_temporal_linear_lif_windows(
+    groups: List[TemporalLinearLifGroup],
+    window_size: int,
+    allow_tail: bool,
+) -> List[TemporalLinearLifWindow]:
+    if window_size < 1:
+        return []
+    windows: List[TemporalLinearLifWindow] = []
+    for group in groups:
+        by_window: Dict[int, List[TemporalLinearLifPattern]] = {}
+        for pattern in group.patterns:
+            by_window.setdefault(pattern.window_id, []).append(pattern)
+        for window_id, items in sorted(by_window.items()):
+            items = sorted(items, key=lambda pattern: pattern.timestep_index)
+            if len(items) < window_size and not allow_tail:
+                print(f"[SKIP][TEMPORAL_LINEAR_LIF] layer={group.layer_id}: tail size={len(items)} < window={window_size}")
+                continue
+            if len(items) <= 1:
+                continue
+            expected = list(range(items[0].timestep_index, items[0].timestep_index + len(items)))
+            actual = [pattern.timestep_index for pattern in items]
+            if actual != expected:
+                print(f"[SKIP][TEMPORAL_LINEAR_LIF] layer={group.layer_id}: timesteps not continuous: {actual}")
+                continue
+            ok, reason = check_temporal_linear_lif_state_chain(items)
+            if not ok:
+                print(f"[SKIP][TEMPORAL_LINEAR_LIF] layer={group.layer_id}: state chain not continuous: {reason}")
+                continue
+            windows.append(TemporalLinearLifWindow(layer_id=group.layer_id, window_id=window_id, patterns=items))
+    return windows
+
+
 def make_temporal_lif_avgpool_linear_windows(
     groups: List[TemporalLifAvgPoolLinearGroup],
     window_size: int,
@@ -882,6 +1122,34 @@ def _same_standalone_lif_params(patterns: List[TemporalLifPattern]) -> bool:
 def _same_standalone_lif_shapes(patterns: List[TemporalLifPattern]) -> bool:
     first = patterns[0].shape_key
     return all(pattern.shape_key == first for pattern in patterns)
+
+
+def _linear_lif_middle_v_next_has_no_external_uses(window: TemporalLinearLifWindow) -> Tuple[bool, str]:
+    patterns = window.patterns
+    for idx, pattern in enumerate(patterns[:-1]):
+        allowed = patterns[idx + 1].lif_node
+        external = [user.name for user in pattern.v_getitem.users if user is not allowed]
+        if external:
+            return False, f"middle v_next {pattern.v_getitem.name} has external users {external}"
+    return True, ""
+
+
+def _same_linear_lif_params(patterns: List[TemporalLinearLifPattern]) -> bool:
+    first = patterns[0]
+    return all(
+        pattern.lif_params == first.lif_params
+        and _node_key(pattern.weight) == _node_key(first.weight)
+        and _node_key(pattern.bias) == _node_key(first.bias)
+        for pattern in patterns
+    )
+
+
+def _same_linear_lif_shapes(patterns: List[TemporalLinearLifPattern]) -> bool:
+    first = patterns[0]
+    return all(
+        pattern.input_shape_key == first.input_shape_key and pattern.output_shape_key == first.output_shape_key
+        for pattern in patterns
+    )
 
 
 def _same_lif_avgpool_linear_params(patterns: List[TemporalLifAvgPoolLinearPattern]) -> bool:
@@ -1118,6 +1386,46 @@ def _cleanup_window_nodes(gm: torch.fx.GraphModule, window: TemporalWindow):
         _erase_if_unused(gm, node)
 
 
+def _replaceable_temporal_window_nodes(window: TemporalWindow) -> set:
+    nodes = set()
+    for pattern in window.patterns:
+        nodes.update([pattern.conv_node, pattern.bn_node, pattern.lif_node, pattern.spike_getitem, pattern.v_getitem])
+        v_prev = pattern.lif_node.args[1] if len(pattern.lif_node.args) > 1 else None
+        if isinstance(v_prev, torch.fx.Node) and _is_zeros_like_of(v_prev, pattern.bn_node):
+            nodes.add(v_prev)
+    return nodes
+
+
+def _select_temporal_conv_lif_insert_anchor(
+    gm: torch.fx.GraphModule,
+    window: TemporalWindow,
+    inputs: List[Any],
+) -> Tuple[Optional[torch.fx.Node], str, str]:
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    first = window.patterns[0].conv_node
+    first_order = order[first]
+    replaceable = _replaceable_temporal_window_nodes(window)
+    input_nodes = [value for value in inputs if isinstance(value, torch.fx.Node)]
+    for node in input_nodes:
+        if node in replaceable:
+            return None, "skip", f"input {node.name} is produced by nodes being replaced"
+
+    late_inputs = [node for node in input_nodes if order.get(node, -1) >= first_order]
+    if not late_inputs:
+        return first, "before", ""
+
+    anchor = max(late_inputs, key=lambda node: order[node])
+    anchor_order = order[anchor]
+    first_spike_order = min(order[pattern.spike_getitem] for pattern in window.patterns)
+    if anchor_order >= first_spike_order:
+        return (
+            None,
+            "skip",
+            f"latest input {anchor.name} appears after first replaceable spike {window.patterns[0].spike_getitem.name}",
+        )
+    return anchor, "after", ""
+
+
 def _replaceable_lif_window_nodes(window: TemporalLifWindow) -> set:
     nodes = set()
     for pattern in window.patterns:
@@ -1174,6 +1482,345 @@ def _cleanup_lif_window_nodes(gm: torch.fx.GraphModule, window: TemporalLifWindo
     unique = []
     seen = set()
     for node in candidates:
+        if isinstance(node, torch.fx.Node) and node not in seen and node in order:
+            unique.append(node)
+            seen.add(node)
+    for node in sorted(unique, key=lambda n: order[n], reverse=True):
+        _erase_if_unused(gm, node)
+
+
+def _replaceable_linear_lif_window_nodes(window: TemporalLinearLifWindow) -> set:
+    nodes = set()
+    for pattern in window.patterns:
+        nodes.update([pattern.linear_node, pattern.lif_node, pattern.spike_getitem, pattern.v_getitem])
+        v_prev = pattern.lif_node.args[1] if len(pattern.lif_node.args) > 1 else None
+        if isinstance(v_prev, torch.fx.Node) and _is_zeros_like_of(v_prev, pattern.linear_node):
+            nodes.add(v_prev)
+    return nodes
+
+
+def _external_linear_lif_window_users(window: TemporalLinearLifWindow) -> List[torch.fx.Node]:
+    replaceable = _replaceable_linear_lif_window_nodes(window)
+    users: List[torch.fx.Node] = []
+    for user in window.patterns[-1].v_getitem.users:
+        if user not in replaceable:
+            users.append(user)
+    return users
+
+
+def _select_linear_lif_temporal_insert_anchor(
+    gm: torch.fx.GraphModule,
+    window: TemporalLinearLifWindow,
+    inputs: List[Any],
+) -> Tuple[Optional[torch.fx.Node], str, str]:
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    first = window.patterns[0].linear_node
+    first_order = order[first]
+    replaceable = _replaceable_linear_lif_window_nodes(window)
+    input_nodes = [value for value in inputs if isinstance(value, torch.fx.Node)]
+    for node in input_nodes:
+        if node in replaceable:
+            return None, "skip", f"input {node.name} is produced by nodes being replaced"
+    spike_external_users = _external_spike_users_by_pattern(window.patterns, replaceable)
+    unremappable = _unremappable_spike_external_user_reason(spike_external_users, inputs)
+    if unremappable:
+        return None, "skip", unremappable
+    late_inputs = [node for node in input_nodes if order.get(node, -1) >= first_order]
+    if not late_inputs:
+        return first, "before", ""
+    anchor = max(late_inputs, key=lambda node: order[node])
+    anchor_order = order[anchor]
+    early_users = [
+        user.name
+        for user in _external_linear_lif_window_users(window)
+        if order.get(user, anchor_order + 1) <= anchor_order
+    ]
+    if early_users:
+        return None, "skip", f"external users {early_users} appear before latest input {anchor.name}"
+    return anchor, "after", ""
+
+
+def _cleanup_linear_lif_window_nodes(gm: torch.fx.GraphModule, window: TemporalLinearLifWindow):
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    candidates = []
+    for pattern in window.patterns:
+        candidates.extend([pattern.spike_getitem, pattern.v_getitem, pattern.lif_node, pattern.linear_node])
+        v_prev = pattern.lif_node.args[1] if len(pattern.lif_node.args) > 1 else None
+        if isinstance(v_prev, torch.fx.Node) and _is_zeros_like_of(v_prev, pattern.linear_node):
+            candidates.append(v_prev)
+    unique = []
+    seen = set()
+    for node in candidates:
+        if isinstance(node, torch.fx.Node) and node not in seen and node in order:
+            unique.append(node)
+            seen.add(node)
+    for node in sorted(unique, key=lambda n: order[n], reverse=True):
+        _erase_if_unused(gm, node)
+
+
+_TEMPORAL_FUSED_STATE_OP_TARGETS = {
+    "snn_custom.fused_temporal_conv_lif_state.default",
+    "snn_custom.fused_temporal_conv_add_lif_state.default",
+    "snn_custom.fused_temporal_lif_state.default",
+    "snn_custom.fused_temporal_linear_lif_state.default",
+    "snn_custom.fused_temporal_linear_lif_state_packed.default",
+    "snn_custom.fused_temporal_lif_avgpool_linear.default",
+    "snn_custom.fused_temporal_lif_tail.default",
+}
+
+
+def _is_temporal_fused_v_final_node(node) -> bool:
+    if not isinstance(node, torch.fx.Node) or node.op != "call_function":
+        return False
+    if _getitem_index(node) != 1 or not node.args:
+        return False
+    producer = node.args[0]
+    return (
+        isinstance(producer, torch.fx.Node)
+        and producer.op == "call_function"
+        and str(producer.target) in _TEMPORAL_FUSED_STATE_OP_TARGETS
+    )
+
+
+def _materialize_temporal_fused_v_init(
+    gm: torch.fx.GraphModule,
+    v_init,
+    *,
+    origin: str,
+):
+    return v_init
+
+
+def _materialize_temporal_fused_v_final(
+    gm: torch.fx.GraphModule,
+    v_final: torch.fx.Node,
+    *,
+    enabled: bool,
+    origin: str,
+) -> torch.fx.Node:
+    return v_final
+
+
+def _insert_size_after(gm: torch.fx.GraphModule, tensor_node: torch.fx.Node, dim: int, prev: torch.fx.Node) -> torch.fx.Node:
+    with gm.graph.inserting_after(prev):
+        size_node = gm.graph.call_method("size", args=(tensor_node, dim))
+    return size_node
+
+
+def _as_pair(value) -> Tuple[int, int]:
+    if isinstance(value, int):
+        return int(value), int(value)
+    return int(value[0]), int(value[1])
+
+
+def _insert_binary_after(
+    gm: torch.fx.GraphModule,
+    target,
+    lhs,
+    rhs,
+    prev: torch.fx.Node,
+    name: str,
+) -> torch.fx.Node:
+    with gm.graph.inserting_after(prev):
+        node = gm.graph.call_function(target, args=(lhs, rhs))
+        node.name = name
+    return node
+
+
+def _insert_conv_out_dim_after(
+    gm: torch.fx.GraphModule,
+    input_dim,
+    *,
+    kernel: int,
+    stride: int,
+    padding: int,
+    dilation: int,
+    prev: torch.fx.Node,
+    name: str,
+) -> torch.fx.Node:
+    # (input + 2 * padding - dilation * (kernel - 1) - 1) // stride + 1
+    node = _insert_binary_after(gm, operator.add, input_dim, 2 * int(padding), prev, f"{name}_pad")
+    node = _insert_binary_after(gm, operator.sub, node, int(dilation) * (int(kernel) - 1), node, f"{name}_kernel")
+    node = _insert_binary_after(gm, operator.sub, node, 1, node, f"{name}_minus_one")
+    node = _insert_binary_after(gm, operator.floordiv, node, int(stride), node, f"{name}_div")
+    node = _insert_binary_after(gm, operator.add, node, 1, node, name)
+    return node
+
+
+def _insert_temporal_conv_lif_out_buffers(
+    gm: torch.fx.GraphModule,
+    x_seq: torch.fx.Node,
+    *,
+    T: int,
+    out_channels: int,
+    kernel_hw: Tuple[int, int],
+    stride,
+    padding,
+    dilation,
+) -> Tuple[torch.fx.Node, torch.fx.Node]:
+    stride_h, stride_w = _as_pair(stride)
+    pad_h, pad_w = _as_pair(padding)
+    dil_h, dil_w = _as_pair(dilation)
+    k_h, k_w = int(kernel_hw[0]), int(kernel_hw[1])
+    n = _insert_size_after(gm, x_seq, 1, x_seq)
+    h = _insert_size_after(gm, x_seq, 3, n)
+    w = _insert_size_after(gm, x_seq, 4, h)
+    out_h = _insert_conv_out_dim_after(
+        gm,
+        h,
+        kernel=k_h,
+        stride=stride_h,
+        padding=pad_h,
+        dilation=dil_h,
+        prev=w,
+        name=f"{x_seq.name}_out_h",
+    )
+    out_w = _insert_conv_out_dim_after(
+        gm,
+        w,
+        kernel=k_w,
+        stride=stride_w,
+        padding=pad_w,
+        dilation=dil_w,
+        prev=out_h,
+        name=f"{x_seq.name}_out_w",
+    )
+    with gm.graph.inserting_after(out_w):
+        spike_out = gm.graph.call_method("new_empty", args=(x_seq, (int(T), n, int(out_channels), out_h, out_w)))
+        spike_out.name = f"{x_seq.name}_spike_out"
+    with gm.graph.inserting_after(spike_out):
+        v_out = gm.graph.call_method("new_empty", args=(x_seq, (n, int(out_channels), out_h, out_w)))
+        v_out.name = f"{x_seq.name}_v_out"
+    return spike_out, v_out
+
+
+def _insert_temporal_linear_lif_out_buffers(
+    gm: torch.fx.GraphModule,
+    x_seq: torch.fx.Node,
+    weight,
+    *,
+    T: int,
+) -> Tuple[torch.fx.Node, torch.fx.Node]:
+    n = _insert_size_after(gm, x_seq, 1, x_seq)
+    if isinstance(weight, torch.fx.Node):
+        out_features = _insert_size_after(gm, weight, 0, n)
+        prev = out_features
+    else:
+        out_features = int(weight.shape[0])
+        prev = n
+    with gm.graph.inserting_after(prev):
+        spike_out = gm.graph.call_method("new_empty", args=(x_seq, (int(T), n, out_features)))
+        spike_out.name = f"{x_seq.name}_spike_out"
+    with gm.graph.inserting_after(spike_out):
+        v_out = gm.graph.call_method("new_empty", args=(x_seq, (n, out_features)))
+        v_out.name = f"{x_seq.name}_v_out"
+    return spike_out, v_out
+
+
+def _clone_temporal_state_after(
+    gm: torch.fx.GraphModule,
+    state_node: torch.fx.Node,
+    after_node: torch.fx.Node,
+    *,
+    name: str,
+) -> torch.fx.Node:
+    with gm.graph.inserting_after(after_node):
+        cloned = gm.graph.call_function(torch.clone, args=(state_node,))
+        cloned.name = name
+        cloned.meta["chronos_origin"] = "temporal_fused_state_cudagraph_pool_clone"
+    return cloned
+
+
+def _is_get_attr_scalar_zero(gm: torch.fx.GraphModule, node) -> bool:
+    if not isinstance(node, torch.fx.Node) or node.op != "get_attr":
+        return False
+    try:
+        value = getattr(gm, str(node.target))
+    except AttributeError:
+        return False
+    if not isinstance(value, torch.Tensor) or value.numel() != 1:
+        return False
+    try:
+        return float(value.detach().cpu().item()) == 0.0
+    except Exception:
+        return False
+
+
+def _materialize_zero_scalar_like_after(
+    gm: torch.fx.GraphModule,
+    like_node: torch.fx.Node,
+    after_node: torch.fx.Node,
+    *,
+    name: str,
+) -> torch.fx.Node:
+    with gm.graph.inserting_after(after_node):
+        zero = gm.graph.call_method("new_zeros", args=(like_node, ()))
+        zero.name = name
+        zero.meta["chronos_origin"] = "temporal_linear_lif_device_scalar_v_init"
+    return zero
+
+
+def _make_temporal_avgpool_flatten_x_seq(
+    gm: torch.fx.GraphModule,
+    patterns: List[TemporalLinearLifPattern],
+    anchor: torch.fx.Node,
+    insert_mode: str,
+) -> Tuple[Optional[torch.fx.Node], List[torch.fx.Node], str]:
+    matches = []
+    for pattern in patterns:
+        match = _match_temporal_stack_avgpool_flatten(pattern.linear_input)
+        if match is None:
+            return None, [], "linear input is not temporal_stack[t] -> adaptive_avg_pool2d(1x1) -> flatten"
+        matches.append(match)
+
+    stack_node = matches[0][0]
+    if any(match[0] is not stack_node for match in matches):
+        return None, [], "linear inputs come from different temporal stacks"
+    timesteps = [match[3] for match in matches]
+    if timesteps != list(range(len(patterns))):
+        return None, [], f"temporal stack timesteps are not contiguous from zero: {timesteps}"
+
+    insert_ctx = gm.graph.inserting_before(anchor) if insert_mode == "before" else gm.graph.inserting_after(anchor)
+    with insert_ctx:
+        stack_batched = gm.graph.call_function(torch.flatten, args=(stack_node, 0, 1))
+        stack_batched.name = f"{stack_node.name}_temporal_avgpool_input_batched"
+        stack_batched.meta["chronos_temporal_layout"] = "batched_tn"
+        stack_batched.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
+        stack_batched.meta["chronos_T"] = len(patterns)
+
+    with gm.graph.inserting_after(stack_batched):
+        pooled_batched = gm.graph.call_function(F.adaptive_avg_pool2d, args=(stack_batched, (1, 1)))
+        pooled_batched.name = f"{stack_node.name}_temporal_avgpool_batched"
+        pooled_batched.meta["chronos_temporal_layout"] = "batched_tn"
+        pooled_batched.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
+        pooled_batched.meta["chronos_T"] = len(patterns)
+
+    with gm.graph.inserting_after(pooled_batched):
+        flat_batched = gm.graph.call_function(torch.flatten, args=(pooled_batched, 1, -1))
+        flat_batched.name = f"{stack_node.name}_temporal_flatten_batched"
+        flat_batched.meta["chronos_temporal_layout"] = "batched_tn"
+        flat_batched.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
+        flat_batched.meta["chronos_T"] = len(patterns)
+
+    with gm.graph.inserting_after(flat_batched):
+        x_seq = gm.graph.call_function(torch.unflatten, args=(flat_batched, 0, (len(patterns), -1)))
+        x_seq.name = f"{patterns[0].linear_node.name}_temporal_avgpool_flatten_x_seq"
+        x_seq.meta["chronos_temporal_layout"] = "stack"
+        x_seq.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
+        x_seq.meta["chronos_T"] = len(patterns)
+
+    cleanup_nodes = []
+    for _stack, spike_t, pool_node, _timestep in matches:
+        cleanup_nodes.extend([spike_t, pool_node])
+    cleanup_nodes.extend([pattern.linear_input for pattern in patterns])
+    return x_seq, cleanup_nodes, ""
+
+
+def _cleanup_extra_nodes(gm: torch.fx.GraphModule, nodes: List[torch.fx.Node]):
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    unique = []
+    seen = set()
+    for node in nodes:
         if isinstance(node, torch.fx.Node) and node not in seen and node in order:
             unique.append(node)
             seen.add(node)
@@ -1331,22 +1978,49 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
             v_init = _resolved_replacement_node(first.lif_node.args[1])
             if isinstance(v_init, torch.fx.Node) and _is_zeros_like_of(v_init, first.bn_node):
                 v_init = _materialize_scalar_zero_v_init(gm, first.conv_node, folded_weight)
+            v_init = _materialize_temporal_fused_v_init(
+                gm,
+                v_init,
+                origin="temporal_conv_lif_cross_window_v_clone",
+            )
 
             weight_attr = add_tensor_attr(gm, "_fx_temporal_folded_conv_bn_weight", folded_weight)
             bias_attr = add_tensor_attr(gm, "_fx_temporal_folded_conv_bn_bias", folded_bias)
             weight_node = _insert_get_attr_before(gm, first.conv_node, weight_attr)
             bias_node = _insert_get_attr_before(gm, first.conv_node, bias_attr)
-            xs = [pattern.conv_input for pattern in patterns]
-            ok, reason = _all_inputs_available_before(gm, xs + [v_init, weight_node, bias_node], first.conv_node)
-            if not ok:
-                raise ValueError("scheduled inputs are not available before first conv; " + reason)
+            xs = [_resolved_replacement_node(pattern.conv_input) for pattern in patterns]
+            fused_inputs = xs + [v_init, weight_node, bias_node]
+            anchor, insert_mode, reason = _select_temporal_conv_lif_insert_anchor(gm, window, fused_inputs)
+            if anchor is None:
+                raise ValueError("cannot find legal temporal conv lif insertion point; " + reason)
             v_threshold, v_reset, tau, detach_reset = first.lif_params
 
-            with gm.graph.inserting_before(first.conv_node):
-                temporal_tuple = gm.graph.call_function(
-                    torch.ops.snn_custom.fused_temporal_conv_lif_state.default,
+            insert_ctx = gm.graph.inserting_before(anchor) if insert_mode == "before" else gm.graph.inserting_after(anchor)
+            with insert_ctx:
+                x_seq = gm.graph.call_function(torch.stack, args=(xs, 0))
+                x_seq.name = f"{first.conv_node.name}_temporal_conv_lif_x_seq"
+                x_seq.meta["chronos_temporal_layout"] = "stack"
+                x_seq.meta["chronos_origin"] = "temporal_conv_lif_packed_out_input"
+                x_seq.meta["chronos_T"] = len(xs)
+
+            spike_stack, v_final = _insert_temporal_conv_lif_out_buffers(
+                gm,
+                x_seq,
+                T=len(xs),
+                out_channels=int(folded_weight.shape[0]),
+                kernel_hw=tuple(folded_weight.shape[-2:]),
+                stride=stride,
+                padding=padding,
+                dilation=dilation,
+            )
+            spike_stack.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state_spike_stack"
+            v_final.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state_v_final"
+
+            with gm.graph.inserting_after(v_final):
+                temporal_op = gm.graph.call_function(
+                    torch.ops.snn_custom.fused_temporal_conv_lif_state_packed_out.default,
                     args=(
-                        xs,
+                        x_seq,
                         weight_node,
                         bias_node,
                         v_init,
@@ -1358,23 +2032,45 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
                         v_reset,
                         tau,
                         detach_reset,
+                        spike_stack,
+                        v_final,
                     ),
                 )
-                temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state"
-                spike_stack = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 0))
-                spike_stack.name = f"{temporal_tuple.name}_spike_stack"
-                v_final = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 1))
-                v_final.name = f"{temporal_tuple.name}_v_final"
+                temporal_op.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state_out"
+            v_final_for_users = _clone_temporal_state_after(
+                gm,
+                v_final,
+                temporal_op,
+                name=f"{v_final.name}_pool_safe",
+            )
+
+            ok, reason = _all_inputs_available_for_node(gm, xs, x_seq)
+            if not ok:
+                if len(temporal_op.users) == 0:
+                    gm.graph.erase_node(temporal_op)
+                raise ValueError("cannot find legal temporal conv lif insertion point; " + reason)
+            ok, reason = _all_inputs_available_for_node(
+                gm,
+                [x_seq, v_init, weight_node, bias_node],
+                temporal_op,
+            )
+            if not ok:
+                if len(temporal_op.users) == 0:
+                    gm.graph.erase_node(temporal_op)
+                raise ValueError("cannot find legal temporal conv lif insertion point; " + reason)
 
             for index, pattern in enumerate(patterns):
+                ok, reason = _all_inputs_available_before(gm, [spike_stack], pattern.spike_getitem)
+                if not ok:
+                    raise ValueError("cannot place fused spike before original spike users; " + reason)
                 with gm.graph.inserting_before(pattern.spike_getitem):
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
-                    spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
+                    spike_k.name = f"{temporal_op.name}_spike_t{index}"
                 pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
-            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
-            patterns[-1].v_getitem.replace_all_uses_with(v_final)
+            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final_for_users
+            patterns[-1].v_getitem.replace_all_uses_with(v_final_for_users)
             _cleanup_window_nodes(gm, window)
 
             stats.temporal_replaced_windows += 1
@@ -1507,6 +2203,11 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
             v_init = _resolved_replacement_node(first.lif_node.args[1])
             if isinstance(v_init, torch.fx.Node) and _is_zeros_like_of(v_init, first.add_node):
                 v_init = _materialize_scalar_zero_v_init(gm, first.conv_node, folded_weight)
+            v_init = _materialize_temporal_fused_v_init(
+                gm,
+                v_init,
+                origin="temporal_residual_conv_lif_cross_window_v_clone",
+            )
 
             xs = [_resolved_replacement_node(pattern.conv_input) for pattern in patterns]
             residuals = [_resolved_replacement_node(pattern.residual_node) for pattern in patterns]
@@ -1573,6 +2274,12 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
             with gm.graph.inserting_after(spike_stack):
                 v_final = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 1))
                 v_final.name = f"{temporal_tuple.name}_v_final"
+            v_final = _materialize_temporal_fused_v_final(
+                gm,
+                v_final,
+                enabled=len(patterns) > 1,
+                origin="temporal_residual_conv_lif_v_final_graph_output_clone",
+            )
 
             prev_insert = v_final
             for index, pattern in enumerate(patterns):
@@ -1658,6 +2365,11 @@ def rewrite_temporal_lif_state_to_fused(
             first = patterns[0]
             xs = [_resolved_replacement_node(pattern.input_node) for pattern in patterns]
             v_init = _resolved_replacement_node(first.v_prev_node)
+            v_init = _materialize_temporal_fused_v_init(
+                gm,
+                v_init,
+                origin="temporal_lif_cross_window_v_clone",
+            )
             anchor, insert_mode, reason = _select_lif_temporal_insert_anchor(gm, window, xs + [v_init])
             if anchor is None:
                 if "replacement would create cycle" in reason:
@@ -1696,6 +2408,12 @@ def rewrite_temporal_lif_state_to_fused(
             with gm.graph.inserting_after(spike_stack):
                 v_final = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 1))
                 v_final.name = f"{temporal_tuple.name}_v_final"
+            v_final = _materialize_temporal_fused_v_final(
+                gm,
+                v_final,
+                enabled=len(patterns) > 1,
+                origin="temporal_lif_v_final_graph_output_clone",
+            )
 
             prev_insert = v_final
             for index, pattern in enumerate(patterns):
@@ -1738,6 +2456,196 @@ def rewrite_temporal_lif_state_to_fused(
     return stats
 
 
+def rewrite_temporal_linear_lif_state_to_fused(
+    gm: torch.fx.GraphModule,
+    temporal_windows: List[TemporalLinearLifWindow],
+    max_patterns: int,
+) -> TemporalLinearLifRewriteStats:
+    stats = TemporalLinearLifRewriteStats(
+        temporal_linear_lif_groups=len({window.layer_id for window in temporal_windows}),
+        temporal_linear_lif_windows=len(temporal_windows),
+        temporal_linear_lif_total_windows=len(temporal_windows),
+    )
+    replaced_patterns = 0
+    for window in temporal_windows:
+        patterns = window.patterns
+        if replaced_patterns + len(patterns) > max_patterns:
+            stats.skip(window, "max_patterns")
+            continue
+        try:
+            if not _same_linear_lif_params(patterns):
+                stats.skip(window, "linear/lif params differ inside temporal linear lif window")
+                continue
+            if not _same_linear_lif_shapes(patterns):
+                stats.skip(window, "linear input/output shapes differ inside temporal linear lif window")
+                continue
+            ok, reason = check_temporal_linear_lif_state_chain(patterns)
+            if not ok:
+                stats.skip(window, f"state chain not continuous: {reason}")
+                continue
+            ok, reason = _linear_lif_middle_v_next_has_no_external_uses(window)
+            if not ok:
+                stats.skip(window, reason)
+                continue
+            spike_external_users = _external_spike_users_by_pattern(
+                patterns,
+                _replaceable_linear_lif_window_nodes(window),
+            )
+            remappable_spike_users = _unique_nodes(
+                [user for users in spike_external_users.values() for user in users]
+            )
+
+            first = patterns[0]
+            xs = [_resolved_replacement_node(pattern.linear_input) for pattern in patterns]
+            weight = _resolved_replacement_node(first.weight)
+            bias = _resolved_replacement_node(first.bias) if isinstance(first.bias, torch.fx.Node) else first.bias
+            v_init = _resolved_replacement_node(first.v_prev_node)
+            if isinstance(v_init, torch.fx.Node) and _is_zeros_like_of(v_init, first.linear_node):
+                zero_attr = add_tensor_attr(gm, "_fx_temporal_linear_lif_zero_scalar_v_init", torch.tensor(0.0))
+                v_init = _insert_get_attr_before(gm, first.linear_node, zero_attr)
+            v_init = _materialize_temporal_fused_v_init(
+                gm,
+                v_init,
+                origin="temporal_linear_lif_cross_window_v_clone",
+            )
+
+            temporal_stack_match = [_match_temporal_stack_avgpool_flatten(pattern.linear_input) for pattern in patterns]
+            use_temporal_avgpool_flatten = (
+                all(match is not None for match in temporal_stack_match)
+                and len({match[0] for match in temporal_stack_match if match is not None}) == 1
+                and [match[3] for match in temporal_stack_match if match is not None] == list(range(len(patterns)))
+            )
+            linear_data_inputs = [temporal_stack_match[0][0]] if use_temporal_avgpool_flatten else xs
+
+            input_values = linear_data_inputs + [weight, v_init]
+            if isinstance(bias, torch.fx.Node):
+                input_values.append(bias)
+            anchor, insert_mode, reason = _select_linear_lif_temporal_insert_anchor(gm, window, input_values)
+            if anchor is None:
+                if "replacement would create cycle" in reason:
+                    stats.temporal_linear_lif_unremappable_external_users += len(remappable_spike_users)
+                stats.skip(window, "cannot find legal temporal linear lif insertion point; " + reason)
+                continue
+            v_threshold, v_reset, tau, detach_reset = first.lif_params
+
+            extra_cleanup_nodes: List[torch.fx.Node] = []
+            if use_temporal_avgpool_flatten:
+                x_seq, extra_cleanup_nodes, reason = _make_temporal_avgpool_flatten_x_seq(
+                    gm,
+                    patterns,
+                    anchor,
+                    insert_mode,
+                )
+                if x_seq is None:
+                    stats.skip(window, "cannot propagate temporal avgpool/flatten: " + reason)
+                    continue
+            else:
+                insert_ctx = gm.graph.inserting_before(anchor) if insert_mode == "before" else gm.graph.inserting_after(anchor)
+                with insert_ctx:
+                    x_seq = gm.graph.call_function(torch.stack, args=(xs, 0))
+                    x_seq.name = f"{first.linear_node.name}_temporal_linear_lif_x_seq"
+                    x_seq.meta["chronos_temporal_layout"] = "stack"
+                    x_seq.meta["chronos_origin"] = "temporal_linear_lif_packed_input"
+                    x_seq.meta["chronos_T"] = len(xs)
+
+            materialize_scalar_v_init = _is_get_attr_scalar_zero(gm, v_init)
+
+            spike_stack, v_final = _insert_temporal_linear_lif_out_buffers(
+                gm,
+                x_seq,
+                weight,
+                T=len(patterns),
+            )
+            spike_stack.name = f"{first.linear_node.name}_temporal_fused_linear_lif_state_spike_stack"
+            v_final.name = f"{first.linear_node.name}_temporal_fused_linear_lif_state_v_final"
+
+            temporal_insert_after = v_final
+            if materialize_scalar_v_init:
+                v_init = _materialize_zero_scalar_like_after(
+                    gm,
+                    x_seq,
+                    v_final,
+                    name=f"{first.linear_node.name}_temporal_linear_lif_v_init_device",
+                )
+                temporal_insert_after = v_init
+
+            with gm.graph.inserting_after(temporal_insert_after):
+                temporal_op = gm.graph.call_function(
+                    torch.ops.snn_custom.fused_temporal_linear_lif_state_packed_out.default,
+                    args=(x_seq, weight, bias, v_init, v_threshold, v_reset, tau, detach_reset, spike_stack, v_final),
+                )
+                temporal_op.name = f"{first.linear_node.name}_temporal_fused_linear_lif_state_out"
+            v_final_for_users = _clone_temporal_state_after(
+                gm,
+                v_final,
+                temporal_op,
+                name=f"{v_final.name}_pool_safe",
+            )
+
+            x_seq_inputs = linear_data_inputs if use_temporal_avgpool_flatten else xs
+            ok, reason = _all_inputs_available_for_node(gm, x_seq_inputs, x_seq)
+            if not ok:
+                if len(temporal_op.users) == 0:
+                    gm.graph.erase_node(temporal_op)
+                if len(x_seq.users) == 0:
+                    gm.graph.erase_node(x_seq)
+                stats.skip(window, "cannot find legal temporal linear lif insertion point; " + reason)
+                continue
+            fused_input_values = [x_seq, weight, v_init]
+            if isinstance(bias, torch.fx.Node):
+                fused_input_values.append(bias)
+            ok, reason = _all_inputs_available_for_node(gm, fused_input_values, temporal_op)
+            if not ok:
+                if len(temporal_op.users) == 0:
+                    gm.graph.erase_node(temporal_op)
+                if len(x_seq.users) == 0:
+                    gm.graph.erase_node(x_seq)
+                stats.skip(window, "cannot find legal temporal linear lif insertion point; " + reason)
+                continue
+
+            prev_insert = v_final_for_users
+            for index, pattern in enumerate(patterns):
+                with gm.graph.inserting_after(prev_insert):
+                    spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
+                    spike_k.name = f"{temporal_op.name}_spike_t{index}"
+                prev_insert = spike_k
+                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
+                pattern.spike_getitem.replace_all_uses_with(spike_k)
+
+            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final_for_users
+            patterns[-1].v_getitem.replace_all_uses_with(v_final_for_users)
+            if remappable_spike_users:
+                _move_early_remapped_users_after(gm, remappable_spike_users, prev_insert)
+                stats.temporal_linear_lif_remapped_spike_external_users += len(remappable_spike_users)
+            _cleanup_linear_lif_window_nodes(gm, window)
+            if extra_cleanup_nodes:
+                _cleanup_extra_nodes(gm, extra_cleanup_nodes)
+
+            stats.temporal_linear_lif_rewritten_windows += 1
+            stats.temporal_linear_lif_replaced_patterns += len(patterns)
+            replaced_patterns += len(patterns)
+            message = (
+                f"[REWRITE][TEMPORAL_LINEAR_LIF] layer={window.layer_id}, window={window.window_id}, "
+                f"size={len(patterns)}, first={patterns[0].lif_node.name}, last={patterns[-1].lif_node.name}"
+            )
+            stats.log.append(message)
+            print(message)
+        except Exception as exc:
+            reason = str(exc)
+            stats.skip(window, reason)
+            if not isinstance(exc, ValueError):
+                traceback.print_exc()
+
+    try:
+        gm.graph.lint()
+        gm.recompile()
+    except Exception:
+        print("[WARN][TEMPORAL_LINEAR_LIF] graph lint/recompile failed after temporal Linear+LIF rewrite")
+        traceback.print_exc()
+        raise
+    return stats
+
+
 def rewrite_temporal_lif_avgpool_linear_to_fused(
     gm: torch.fx.GraphModule,
     temporal_windows: List[TemporalLifAvgPoolLinearWindow],
@@ -1774,6 +2682,11 @@ def rewrite_temporal_lif_avgpool_linear_to_fused(
             last = patterns[-1]
             xs = [pattern.input_node for pattern in patterns]
             v_init = first.v_prev_node
+            v_init = _materialize_temporal_fused_v_init(
+                gm,
+                v_init,
+                origin="temporal_lif_avgpool_linear_cross_window_v_clone",
+            )
             fc_bias = first.fc_bias
             fc_inputs = [first.fc_weight]
             if isinstance(fc_bias, torch.fx.Node):
@@ -1818,6 +2731,12 @@ def rewrite_temporal_lif_avgpool_linear_to_fused(
             with gm.graph.inserting_after(out_sum):
                 v_final = gm.graph.call_function(operator.getitem, args=(temporal_tuple, 1))
                 v_final.name = f"{temporal_tuple.name}_v_final"
+            v_final = _materialize_temporal_fused_v_final(
+                gm,
+                v_final,
+                enabled=len(patterns) > 1,
+                origin="temporal_lif_avgpool_linear_v_final_graph_output_clone",
+            )
 
             final_acc = out_sum
             if isinstance(acc_prev, torch.fx.Node):
@@ -1928,6 +2847,36 @@ def dump_temporal_lif_avgpool_linear_windows(windows: List[TemporalLifAvgPoolLin
     path.write_text("\n".join(lines), encoding="utf-8")
 
 
+def dump_temporal_linear_lif_patterns(groups: List[TemporalLinearLifGroup], path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for group in groups:
+        lines.append(f"layer_id: {group.layer_id}")
+        lines.append(f"  count={len(group.patterns)}")
+        for pattern in group.patterns:
+            lines.append(
+                "  "
+                f"pattern_{pattern.timestep_index}: linear={pattern.linear_node.name}, "
+                f"lif={pattern.lif_node.name}, spike={pattern.spike_getitem.name}, "
+                f"v={pattern.v_getitem.name}, v_prev={getattr(pattern.v_prev_node, 'name', pattern.v_prev_node)}"
+            )
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def dump_temporal_linear_lif_windows(windows: List[TemporalLinearLifWindow], path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = []
+    for index, window in enumerate(windows):
+        lines.append(f"window_{index}:")
+        lines.append(f"  layer_id={window.layer_id}")
+        lines.append(f"  window_id={window.window_id}")
+        lines.append(f"  size={len(window.patterns)}")
+        lines.append(f"  patterns={[pattern.lif_node.name for pattern in window.patterns]}")
+        lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
 def dump_temporal_rewrite_log(log: List[str], path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(log) + ("\n" if log else ""), encoding="utf-8")
@@ -1937,7 +2886,12 @@ def count_fused_temporal_conv_lif_state_nodes(gm: torch.fx.GraphModule) -> int:
     return sum(
         1
         for node in gm.graph.nodes
-        if node.op == "call_function" and str(node.target) == "snn_custom.fused_temporal_conv_lif_state.default"
+        if node.op == "call_function"
+        and str(node.target)
+        in {
+            "snn_custom.fused_temporal_conv_lif_state.default",
+            "snn_custom.fused_temporal_conv_lif_state_packed_out.default",
+        }
     )
 
 
@@ -1962,6 +2916,20 @@ def count_fused_temporal_lif_avgpool_linear_nodes(gm: torch.fx.GraphModule) -> i
         1
         for node in gm.graph.nodes
         if node.op == "call_function" and str(node.target) == "snn_custom.fused_temporal_lif_avgpool_linear.default"
+    )
+
+
+def count_fused_temporal_linear_lif_state_nodes(gm: torch.fx.GraphModule) -> int:
+    return sum(
+        1
+        for node in gm.graph.nodes
+        if node.op == "call_function"
+        and str(node.target)
+        in {
+            "snn_custom.fused_temporal_linear_lif_state.default",
+            "snn_custom.fused_temporal_linear_lif_state_packed.default",
+            "snn_custom.fused_temporal_linear_lif_state_packed_out.default",
+        }
     )
 
 
