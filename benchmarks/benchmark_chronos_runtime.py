@@ -269,7 +269,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     cases = {}
     execution_modes = {}
 
-    if args.include_s_cases:
+    if args.include_s_cases and not args.chronos_only:
         cases["baseline_single_step_mode_eager"] = (
             SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(
                 device=args.device,
@@ -290,31 +290,32 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         )
         execution_modes["baseline_single_step_mode_compile"] = "single_step_mode_loop"
 
-    cases["baseline_multi_step_mode_eager"] = (
-        MultiStepModeWrapper(
-            copy.deepcopy(base_layer_m),
-            args.T,
-        ).to(
-            device=args.device,
-            dtype=dtype,
-        ).eval(),
-        False,
-        None,
-    )
-    execution_modes["baseline_multi_step_mode_eager"] = "multi_step_mode_native"
+    if not args.chronos_only:
+        cases["baseline_multi_step_mode_eager"] = (
+            MultiStepModeWrapper(
+                copy.deepcopy(base_layer_m),
+                args.T,
+            ).to(
+                device=args.device,
+                dtype=dtype,
+            ).eval(),
+            False,
+            None,
+        )
+        execution_modes["baseline_multi_step_mode_eager"] = "multi_step_mode_native"
 
-    cases["baseline_multi_step_mode_compile"] = (
-        MultiStepModeWrapper(
-            copy.deepcopy(base_layer_m),
-            args.T,
-        ).to(
-            device=args.device,
-            dtype=dtype,
-        ).eval(),
-        True,
-        None,
-    )
-    execution_modes["baseline_multi_step_mode_compile"] = "multi_step_mode_native"
+        cases["baseline_multi_step_mode_compile"] = (
+            MultiStepModeWrapper(
+                copy.deepcopy(base_layer_m),
+                args.T,
+            ).to(
+                device=args.device,
+                dtype=dtype,
+            ).eval(),
+            True,
+            None,
+        )
+        execution_modes["baseline_multi_step_mode_compile"] = "multi_step_mode_native"
 
     if args.sweep_temporal_windows:
         candidate_windows = args.temporal_window_candidates
@@ -581,9 +582,12 @@ def parse_args():
 
     parser.add_argument(
         "--rewrite-backend-mode",
-        choices=("eager", "inductor"),
+        choices=("eager", "inductor", "standalone"),
         default="inductor",
     )
+    parser.add_argument("--fx-standalone-streams", type=int, default=1)
+    parser.add_argument("--fx-standalone-cudagraph", action="store_true")
+    parser.add_argument("--fx-standalone-debug", action="store_true")
 
     parser.add_argument("--strict-triton", action="store_true")
 
@@ -660,6 +664,12 @@ def parse_args():
     parser.add_argument("--max-patterns", type=int, default=1000)
 
     parser.add_argument("--include-s-cases", action="store_true")
+
+    parser.add_argument(
+        "--chronos-only",
+        action="store_true",
+        help="Run only Chronos temporal-fusion cases and skip all baseline cases.",
+    )
 
     parser.add_argument("--require-direct-resnet32-api", action="store_true")
 

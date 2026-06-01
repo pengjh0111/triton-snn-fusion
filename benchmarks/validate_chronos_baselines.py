@@ -22,6 +22,7 @@ torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
 
 import runtime.snn_custom_ops as snn_custom_ops
+from runtime.fx_standalone_executor import build_fx_standalone_backend
 from compiler.chronos_compile import (
     build_chronos_compile_config,
     compile_with_chronos_options,
@@ -1051,6 +1052,14 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
 
         if args.rewrite_backend_mode == "eager":
             return gm.forward
+        if args.rewrite_backend_mode == "standalone":
+            return build_fx_standalone_backend(
+                gm,
+                num_streams=args.fx_standalone_streams,
+                use_cuda_graph=args.fx_standalone_cudagraph,
+                example_inputs=tuple(example_inputs),
+                debug=args.fx_standalone_debug,
+            )
         gm.meta.pop("dynamo_compile_id", None)
         if hasattr(gm, "_param_name_to_source"):
             delattr(gm, "_param_name_to_source")
@@ -1297,7 +1306,10 @@ def parse_args():
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--dtype", choices=("fp32", "fp16"), default="fp32")
     parser.add_argument("--fused-op-backend", choices=("torch", "triton"), default="torch")
-    parser.add_argument("--rewrite-backend-mode", choices=("eager", "inductor"), default="inductor")
+    parser.add_argument("--rewrite-backend-mode", choices=("eager", "inductor", "standalone"), default="inductor")
+    parser.add_argument("--fx-standalone-streams", type=int, default=1)
+    parser.add_argument("--fx-standalone-cudagraph", action="store_true")
+    parser.add_argument("--fx-standalone-debug", action="store_true")
     parser.add_argument("--strict-triton", action="store_true")
     parser.add_argument("--disable-triton-autotune", action="store_true")
     parser.add_argument("--disable-rewrite", action="store_true")
