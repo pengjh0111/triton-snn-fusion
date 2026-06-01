@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from benchmarks.validate_chronos_baselines import ChronosMobileNetV1
+from benchmarks.validate_chronos_baselines import ChronosMobileNetV1, ChronosMobileNetV2
 from kernels.benchmark_conv_lif_temporal_general import (
     _pointwise_config_for_shape,
     get_autotune_best_config,
@@ -30,6 +30,8 @@ from kernels.benchmark_conv_lif_temporal_general import (
 @dataclass(frozen=True)
 class PointwiseShape:
     index: int
+    name: str
+    kind: str
     in_channels: int
     out_channels: int
     height: int
@@ -41,40 +43,74 @@ def _conv_out(size: int, kernel: int, stride: int, padding: int, dilation: int =
     return (size + 2 * padding - dilation * (kernel - 1) - 1) // stride + 1
 
 
-def collect_mobilenet_pointwise_shapes(height: int, width: int, channels: int) -> List[PointwiseShape]:
-    model = ChronosMobileNetV1(channels=channels, lif_impl="chronos").eval()
+def _make_mobilenet_model(model_name: str, *, channels: int):
+    if model_name == "mobilenetv1":
+        return ChronosMobileNetV1(channels=channels, lif_impl="chronos").eval()
+    if model_name == "mobilenetv2":
+        return ChronosMobileNetV2(channels=channels, lif_impl="chronos").eval()
+    raise ValueError(f"unsupported MobileNet model: {model_name}")
+
+
+def _pointwise_kind(in_channels: int, out_channels: int, height: int, width: int) -> str:
+    if out_channels >= 4 * in_channels:
+        return "expand"
+    if in_channels >= 4 * out_channels:
+        return "project"
+    if height <= 7 and out_channels >= 1024:
+        return "final"
+    return "pointwise"
+
+
+def collect_mobilenet_pointwise_shapes(height: int, width: int, channels: int, model_name: str = "mobilenetv1") -> List[PointwiseShape]:
+    model = _make_mobilenet_model(model_name, channels=channels)
     shapes: List[PointwiseShape] = []
-    cur_h, cur_w = height, width
-    for idx, module in enumerate(model.layer):
+    handles = []
+
+    def hook(name: str, module, inputs, output):
         if not hasattr(module, "weight") or module.weight.dim() != 4:
-            continue
+            return
+        x = inputs[0]
+        if not isinstance(x, torch.Tensor) or x.dim() < 4:
+            return
+        cur_h, cur_w = int(x.shape[-2]), int(x.shape[-1])
         weight = module.weight
         kh, kw = weight.shape[2], weight.shape[3]
-        stride_h, stride_w = module.stride
-        pad_h, pad_w = module.padding
         groups = int(module.groups)
         if kh == 1 and kw == 1 and groups == 1:
+            in_channels = int(module.in_channels)
+            out_channels = int(module.out_channels)
             shapes.append(
                 PointwiseShape(
-                    index=idx,
-                    in_channels=int(module.in_channels),
-                    out_channels=int(module.out_channels),
+                    index=len(shapes),
+                    name=name,
+                    kind=_pointwise_kind(in_channels, out_channels, cur_h, cur_w),
+                    in_channels=in_channels,
+                    out_channels=out_channels,
                     height=cur_h,
                     width=cur_w,
                 )
             )
-        cur_h = _conv_out(cur_h, kh, stride_h, pad_h)
-        cur_w = _conv_out(cur_w, kw, stride_w, pad_w)
 
-    merged: Dict[Tuple[int, int, int, int], PointwiseShape] = {}
+    for name, module in model.named_modules():
+        if hasattr(module, "weight") and getattr(module.weight, "dim", lambda: 0)() == 4:
+            handles.append(module.register_forward_hook(lambda m, i, o, name=name: hook(name, m, i, o)))
+    with torch.no_grad():
+        x = torch.zeros(1, 3, int(height), int(width))
+        model(x)
+    for handle in handles:
+        handle.remove()
+
+    merged: Dict[Tuple[int, int, int, int, str], PointwiseShape] = {}
     for shape in shapes:
-        key = (shape.in_channels, shape.out_channels, shape.height, shape.width)
+        key = (shape.in_channels, shape.out_channels, shape.height, shape.width, shape.kind)
         if key not in merged:
             merged[key] = shape
         else:
             prev = merged[key]
             merged[key] = PointwiseShape(
                 prev.index,
+                prev.name,
+                prev.kind,
                 prev.in_channels,
                 prev.out_channels,
                 prev.height,
@@ -239,6 +275,7 @@ def main():
     parser.add_argument("--height", type=int, default=224)
     parser.add_argument("--width", type=int, default=224)
     parser.add_argument("--channels", type=int, default=64)
+    parser.add_argument("--model", choices=("mobilenetv1", "mobilenetv2"), default="mobilenetv1")
     parser.add_argument("--dtype", choices=("fp32", "fp16"), default="fp32")
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeat", type=int, default=20)
@@ -246,22 +283,30 @@ def main():
     parser.add_argument("--acc-limits", type=int, nargs="+", default=[8192, 16384])
     parser.add_argument("--check-autotune", action="store_true")
     parser.add_argument("--sweep", action="store_true")
+    parser.add_argument("--collect-only", action="store_true")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
 
-    shapes = collect_mobilenet_pointwise_shapes(args.height, args.width, args.channels)
+    shapes = collect_mobilenet_pointwise_shapes(args.height, args.width, args.channels, args.model)
     old_weighted = 0.0
     selector_weighted = 0.0
     print(
         f"[POINTWISE_CONFIG_BENCH] T={args.T} batch={args.batch_size} "
         f"input={args.height}x{args.width} dtype={args.dtype} shapes={len(shapes)} acc_limits={args.acc_limits}"
     )
+    if args.collect_only:
+        for shape in shapes:
+            print(
+                f"[POINTWISE_SHAPE] model={args.model} layer={shape.name} kind={shape.kind} T={args.T} N={args.batch_size} "
+                f"Cin={shape.in_channels} Cout={shape.out_channels} H={shape.height} W={shape.width} count={shape.count}"
+            )
+        return
     for shape in shapes:
         print(
-            f"[POINTWISE_SHAPE] layer={shape.index} T={args.T} N={args.batch_size} "
+            f"[POINTWISE_SHAPE] model={args.model} layer={shape.name} kind={shape.kind} T={args.T} N={args.batch_size} "
             f"Cin={shape.in_channels} Cout={shape.out_channels} H={shape.height} W={shape.width} count={shape.count}"
         )
         rows = benchmark_shape(args, shape)
@@ -274,7 +319,7 @@ def main():
             old_weighted += old_ms * shape.count
             selector_weighted += selector_ms * shape.count
             print(
-                f"{shape.in_channels}->{shape.out_channels} {shape.height}x{shape.width} x{shape.count}: "
+                f"{shape.kind} {shape.in_channels}->{shape.out_channels} {shape.height}x{shape.width} x{shape.count}: "
                 f"old_fixed={old_ms:.4f}ms selector_fixed={selector_ms:.4f}ms "
                 f"speedup={old_ms / selector_ms:.3f} cfg={selector_config} "
                 f"corr_allclose={selector_corr['allclose']} v_max={selector_corr['v_max']:.3e}"

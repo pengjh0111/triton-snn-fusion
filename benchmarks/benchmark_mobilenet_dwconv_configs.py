@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from benchmarks.validate_chronos_baselines import ChronosMobileNetV1
+from benchmarks.validate_chronos_baselines import ChronosMobileNetV1, ChronosMobileNetV2
 from kernels.benchmark_conv_lif_temporal_general import run_fused_temporal_general
 
 
@@ -38,8 +38,17 @@ def _conv_out(size: int, kernel: int, stride: int, padding: int, dilation: int =
     return (size + 2 * padding - dilation * (kernel - 1) - 1) // stride + 1
 
 
-def collect_mobilenetv1_depthwise_shapes(
+def _make_mobilenet_model(model_name: str, *, model_channels: int, lif_impl: str):
+    if model_name == "mobilenetv1":
+        return ChronosMobileNetV1(channels=model_channels, step_mode="s", lif_impl=lif_impl)
+    if model_name == "mobilenetv2":
+        return ChronosMobileNetV2(channels=model_channels, step_mode="s", lif_impl=lif_impl)
+    raise ValueError(f"unsupported MobileNet model: {model_name}")
+
+
+def collect_mobilenet_depthwise_shapes(
     *,
+    model_name: str,
     model_channels: int,
     T: int,
     batch_size: int,
@@ -48,12 +57,17 @@ def collect_mobilenetv1_depthwise_shapes(
     lif_impl: str,
     unique: bool,
 ) -> List[DWShape]:
-    model = ChronosMobileNetV1(channels=model_channels, step_mode="s", lif_impl=lif_impl)
-    h, w = int(height), int(width)
+    model = _make_mobilenet_model(model_name, model_channels=model_channels, lif_impl=lif_impl).eval()
     shapes: List[DWShape] = []
-    for idx, module in enumerate(model.layer):
+    handles = []
+
+    def hook(name: str, module, inputs, output):
         if not all(hasattr(module, attr) for attr in ("in_channels", "out_channels", "kernel_size", "stride", "padding", "groups")):
-            continue
+            return
+        x = inputs[0]
+        if not isinstance(x, torch.Tensor) or x.dim() < 4:
+            return
+        h, w = int(x.shape[-2]), int(x.shape[-1])
         kh, kw = tuple(module.kernel_size)
         sh, sw = tuple(module.stride)
         ph, pw = tuple(module.padding)
@@ -72,8 +86,8 @@ def collect_mobilenetv1_depthwise_shapes(
         if is_depthwise:
             shapes.append(
                 DWShape(
-                    name=f"layer_{idx}",
-                    layer_index=idx,
+                    name=name,
+                    layer_index=len(shapes),
                     kernel_key=f"depthwise_k3_s{sh}_p1",
                     T=T,
                     batch=batch_size,
@@ -86,7 +100,16 @@ def collect_mobilenetv1_depthwise_shapes(
                     padding=ph,
                 )
             )
-        h, w = out_h, out_w
+
+    for name, module in model.named_modules():
+        if all(hasattr(module, attr) for attr in ("in_channels", "out_channels", "kernel_size", "stride", "padding", "groups")):
+            handles.append(module.register_forward_hook(lambda m, i, o, name=name: hook(name, m, i, o)))
+    with torch.no_grad():
+        x = torch.zeros(1, 3, int(height), int(width))
+        model(x)
+    for handle in handles:
+        handle.remove()
+
     if not unique:
         return shapes
     by_key: Dict[Tuple[int, int, int, int, int, str], DWShape] = {}
@@ -235,7 +258,8 @@ def benchmark_shape(shape: DWShape, args) -> Dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Sweep MobileNetV1 depthwise temporal ConvLIF Triton configs.")
+    parser = argparse.ArgumentParser(description="Sweep MobileNet depthwise temporal ConvLIF Triton configs.")
+    parser.add_argument("--model", choices=("mobilenetv1", "mobilenetv2"), default="mobilenetv1")
     parser.add_argument("--model-channels", type=int, default=64)
     parser.add_argument("--lif-impl", default="chronos")
     parser.add_argument("--T", type=int, default=4)
@@ -255,11 +279,13 @@ def main():
     parser.add_argument("--kernel-key", choices=("depthwise_k3_s1_p1", "depthwise_k3_s2_p1"), default="")
     parser.add_argument("--progress", type=int, default=0)
     parser.add_argument("--out", default="")
+    parser.add_argument("--collect-only", action="store_true")
     parser.add_argument("--seed", type=int, default=2026)
     args = parser.parse_args()
     if not torch.cuda.is_available():
         raise SystemExit("CUDA is required")
-    shapes = collect_mobilenetv1_depthwise_shapes(
+    shapes = collect_mobilenet_depthwise_shapes(
+        model_name=args.model,
         model_channels=args.model_channels,
         T=args.T,
         batch_size=args.batch_size,
@@ -281,6 +307,12 @@ def main():
             f"out={shape.out_height}x{shape.out_width} occurrences={shape.occurrences}",
             flush=True,
         )
+    if args.collect_only:
+        payload = {"args": vars(args), "shapes": [asdict(shape) for shape in shapes]}
+        if args.out:
+            Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+            Path(args.out).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        return
     results = [benchmark_shape(shape, args) for shape in shapes]
     print("| layer | key | T,N,C,H,W | out | occ | tested | best_ms | best_config |")
     print("|---|---|---|---|---:|---:|---:|---|")

@@ -202,6 +202,20 @@ class RewriteCounters:
     canonicalize_cat_chunk_removed: int = 0
     canonicalize_chunk_cat_removed: int = 0
     canonicalize_getitem_cat_removed: int = 0
+    temporal_mean_rewrites: int = 0
+    temporal_mean_removed_getitems: int = 0
+    temporal_mean_removed_adds: int = 0
+    state_prune_removed_final_return_states: int = 0
+    ir_nodes_before: int = 0
+    ir_nodes_after: int = 0
+    ir_getitem_before: int = 0
+    ir_getitem_after: int = 0
+    ir_add_before: int = 0
+    ir_add_after: int = 0
+    ir_div_before: int = 0
+    ir_div_after: int = 0
+    ir_returned_states_before: int = 0
+    ir_returned_states_after: int = 0
     canonicalize_view_folded: int = 0
     canonicalize_dead_nodes_removed: int = 0
     canonicalize_final_cat_count: int = 0
@@ -979,10 +993,26 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
             gm,
             dump_dir=local_dir,
             strict=False,
+            rewrite_temporal_mean=getattr(args, "enable_temporal_mean_rewrite", False),
+            drop_intermediate_states=getattr(args, "drop_intermediate_states", False),
         )
         counters.canonicalize_cat_chunk_removed += canonicalize_stats.canonicalize_cat_chunk_removed
         counters.canonicalize_chunk_cat_removed += canonicalize_stats.canonicalize_chunk_cat_removed
         counters.canonicalize_getitem_cat_removed += canonicalize_stats.canonicalize_getitem_cat_removed
+        counters.temporal_mean_rewrites += canonicalize_stats.temporal_mean_rewrites
+        counters.temporal_mean_removed_getitems += canonicalize_stats.temporal_mean_removed_getitems
+        counters.temporal_mean_removed_adds += canonicalize_stats.temporal_mean_removed_adds
+        counters.state_prune_removed_final_return_states += canonicalize_stats.state_prune_removed_final_return_states
+        counters.ir_nodes_before += canonicalize_stats.ir_nodes_before
+        counters.ir_nodes_after += canonicalize_stats.ir_nodes_after
+        counters.ir_getitem_before += canonicalize_stats.ir_getitem_before
+        counters.ir_getitem_after += canonicalize_stats.ir_getitem_after
+        counters.ir_add_before += canonicalize_stats.ir_add_before
+        counters.ir_add_after += canonicalize_stats.ir_add_after
+        counters.ir_div_before += canonicalize_stats.ir_div_before
+        counters.ir_div_after += canonicalize_stats.ir_div_after
+        counters.ir_returned_states_before += canonicalize_stats.ir_returned_states_before
+        counters.ir_returned_states_after += canonicalize_stats.ir_returned_states_after
         counters.canonicalize_view_folded += canonicalize_stats.canonicalize_view_folded
         counters.canonicalize_dead_nodes_removed += canonicalize_stats.canonicalize_dead_nodes_removed
         counters.canonicalize_final_cat_count += canonicalize_stats.final_cat_count
@@ -1281,6 +1311,8 @@ def parse_args():
     )
     parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
     parser.add_argument("--disable-temporal-linear-lif-rewrite", action="store_true")
+    parser.add_argument("--drop-intermediate-states", action="store_true")
+    parser.add_argument("--enable-temporal-mean-rewrite", action="store_true")
     parser.add_argument("--enable-temporal-rewrite", action="store_true")
     parser.add_argument("--temporal-fuse-window", type=int, default=1)
     parser.add_argument("--temporal-allow-tail", action="store_true")

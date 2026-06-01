@@ -654,6 +654,8 @@ def parse_args():
 
     parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
     parser.add_argument("--disable-temporal-linear-lif-rewrite", action="store_true")
+    parser.add_argument("--drop-intermediate-states", action="store_true")
+    parser.add_argument("--enable-temporal-mean-rewrite", action="store_true")
 
     parser.add_argument("--max-patterns", type=int, default=1000)
 
