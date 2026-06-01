@@ -65,6 +65,37 @@ def _copy_input(dst: Any, src: Any) -> Any:
     return src
 
 
+def _is_plain_python_scalar(value: Any) -> bool:
+    return isinstance(value, (int, float, bool))
+
+
+def _has_tensor_meta(node: torch.fx.Node) -> bool:
+    value = node.meta.get("val")
+    if isinstance(value, torch.Tensor):
+        return True
+    if isinstance(value, (tuple, list)):
+        return any(isinstance(item, torch.Tensor) for item in value)
+    return False
+
+
+def _has_known_non_tensor_meta(node: torch.fx.Node) -> bool:
+    return "val" in node.meta and not _has_tensor_meta(node)
+
+
+def _is_metadata_node(node: torch.fx.Node) -> bool:
+    value = node.meta.get("val")
+    if _is_plain_python_scalar(value):
+        return True
+    if node.op == "call_method" and node.target in ("size", "dim", "numel", "item"):
+        return True
+    if node.op == "call_function" and node.target is operator.getitem:
+        users = tuple(node.users)
+        if not users:
+            return False
+        return all(_has_known_non_tensor_meta(user) for user in users)
+    return False
+
+
 class ChronosFXStandaloneExecutor:
     def __init__(
         self,
@@ -207,6 +238,17 @@ class ChronosFXStandaloneExecutor:
         for level in sorted(self.groups):
             level_events = []
             for index, node in enumerate(self.groups[level]):
+                if _is_metadata_node(node):
+                    for dep in self.deps[node]:
+                        event = self.node_events.get(dep)
+                        if event is not None:
+                            main_stream.wait_event(event)
+                    if self.debug:
+                        deps = ",".join(dep.name for dep in self.deps[node])
+                        print(f"[STREAM_ASSIGN] level={level} node={node.name} stream=main deps={deps} metadata=True")
+                    env[node] = self._execute_node(node, env)
+                    continue
+
                 stream = self.streams[index % len(self.streams)]
                 if self.debug:
                     deps = ",".join(dep.name for dep in self.deps[node])
@@ -244,7 +286,17 @@ class ChronosFXStandaloneExecutor:
                 self._static_output = self._run_uncaptured(self._static_inputs)
             torch.cuda.synchronize()
 
-            self._ensure_cuda_schedule(self._static_inputs)
+            # streams and events must exist before capture.
+            if self.num_streams > 1 and not self._ensure_cuda_schedule(self._static_inputs):
+                self._graph_fallback_reason = "CUDA schedule could not be initialized before capture"
+                if self.debug:
+                    print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
+                return
+            if self.num_streams > 1 and not self.streams:
+                self._graph_fallback_reason = "CUDA streams were not populated before capture"
+                if self.debug:
+                    print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
+                return
             graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(graph):
                 self._static_output = self._run_uncaptured(self._static_inputs)
@@ -306,4 +358,3 @@ def make_fx_standalone_torch_compile_backend(
         )
 
     return backend
-
