@@ -82,6 +82,17 @@ def classify_conv_lif_config(weight, stride, padding, dilation, groups) -> str:
     return "unsupported"
 
 
+def classify_conv_lif_runtime_kind(weight, stride, padding, dilation, groups) -> str:
+    kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
+    if kernel_key.startswith("depthwise_"):
+        return "depthwise"
+    if kernel_key == "k1_s1_p0":
+        return "pointwise"
+    if kernel_key != "unsupported":
+        return "regular"
+    return "unsupported"
+
+
 SUPPORTED_CONV_LIF_CONFIGS = {
     (1, 1): {
         ((1, 1), (0, 0)): "k1_s1_p0",
@@ -271,6 +282,34 @@ def _run_triton_temporal_by_key(
     raise RuntimeError(f"unsupported dispatch key: {kernel_key}")
 
 
+def _validate_temporal_conv_kind(kind: str, kernel_key: str) -> None:
+    if kind == "regular" and kernel_key.startswith("depthwise_"):
+        raise RuntimeError(f"regular conv op cannot dispatch depthwise kernel {kernel_key}")
+    if kind == "regular" and kernel_key == "k1_s1_p0":
+        raise RuntimeError("regular conv op cannot dispatch pointwise kernel k1_s1_p0")
+    if kind == "pointwise" and kernel_key != "k1_s1_p0":
+        raise RuntimeError(f"pointwise conv op requires k1_s1_p0 kernel, got {kernel_key}")
+    if kind == "depthwise" and not kernel_key.startswith("depthwise_"):
+        raise RuntimeError(f"depthwise conv op requires depthwise kernel, got {kernel_key}")
+
+
+def _debug_dispatch(verbose: bool, op_name: str, backend: str, xs_or_seq, weight, stride, padding, groups) -> None:
+    if not verbose:
+        return
+    if isinstance(xs_or_seq, torch.Tensor):
+        x_shape = tuple(xs_or_seq.shape)
+    elif isinstance(xs_or_seq, (list, tuple)) and len(xs_or_seq) > 0 and isinstance(xs_or_seq[0], torch.Tensor):
+        x_shape = (len(xs_or_seq),) + tuple(xs_or_seq[0].shape)
+    else:
+        x_shape = None
+    w_shape = tuple(weight.shape) if isinstance(weight, torch.Tensor) else None
+    print(
+        f"[CHRONOS_DISPATCH] op={op_name} backend={backend} "
+        f"x_shape={x_shape} w_shape={w_shape} stride={tuple(_as_pair(stride))} "
+        f"padding={tuple(_as_pair(padding))} groups={int(groups)}"
+    )
+
+
 def _get_kernel_temporal_config(kernel_key: str, residual_add: bool = False):
     try:
         from kernels.benchmark_conv_lif_temporal_general import get_autotune_best_config
@@ -369,6 +408,128 @@ def run_triton_fused_temporal_conv_lif_state(
     use_autotune: bool = True,
     compute_dtype: str = None,
 ) -> TritonConvLIFResult:
+    return _run_triton_fused_temporal_conv_lif_state_kind(
+        "regular",
+        "fused_temporal_conv_lif_state",
+        xs,
+        weight,
+        bias,
+        v_init,
+        stride,
+        padding,
+        dilation,
+        groups,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+        strict=strict,
+        verbose=verbose,
+        use_autotune=use_autotune,
+        compute_dtype=compute_dtype,
+    )
+
+
+def run_triton_fused_temporal_pointwise_conv_lif_state(
+    xs,
+    weight,
+    bias,
+    v_init,
+    stride: Sequence[int],
+    padding: Sequence[int],
+    dilation: Sequence[int],
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+    strict: bool = False,
+    verbose: bool = False,
+    use_autotune: bool = True,
+    compute_dtype: str = None,
+) -> TritonConvLIFResult:
+    return _run_triton_fused_temporal_conv_lif_state_kind(
+        "pointwise",
+        "fused_temporal_pointwise_conv_lif_state",
+        xs,
+        weight,
+        bias,
+        v_init,
+        stride,
+        padding,
+        dilation,
+        groups,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+        strict=strict,
+        verbose=verbose,
+        use_autotune=use_autotune,
+        compute_dtype=compute_dtype,
+    )
+
+
+def run_triton_fused_temporal_depthwise_conv_lif_state(
+    xs,
+    weight,
+    bias,
+    v_init,
+    stride: Sequence[int],
+    padding: Sequence[int],
+    dilation: Sequence[int],
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+    strict: bool = False,
+    verbose: bool = False,
+    use_autotune: bool = True,
+    compute_dtype: str = None,
+) -> TritonConvLIFResult:
+    return _run_triton_fused_temporal_conv_lif_state_kind(
+        "depthwise",
+        "fused_temporal_depthwise_conv_lif_state",
+        xs,
+        weight,
+        bias,
+        v_init,
+        stride,
+        padding,
+        dilation,
+        groups,
+        v_threshold,
+        v_reset,
+        tau,
+        detach_reset,
+        strict=strict,
+        verbose=verbose,
+        use_autotune=use_autotune,
+        compute_dtype=compute_dtype,
+    )
+
+
+def _run_triton_fused_temporal_conv_lif_state_kind(
+    kind: str,
+    op_name: str,
+    xs,
+    weight,
+    bias,
+    v_init,
+    stride: Sequence[int],
+    padding: Sequence[int],
+    dilation: Sequence[int],
+    groups: int,
+    v_threshold: float,
+    v_reset: float,
+    tau: float,
+    detach_reset: bool,
+    strict: bool = False,
+    verbose: bool = False,
+    use_autotune: bool = True,
+    compute_dtype: str = None,
+) -> TritonConvLIFResult:
     reasons: List[str] = []
     if not isinstance(xs, (list, tuple)) or len(xs) == 0:
         reasons.append("xs must be a non-empty list/tuple of tensors")
@@ -419,6 +580,8 @@ def run_triton_fused_temporal_conv_lif_state(
         kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
         if kernel_key == "unsupported":
             raise RuntimeError("unsupported dispatch key after support check")
+        _validate_temporal_conv_kind(kind, kernel_key)
+        _debug_dispatch(verbose, op_name, kernel_key, xs, weight, stride, padding, groups)
         spikes, membrane = _run_triton_temporal_by_key(kernel_key, x_seq, weight, bias, use_autotune=use_autotune, v_init=v_init)
         return TritonConvLIFResult(
             spikes,

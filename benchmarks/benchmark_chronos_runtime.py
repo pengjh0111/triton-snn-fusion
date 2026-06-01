@@ -20,7 +20,13 @@ torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
 
 import runtime.snn_custom_ops as snn_custom_ops
-from compiler.chronos_compile import build_chronos_compile_config, compile_with_chronos_options
+from compiler.chronos_compile import (
+    build_chronos_compile_config,
+    compile_with_chronos_options,
+    diff_compile_counters,
+    snapshot_compile_counters,
+    summarize_cudagraph_check,
+)
 from benchmarks.validate_chronos_baselines import (
     CHRONOS_MODEL_CHOICES,
     LIF_IMPL_CHOICES,
@@ -253,6 +259,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         backend=args.fused_op_backend,
         strict_triton=args.strict_triton,
         verbose=args.print_fused_op_calls,
+        use_triton_autotune=not args.disable_triton_autotune,
     )
 
     # out_dir = Path(args.out_dir) / model_name
@@ -356,9 +363,14 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     results = {}
     summary_rows = []
     fused_stats_by_case = {}
+    cudagraph_status_by_case = {}
 
     for case_name, (model, compile_mode, backend) in cases.items():
         snn_custom_ops.reset_fused_op_call_stats()
+        counter_before = snapshot_compile_counters()
+        graph_count_before = None
+        if case_name in chronos_rewrite_counters:
+            graph_count_before = chronos_rewrite_counters[case_name].captured_graphs
 
         result = run_case(
             case_name,
@@ -373,9 +385,27 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         )
 
         case_fused_stats = snn_custom_ops.get_fused_op_call_stats()
+        counter_after = snapshot_compile_counters()
+        counter_diff = diff_compile_counters(counter_before, counter_after)
+        graph_count = None
+        if case_name in chronos_rewrite_counters:
+            graph_count = chronos_rewrite_counters[case_name].captured_graphs - int(graph_count_before or 0)
+        else:
+            graph_count = counter_diff.get("stats", {}).get("unique_graphs")
+        cudagraph_status = summarize_cudagraph_check(
+            model=model_name,
+            case=case_name,
+            compile_config=compile_config,
+            compile_mode=compile_mode,
+            device=args.device,
+            graph_count=graph_count,
+            counter_diff=counter_diff,
+        )
+        cudagraph_status_by_case[case_name] = cudagraph_status
         fused_stats_by_case[case_name] = case_fused_stats
         results[case_name] = asdict(result)
         results[case_name]["execution_mode"] = execution_modes.get(case_name, "")
+        results[case_name]["cudagraph_status"] = cudagraph_status
 
         if result.ok:
             print(
@@ -482,6 +512,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         "best_case": best_case,
         "fused_op_call_stats_last_case": fused_stats,
         "fused_op_call_stats_by_case": fused_stats_by_case,
+        "cudagraph_status_by_case": cudagraph_status_by_case,
     }
 
     write_path = out_dir / "benchmark_summary.json"
@@ -557,6 +588,8 @@ def parse_args():
     parser.add_argument("--strict-triton", action="store_true")
 
     parser.add_argument("--print-fused-op-calls", action="store_true")
+
+    parser.add_argument("--disable-triton-autotune", action="store_true")
 
     parser.add_argument("--enable-temporal-rewrite", action="store_true")
 

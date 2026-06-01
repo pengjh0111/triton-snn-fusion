@@ -1,4 +1,5 @@
 import operator
+import os
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -549,7 +550,11 @@ def collect_standalone_lif_state_patterns(
             continue
         if str(node.target) in (
             "snn_custom.fused_temporal_conv_lif_state.default",
+            "snn_custom.fused_temporal_pointwise_conv_lif_state.default",
+            "snn_custom.fused_temporal_depthwise_conv_lif_state.default",
+            "snn_custom.fused_temporal_conv_lif_state_depthwise.default",
             "snn_custom.fused_temporal_conv_add_lif_state.default",
+            "snn_custom.fused_temporal_conv_add_lif_state_depthwise.default",
             "snn_custom.fused_temporal_lif_state.default",
         ):
             continue
@@ -1560,7 +1565,11 @@ def _cleanup_linear_lif_window_nodes(gm: torch.fx.GraphModule, window: TemporalL
 
 _TEMPORAL_FUSED_STATE_OP_TARGETS = {
     "snn_custom.fused_temporal_conv_lif_state.default",
+    "snn_custom.fused_temporal_pointwise_conv_lif_state.default",
+    "snn_custom.fused_temporal_depthwise_conv_lif_state.default",
+    "snn_custom.fused_temporal_conv_lif_state_depthwise.default",
     "snn_custom.fused_temporal_conv_add_lif_state.default",
+    "snn_custom.fused_temporal_conv_add_lif_state_depthwise.default",
     "snn_custom.fused_temporal_lif_state.default",
     "snn_custom.fused_temporal_linear_lif_state.default",
     "snn_custom.fused_temporal_linear_lif_state_packed.default",
@@ -1611,6 +1620,70 @@ def _as_pair(value) -> Tuple[int, int]:
     if isinstance(value, int):
         return int(value), int(value)
     return int(value[0]), int(value[1])
+
+
+def classify_conv_kind(conv_module, folded_weight, stride, padding, dilation, groups) -> str:
+    del conv_module
+    if not isinstance(folded_weight, torch.Tensor) or folded_weight.dim() != 4:
+        return "regular"
+    stride_pair = _as_pair(stride)
+    padding_pair = _as_pair(padding)
+    dilation_pair = _as_pair(dilation)
+    groups = int(groups)
+    out_channels = int(folded_weight.shape[0])
+    weight_in_channels = int(folded_weight.shape[1])
+    kernel_h = int(folded_weight.shape[2])
+    kernel_w = int(folded_weight.shape[3])
+    in_channels = int(weight_in_channels * groups)
+
+    is_depthwise = (
+        groups == in_channels
+        and out_channels == in_channels
+        and weight_in_channels == 1
+        and kernel_h == 3
+        and kernel_w == 3
+        and dilation_pair == (1, 1)
+        and padding_pair == (1, 1)
+        and stride_pair in ((1, 1), (2, 2))
+    )
+    if is_depthwise:
+        return "depthwise"
+
+    is_pointwise = (
+        groups == 1
+        and kernel_h == 1
+        and kernel_w == 1
+        and padding_pair == (0, 0)
+        and dilation_pair == (1, 1)
+    )
+    if is_pointwise:
+        return "pointwise"
+
+    return "regular"
+
+
+def _temporal_conv_lif_op_for_kind(kind: str):
+    if kind == "depthwise":
+        return torch.ops.snn_custom.fused_temporal_depthwise_conv_lif_state.default
+    if kind == "pointwise":
+        return torch.ops.snn_custom.fused_temporal_pointwise_conv_lif_state.default
+    return torch.ops.snn_custom.fused_temporal_conv_lif_state.default
+
+
+def _temporal_conv_add_lif_op_for_kind(kind: str):
+    if kind == "depthwise":
+        return torch.ops.snn_custom.fused_temporal_conv_add_lif_state_depthwise.default
+    return torch.ops.snn_custom.fused_temporal_conv_add_lif_state.default
+
+
+def _debug_conv_classify(name: str, kind: str, folded_weight, stride, padding, groups) -> None:
+    if os.environ.get("CHRONOS_FX_CONV_CLASSIFY", "0") != "1":
+        return
+    weight_shape = tuple(folded_weight.shape) if isinstance(folded_weight, torch.Tensor) else None
+    print(
+        f"[CHRONOS_FX_CONV_CLASSIFY] name={name} kind={kind} "
+        f"weight_shape={weight_shape} stride={_as_pair(stride)} padding={_as_pair(padding)} groups={int(groups)}"
+    )
 
 
 def _insert_binary_after(
@@ -1994,14 +2067,17 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
             if anchor is None:
                 raise ValueError("cannot find legal temporal conv lif insertion point; " + reason)
             v_threshold, v_reset, tau, detach_reset = first.lif_params
+            conv_kind = classify_conv_kind(None, folded_weight, stride, padding, dilation, groups)
+            conv_op = _temporal_conv_lif_op_for_kind(conv_kind)
+            _debug_conv_classify(first.conv_node.name, conv_kind, folded_weight, stride, padding, groups)
 
             insert_ctx = gm.graph.inserting_before(anchor) if insert_mode == "before" else gm.graph.inserting_after(anchor)
             with insert_ctx:
                 temporal_tuple = gm.graph.call_function(
-                    torch.ops.snn_custom.fused_temporal_conv_lif_state.default,
+                    conv_op,
                     args=(xs, weight_node, bias_node, v_init, stride, padding, dilation, groups, v_threshold, v_reset, tau, detach_reset),
                 )
-                temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_conv_lif_state"
+                temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_{conv_kind}_conv_lif_state"
 
             ok, reason = _all_inputs_available_for_node(gm, xs + [v_init, weight_node, bias_node], temporal_tuple)
             if not ok:
@@ -2190,11 +2266,14 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
                 stats.skip(window, "cannot find legal temporal residual insertion point; " + reason)
                 continue
             v_threshold, v_reset, tau, detach_reset = first.lif_params
+            conv_kind = classify_conv_kind(None, folded_weight, stride, padding, dilation, groups)
+            conv_op = _temporal_conv_add_lif_op_for_kind(conv_kind)
+            _debug_conv_classify(first.conv_node.name, conv_kind, folded_weight, stride, padding, groups)
 
             insert_ctx = gm.graph.inserting_before(anchor) if insert_mode == "before" else gm.graph.inserting_after(anchor)
             with insert_ctx:
                 temporal_tuple = gm.graph.call_function(
-                    torch.ops.snn_custom.fused_temporal_conv_add_lif_state.default,
+                    conv_op,
                     args=(
                         xs,
                         residuals,
@@ -2845,6 +2924,9 @@ def count_fused_temporal_conv_lif_state_nodes(gm: torch.fx.GraphModule) -> int:
         and str(node.target)
         in {
             "snn_custom.fused_temporal_conv_lif_state.default",
+            "snn_custom.fused_temporal_pointwise_conv_lif_state.default",
+            "snn_custom.fused_temporal_depthwise_conv_lif_state.default",
+            "snn_custom.fused_temporal_conv_lif_state_depthwise.default",
             "snn_custom.fused_temporal_conv_lif_state_packed_out.default",
         }
     )
@@ -2854,7 +2936,12 @@ def count_fused_temporal_conv_add_lif_state_nodes(gm: torch.fx.GraphModule) -> i
     return sum(
         1
         for node in gm.graph.nodes
-        if node.op == "call_function" and str(node.target) == "snn_custom.fused_temporal_conv_add_lif_state.default"
+        if node.op == "call_function"
+        and str(node.target)
+        in {
+            "snn_custom.fused_temporal_conv_add_lif_state.default",
+            "snn_custom.fused_temporal_conv_add_lif_state_depthwise.default",
+        }
     )
 
 

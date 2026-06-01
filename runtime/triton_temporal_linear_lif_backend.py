@@ -82,6 +82,7 @@ def run_triton_fused_temporal_linear_lif_state(
     detach_reset: bool,
     strict: bool = False,
     verbose: bool = False,
+    use_autotune: bool = True,
 ) -> TritonTemporalLinearLIFResult:
     stack_materialized = False
     if isinstance(xs, torch.Tensor):
@@ -96,6 +97,7 @@ def run_triton_fused_temporal_linear_lif_state(
             detach_reset,
             strict=strict,
             verbose=verbose,
+            use_autotune=use_autotune,
         )
     elif isinstance(xs, (tuple, list)) and len(xs) > 0:
         x_seq = torch.stack(list(xs), dim=0).contiguous()
@@ -114,6 +116,7 @@ def run_triton_fused_temporal_linear_lif_state(
         strict=strict,
         verbose=verbose,
         stack_materialized=stack_materialized,
+        use_autotune=use_autotune,
     )
 
 
@@ -128,6 +131,7 @@ def run_triton_fused_temporal_linear_lif_state_packed(
     detach_reset: bool,
     strict: bool = False,
     verbose: bool = False,
+    use_autotune: bool = True,
 ) -> TritonTemporalLinearLIFResult:
     return _run_triton_fused_temporal_linear_lif_state_packed_impl(
         x_seq.contiguous() if isinstance(x_seq, torch.Tensor) else x_seq,
@@ -141,6 +145,7 @@ def run_triton_fused_temporal_linear_lif_state_packed(
         strict=strict,
         verbose=verbose,
         stack_materialized=False,
+        use_autotune=use_autotune,
     )
 
 
@@ -157,6 +162,7 @@ def run_triton_fused_temporal_linear_lif_state_packed_out(
     v_out,
     strict: bool = False,
     verbose: bool = False,
+    use_autotune: bool = True,
 ) -> TritonTemporalLinearLIFResult:
     return _run_triton_fused_temporal_linear_lif_state_packed_impl(
         x_seq.contiguous() if isinstance(x_seq, torch.Tensor) and not x_seq.is_contiguous() else x_seq,
@@ -172,6 +178,7 @@ def run_triton_fused_temporal_linear_lif_state_packed_out(
         stack_materialized=False,
         spike_out=spike_out,
         v_out=v_out,
+        use_autotune=use_autotune,
     )
 
 
@@ -189,6 +196,7 @@ def _run_triton_fused_temporal_linear_lif_state_packed_impl(
     stack_materialized: bool = False,
     spike_out=None,
     v_out=None,
+    use_autotune: bool = True,
 ) -> TritonTemporalLinearLIFResult:
     reasons = check_temporal_linear_lif_support(
         x_seq,
@@ -222,6 +230,7 @@ def _run_triton_fused_temporal_linear_lif_state_packed_impl(
             detach_reset,
             spike_seq_out=spike_out,
             v_last_out=v_out,
+            use_autotune=use_autotune,
         )
         diagnostics = {
             "kernel_kind": "temporal_linear_lif",

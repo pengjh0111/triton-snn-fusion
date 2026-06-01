@@ -21,6 +21,7 @@ from runtime.triton_convlif_backend import (
     classify_conv_lif_config,
     run_triton_fused_conv_lif_state,
     run_triton_fused_temporal_conv_lif_state,
+    run_triton_fused_temporal_pointwise_conv_lif_state,
 )
 
 
@@ -51,7 +52,7 @@ def run_case(case: Dict, T: int, device: str, dtype_name: str, warmup: int, repe
     stride = _pair(case["stride"])
     padding = _pair(case["padding"])
     dtype = _dtype_from_arg(dtype_name)
-    x_seq, weight, bias, v0 = make_case_tensors(case, T, device, dtype=dtype)
+    x_seq, weight, bias, v0, _residual_seq = make_case_tensors(case, T, device, dtype=dtype)
     xs = [x_seq[i] for i in range(T)]
     kernel_key = classify_conv_lif_config(weight, stride, padding, [1, 1], 1)
 
@@ -83,7 +84,12 @@ def run_case(case: Dict, T: int, device: str, dtype_name: str, warmup: int, repe
                 False,
                 use_autotune=use_autotune,
             )
-        return run_triton_fused_temporal_conv_lif_state(
+        runner = (
+            run_triton_fused_temporal_pointwise_conv_lif_state
+            if kernel_key == "k1_s1_p0"
+            else run_triton_fused_temporal_conv_lif_state
+        )
+        return runner(
             xs,
             weight,
             bias,

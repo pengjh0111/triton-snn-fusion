@@ -22,7 +22,13 @@ torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
 
 import runtime.snn_custom_ops as snn_custom_ops
-from compiler.chronos_compile import build_chronos_compile_config, compile_with_chronos_options
+from compiler.chronos_compile import (
+    build_chronos_compile_config,
+    compile_with_chronos_options,
+    diff_compile_counters,
+    snapshot_compile_counters,
+    summarize_cudagraph_check,
+)
 from compiler.fx_lif_rewrite import (
     count_fused_conv_lif_state_nodes,
     count_lif_state_nodes,
@@ -1122,6 +1128,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         backend=args.fused_op_backend,
         strict_triton=args.strict_triton,
         verbose=args.print_fused_op_calls,
+        use_triton_autotune=not args.disable_triton_autotune,
     )
     snn_custom_ops.reset_fused_op_call_stats()
 
@@ -1130,6 +1137,14 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
 
     results: Dict[str, RunResult] = {}
     outputs: Dict[str, Optional[torch.Tensor]] = {}
+    cudagraph_status_by_case: Dict[str, Dict[str, Any]] = {}
+    _, compile_config = build_chronos_compile_config(
+        backend="inductor",
+        enable_cudagraphs=args.enable_cudagraphs,
+        cudagraph_mode=args.cudagraph_mode,
+        fullgraph=False,
+        dynamic=False,
+    )
 
     for case_name, compile_mode, backend in [
         ("baseline_s_eager", False, None),
@@ -1138,7 +1153,19 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         ("baseline_m_compile", True, None),
     ]:
         print(f"[RUN] {model_name}/{case_name}")
+        counter_before = snapshot_compile_counters()
         result, out = run_model(case_name, models[case_name], x, args.device, compile_mode, args, backend)
+        counter_diff = diff_compile_counters(counter_before, snapshot_compile_counters())
+        graph_count = counter_diff.get("stats", {}).get("unique_graphs") if compile_mode else None
+        cudagraph_status_by_case[case_name] = summarize_cudagraph_check(
+            model=model_name,
+            case=case_name,
+            compile_config=compile_config,
+            compile_mode=compile_mode,
+            device=args.device,
+            graph_count=graph_count,
+            counter_diff=counter_diff,
+        )
         results[case_name] = result
         outputs[case_name] = out
         if not result.ok:
@@ -1154,7 +1181,20 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     ]:
         print(f"[RUN] {model_name}/{case_name}")
         backend = make_rewrite_backend(args, out_dir / case_name, rewrite_counters[case_name])
+        counter_before = snapshot_compile_counters()
+        graph_count_before = rewrite_counters[case_name].captured_graphs
         result, out = run_model(case_name, models[case_name], x, args.device, True, args, backend)
+        counter_diff = diff_compile_counters(counter_before, snapshot_compile_counters())
+        graph_count = rewrite_counters[case_name].captured_graphs - graph_count_before
+        cudagraph_status_by_case[case_name] = summarize_cudagraph_check(
+            model=model_name,
+            case=case_name,
+            compile_config=compile_config,
+            compile_mode=True,
+            device=args.device,
+            graph_count=graph_count,
+            counter_diff=counter_diff,
+        )
         results[case_name] = result
         outputs[case_name] = out
         if not result.ok:
@@ -1170,13 +1210,6 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         compare_to(results[case_name], outputs[case_name], outputs[ref_name], args.rtol, args.atol)
 
     call_stats = snn_custom_ops.get_fused_op_call_stats()
-    _, compile_config = build_chronos_compile_config(
-        backend="inductor",
-        enable_cudagraphs=args.enable_cudagraphs,
-        cudagraph_mode=args.cudagraph_mode,
-        fullgraph=False,
-        dynamic=False,
-    )
     payload = {
         "model": model_name,
         "input_shape": [args.batch_size, 3, args.height, args.width],
@@ -1194,6 +1227,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         "results": {name: asdict(result) for name, result in results.items()},
         "rewrite_counters": {name: asdict(counters) for name, counters in rewrite_counters.items()},
         "fused_op_call_stats": call_stats,
+        "cudagraph_status_by_case": cudagraph_status_by_case,
     }
     write_summary(out_dir / "summary.json", payload)
 
@@ -1235,6 +1269,7 @@ def parse_args():
     parser.add_argument("--fused-op-backend", choices=("torch", "triton"), default="torch")
     parser.add_argument("--rewrite-backend-mode", choices=("eager", "inductor"), default="inductor")
     parser.add_argument("--strict-triton", action="store_true")
+    parser.add_argument("--disable-triton-autotune", action="store_true")
     parser.add_argument("--disable-rewrite", action="store_true")
     parser.add_argument("--disable-conv-bn-lif", action="store_true")
     parser.add_argument("--disable-temporal-lif-avgpool-linear-rewrite", action="store_true")

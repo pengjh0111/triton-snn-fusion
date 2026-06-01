@@ -48,6 +48,7 @@ TEMPORAL_AUTOTUNE_SCHEDULES = (
     (16, 1),
 )
 MAX_REUSE_GROUPS = 16
+DEFAULT_POINTWISE_ACC_ELEMS_LIMIT = 8192
 
 
 @dataclass(frozen=True)
@@ -85,22 +86,57 @@ AUTOTUNE_SPATIAL_CONFIGS = [
     {"BLOCK_M": 32, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
 ]
 
+POINTWISE_AUTOTUNE_CONFIGS = [
+    # Keep pointwise independent from regular k3/k5/k7 configs. It is still a
+    # GEMM-like reduction, but it should not inherit depthwise or halo-oriented
+    # tuning decisions.
+    {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_M": 32, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 16, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_M": 8, "BLOCK_OC": 128, "BLOCK_K": 64, "num_warps": 2, "num_stages": 2},
+    {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 64, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_M": 32, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
+]
+
 DWCONV_AUTOTUNE_CONFIGS = [
     # Depthwise conv is a stencil kernel, not a GEMM kernel. Tune spatial
     # rectangle and channel tile directly so the runtime key does not inherit
     # ordinary ConvLIF's reduction-oriented BLOCK_M/BLOCK_K schedule.
-    {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
-    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
-    {"BLOCK_H": 4, "BLOCK_W": 16, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
-    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 64, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2},
-    {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 64, "PIXELS_PER_THREAD": 2, "num_warps": 4, "num_stages": 2},
-    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 2, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_H": 16, "BLOCK_W": 16, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 4},
+    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 2, "num_stages": 3},
+    {"BLOCK_H": 2, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 2, "num_stages": 4},
+    {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 1, "num_stages": 3},
+    {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 3},
+    {"BLOCK_H": 2, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 5},
+    {"BLOCK_H": 2, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 1, "num_stages": 3},
+    {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 3},
 ]
 
 
 def _make_autotune_configs():
     configs = []
     for spatial_config in AUTOTUNE_SPATIAL_CONFIGS:
+        for btile_t, reuse_groups in TEMPORAL_AUTOTUNE_SCHEDULES:
+            configs.append(
+                triton.Config(
+                    {
+                        "BLOCK_M": spatial_config["BLOCK_M"],
+                        "BLOCK_OC": spatial_config["BLOCK_OC"],
+                        "BLOCK_K": spatial_config["BLOCK_K"],
+                        "BTILE_T": btile_t,
+                        "REUSE_GROUPS": reuse_groups,
+                    },
+                    num_warps=spatial_config["num_warps"],
+                    num_stages=spatial_config["num_stages"],
+                )
+            )
+    return configs
+
+
+def _make_pointwise_autotune_configs():
+    configs = []
+    for spatial_config in POINTWISE_AUTOTUNE_CONFIGS:
         for btile_t, reuse_groups in TEMPORAL_AUTOTUNE_SCHEDULES:
             configs.append(
                 triton.Config(
@@ -140,12 +176,89 @@ def _make_dwconv_autotune_configs():
 
 
 def _prune_temporal_configs(configs, named_args, **kwargs):
-    timesteps = named_args["T_STEPS"]
+    timesteps = int(named_args["T_STEPS"])
     return [
         config
         for config in configs
-        if config.kwargs["BTILE_T"] * config.kwargs["REUSE_GROUPS"] <= timesteps
+        if int(config.kwargs["BTILE_T"]) * int(config.kwargs["REUSE_GROUPS"]) <= timesteps
     ]
+
+
+def _config_matches_spatial(config, desired: Dict[str, int], keys: Tuple[str, ...]) -> bool:
+    for key in keys:
+        if int(config.kwargs[key]) != int(desired[key]):
+            return False
+    return (
+        int(getattr(config, "num_warps", desired["num_warps"])) == int(desired["num_warps"])
+        and int(getattr(config, "num_stages", desired["num_stages"])) == int(desired["num_stages"])
+    )
+
+
+def _pointwise_acc_elems_limit() -> int:
+    raw = os.environ.get("CHRONOS_POINTWISE_ACC_ELEMS_LIMIT")
+    if raw is None:
+        return DEFAULT_POINTWISE_ACC_ELEMS_LIMIT
+    try:
+        return int(raw)
+    except ValueError:
+        return DEFAULT_POINTWISE_ACC_ELEMS_LIMIT
+
+
+def _pointwise_acc_elems(config) -> int:
+    return (
+        int(config.kwargs["BTILE_T"])
+        * int(config.kwargs["REUSE_GROUPS"])
+        * int(config.kwargs["BLOCK_M"])
+        * int(config.kwargs["BLOCK_OC"])
+    )
+
+
+def _prune_pointwise_configs(configs, named_args, **kwargs):
+    valid = _prune_temporal_configs(configs, named_args, **kwargs)
+    if not valid:
+        return valid
+
+    acc_limit = _pointwise_acc_elems_limit()
+    if acc_limit > 0:
+        limited = [
+            config
+            for config in valid
+            if _pointwise_acc_elems(config) <= acc_limit
+        ]
+        valid = limited or valid
+
+    in_channels = int(named_args["in_channels"])
+    out_channels = int(named_args["out_channels"])
+    height = int(named_args["height"])
+    width = int(named_args["width"])
+    desired = _pointwise_config_for_shape(in_channels, out_channels, height, width)
+    filtered = [
+        config
+        for config in valid
+        if _config_matches_spatial(config, desired, ("BLOCK_M", "BLOCK_OC", "BLOCK_K"))
+    ]
+    return filtered or valid
+
+
+def _prune_dwconv_configs(configs, named_args, **kwargs):
+    valid = _prune_temporal_configs(configs, named_args, **kwargs)
+    if not valid:
+        return valid
+
+    height = int(named_args["height"])
+    width = int(named_args["width"])
+    out_height = int(named_args["out_height"])
+    out_width = int(named_args["out_width"])
+    out_channels = int(named_args["out_channels"])
+    kernel_key = "depthwise_k3_s1_p1" if (height, width) == (out_height, out_width) else "depthwise_k3_s2_p1"
+    desired = _depthwise_config_for_shape(kernel_key, out_channels, height, width)
+
+    filtered = [
+        config
+        for config in valid
+        if _config_matches_spatial(config, desired, ("BLOCK_H", "BLOCK_W", "BLOCK_C", "PIXELS_PER_THREAD"))
+    ]
+    return filtered or valid
 
 
 def kernel_dtype_diagnostics(dtype) -> Dict[str, object]:
@@ -402,8 +515,47 @@ def _is_depthwise_kernel_key(kernel_key: str) -> bool:
 
 def _default_config_for_key(kernel_key: str) -> Dict[str, int]:
     if _is_depthwise_kernel_key(kernel_key):
-        return {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 32, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 2}
+        return {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 1, "num_stages": 3}
+    if kernel_key == "k1_s1_p0":
+        return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
     return {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
+
+
+def _pointwise_config_for_shape(in_channels: int, out_channels: int, height: int, width: int) -> Dict[str, int]:
+    # MobileNetV1 pointwise layers are bandwidth/occupancy sensitive across
+    # spatial scales. Keep a compact selector so regular conv autotune remains
+    # untouched while k1_s1_p0 does not inherit the old two-config default.
+    if height >= 112 and in_channels <= 64:
+        return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 16, "num_warps": 4, "num_stages": 2}
+    if height >= 56 and in_channels <= 128:
+        return {"BLOCK_M": 8, "BLOCK_OC": 128, "BLOCK_K": 64, "num_warps": 2, "num_stages": 2}
+    if height >= 28 and in_channels <= 256:
+        return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 64, "num_warps": 4, "num_stages": 2}
+    if height >= 28:
+        return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
+    if height <= 14 and in_channels <= 512:
+        return {"BLOCK_M": 32, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
+    return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
+
+
+def _depthwise_config_for_shape(kernel_key: str, channels: int, height: int, width: int) -> Dict[str, int]:
+    if kernel_key == "depthwise_k3_s1_p1":
+        if height >= 16 and channels <= 64:
+            return {"BLOCK_H": 16, "BLOCK_W": 16, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 4}
+        if height >= 8 and channels <= 256:
+            return {"BLOCK_H": 2, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 2, "num_stages": 4}
+        if height >= 4 and channels <= 512:
+            return {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 3}
+        return {"BLOCK_H": 2, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 1, "num_stages": 3}
+    if kernel_key == "depthwise_k3_s2_p1":
+        if height >= 16 and channels <= 128:
+            return {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 2, "num_stages": 3}
+        if height >= 8 and channels <= 256:
+            return {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 1, "num_stages": 3}
+        if height >= 4 and channels <= 512:
+            return {"BLOCK_H": 2, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 5}
+        return {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 3}
+    return _default_config_for_key(kernel_key)
 
 
 def _emit_general_kernel_source(
@@ -736,7 +888,13 @@ _residual_specialized_kernels = {
 }
 _autotuned_kernels = {
     kernel_key: triton.autotune(
-        configs=_make_dwconv_autotune_configs() if KERNEL_VARIANTS[kernel_key].get("depthwise") else _make_autotune_configs(),
+        configs=(
+            _make_dwconv_autotune_configs()
+            if KERNEL_VARIANTS[kernel_key].get("depthwise")
+            else _make_pointwise_autotune_configs()
+            if kernel_key == "k1_s1_p0"
+            else _make_autotune_configs()
+        ),
         key=[
             "num_batches",
             "in_channels",
@@ -748,7 +906,15 @@ _autotuned_kernels = {
             "T_STEPS",
             "USE_TF32",
         ],
-        prune_configs_by={"early_config_prune": _prune_temporal_configs},
+        prune_configs_by={
+            "early_config_prune": (
+                _prune_dwconv_configs
+                if KERNEL_VARIANTS[kernel_key].get("depthwise")
+                else _prune_pointwise_configs
+                if kernel_key == "k1_s1_p0"
+                else _prune_temporal_configs
+            )
+        },
         reset_to_zero=["v_ptr"],
         cache_results=True,
     )(triton.jit(kernel_fn))
@@ -756,7 +922,13 @@ _autotuned_kernels = {
 }
 _residual_autotuned_kernels = {
     kernel_key: triton.autotune(
-        configs=_make_dwconv_autotune_configs() if KERNEL_VARIANTS[kernel_key].get("depthwise") else _make_autotune_configs(),
+        configs=(
+            _make_dwconv_autotune_configs()
+            if KERNEL_VARIANTS[kernel_key].get("depthwise")
+            else _make_pointwise_autotune_configs()
+            if kernel_key == "k1_s1_p0"
+            else _make_autotune_configs()
+        ),
         key=[
             "num_batches",
             "in_channels",
@@ -768,7 +940,15 @@ _residual_autotuned_kernels = {
             "T_STEPS",
             "USE_TF32",
         ],
-        prune_configs_by={"early_config_prune": _prune_temporal_configs},
+        prune_configs_by={
+            "early_config_prune": (
+                _prune_dwconv_configs
+                if KERNEL_VARIANTS[kernel_key].get("depthwise")
+                else _prune_pointwise_configs
+                if kernel_key == "k1_s1_p0"
+                else _prune_temporal_configs
+            )
+        },
         reset_to_zero=["v_ptr"],
         cache_results=True,
     )(triton.jit(kernel_fn))
@@ -814,8 +994,6 @@ def run_fused_temporal_general(
             f"{temporal_batch_size} * {reuse_groups} > {timesteps}"
         )
 
-    if spatial_config is None:
-        spatial_config = _default_config_for_key(kernel_key)
     if kernel_key not in KERNEL_VARIANTS:
         raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
 
@@ -823,6 +1001,12 @@ def run_fused_temporal_general(
     out_channels = weight.shape[0]
     variant = KERNEL_VARIANTS[kernel_key]
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
+    if spatial_config is None and _is_depthwise_kernel_key(kernel_key):
+        spatial_config = _depthwise_config_for_shape(kernel_key, out_channels, height, width)
+    elif spatial_config is None and kernel_key == "k1_s1_p0":
+        spatial_config = _pointwise_config_for_shape(in_channels, out_channels, height, width)
+    elif spatial_config is None:
+        spatial_config = _default_config_for_key(kernel_key)
     x_flat = x_seq.reshape(timesteps * batch, in_channels, height, width).contiguous()
     if spikes_out is None or membrane_out is None:
         spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
@@ -934,8 +1118,6 @@ def run_fused_temporal_general_residual(
             f"BTILE_T * REUSE_GROUPS must be <= T_STEPS, got "
             f"{temporal_batch_size} * {reuse_groups} > {timesteps}"
         )
-    if spatial_config is None:
-        spatial_config = _default_config_for_key(kernel_key)
     if kernel_key not in KERNEL_VARIANTS:
         raise ValueError(f"unsupported kernel_key={kernel_key}, expected one of {tuple(KERNEL_VARIANTS)}")
 
@@ -943,6 +1125,12 @@ def run_fused_temporal_general_residual(
     out_channels = weight.shape[0]
     variant = KERNEL_VARIANTS[kernel_key]
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
+    if spatial_config is None and _is_depthwise_kernel_key(kernel_key):
+        spatial_config = _depthwise_config_for_shape(kernel_key, out_channels, height, width)
+    elif spatial_config is None and kernel_key == "k1_s1_p0":
+        spatial_config = _pointwise_config_for_shape(in_channels, out_channels, height, width)
+    elif spatial_config is None:
+        spatial_config = _default_config_for_key(kernel_key)
     x_flat = x_seq.reshape(timesteps * batch, in_channels, height, width).contiguous()
     spikes, membrane = _alloc_outputs(x_seq, out_channels, out_height, out_width, v_init=v_init)
     _check_residual_seq(residual_seq, spikes, x_seq)
@@ -1168,6 +1356,14 @@ def get_autotune_best_config(kernel_key: str = "k3_s1_p1", residual_add: bool = 
         "BTILE_T": btile_t,
         "REUSE_GROUPS": reuse_groups,
         "kernel_temporal_window": kernel_temporal_window,
+        "acc_elems": (
+            int(btile_t) * int(reuse_groups) * int(all_kwargs.get("BLOCK_M")) * int(all_kwargs.get("BLOCK_OC"))
+            if btile_t is not None
+            and reuse_groups is not None
+            and all_kwargs.get("BLOCK_M") is not None
+            and all_kwargs.get("BLOCK_OC") is not None
+            else None
+        ),
         "num_warps": all_kwargs.get("num_warps"),
         "num_stages": all_kwargs.get("num_stages"),
     }

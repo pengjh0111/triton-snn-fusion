@@ -8,9 +8,12 @@ import torch.nn.functional as F
 
 from runtime.triton_convlif_backend import (
     check_triton_support,
+    classify_conv_lif_config,
     run_triton_fused_conv_lif_state,
     run_triton_fused_temporal_conv_add_lif_state,
     run_triton_fused_temporal_conv_lif_state,
+    run_triton_fused_temporal_depthwise_conv_lif_state,
+    run_triton_fused_temporal_pointwise_conv_lif_state,
     run_triton_fused_temporal_conv_lif_state_packed_out,
 )
 from runtime.triton_temporal_lif_backend import run_triton_fused_temporal_lif_state
@@ -30,6 +33,7 @@ class FusedOpConfig:
     backend: str = "torch"
     strict_triton: bool = False
     verbose: bool = False
+    use_triton_autotune: bool = True
 
 
 _CONFIG = FusedOpConfig()
@@ -172,12 +176,18 @@ def _record_fallback(kind: str, reasons, shape_desc: str):
         print(f"[TRITON][FALLBACK][{kind}] reason_key={','.join(sorted(set(keys)))}; reason={reason_text}; {shape_desc}")
 
 
-def configure_fused_op(backend: str = "torch", strict_triton: bool = False, verbose: bool = False):
+def configure_fused_op(
+    backend: str = "torch",
+    strict_triton: bool = False,
+    verbose: bool = False,
+    use_triton_autotune: bool = True,
+):
     if backend not in ("torch", "triton"):
         raise ValueError(f"unsupported fused op backend: {backend}")
     _CONFIG.backend = backend
     _CONFIG.strict_triton = bool(strict_triton)
     _CONFIG.verbose = bool(verbose)
+    _CONFIG.use_triton_autotune = bool(use_triton_autotune)
 
 
 def reset_fused_op_call_stats():
@@ -345,6 +355,24 @@ def _record_kernel_temporal_config(kind: str, kernel_key: str, config, compute_d
 
 def _strict_temporal_lif_triton_enabled() -> bool:
     return bool(_CONFIG.strict_triton) or os.environ.get("CHRONOS_STRICT_TEMPORAL_LIF_TRITON", "0") == "1"
+
+
+def _get_kernel_temporal_config(kernel_key: str, residual_add: bool = False):
+    try:
+        from kernels.benchmark_conv_lif_temporal_general import get_autotune_best_config
+
+        return get_autotune_best_config(kernel_key, residual_add=residual_add)
+    except Exception:
+        return None
+
+
+def _get_kernel_diagnostics(dtype):
+    try:
+        from kernels.benchmark_conv_lif_temporal_general import kernel_dtype_diagnostics
+
+        return kernel_dtype_diagnostics(dtype)
+    except Exception:
+        return None
 
 
 def _ensure_v_prev(x: torch.Tensor, v_prev: torch.Tensor) -> torch.Tensor:
@@ -990,6 +1018,7 @@ def _fused_temporal_conv_lif_state_impl(
                 strict=_CONFIG.strict_triton,
                 verbose=_CONFIG.verbose,
                 compute_dtype=compute_dtype,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
@@ -1038,7 +1067,9 @@ def _fused_temporal_conv_lif_state_impl(
     )
 
 
-def _fused_temporal_conv_lif_state_depthwise_impl(
+def _fused_temporal_conv_lif_state_kind_impl(
+    op_name,
+    runner,
     xs,
     weight,
     bias,
@@ -1066,28 +1097,35 @@ def _fused_temporal_conv_lif_state_depthwise_impl(
         groups,
         temporal_len=len(xs) if xs is not None else None,
     )
+    signature = _conv_signature_key(first_x, weight, stride, padding, dilation, groups)
 
     if _CONFIG.backend == "triton" and first_x is not None and first_x.is_cuda:
         try:
             compute_dtype = "float16" if first_x.dtype == torch.float16 else "float32"
-            # stack inputs to [T,N,C,H,W]
-            x_seq = torch.stack(tuple(xs), dim=0).contiguous()
-            from kernels import fused_depthwise
-
-            kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
-            result = fused_depthwise.run_fused_temporal_depthwise_autotuned(
-                x_seq,
-                weight.contiguous(),
-                bias.contiguous(),
-                kernel_key=kernel_key,
-                v_init=v_init,
+            result = runner(
+                xs,
+                weight,
+                bias,
+                v_init,
+                stride,
+                padding,
+                dilation,
+                groups,
+                v_threshold,
+                v_reset,
+                tau,
+                detach_reset,
+                strict=_CONFIG.strict_triton,
+                verbose=_CONFIG.verbose,
+                compute_dtype=compute_dtype,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
-            spikes, membrane = result
+            kernel_key = result.kernel_key
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
             _CALL_STATS[f"temporal_{kernel_key}"] = _CALL_STATS.get(f"temporal_{kernel_key}", 0) + 1
             _record_kernel_temporal_config("temporal", kernel_key, _get_kernel_temporal_config(kernel_key), compute_dtype)
-            _record_temporal_conv_signature("temporal", _conv_signature_key(first_x, weight, stride, padding, dilation, groups), "triton")
+            _record_temporal_conv_signature(op_name, signature, "triton")
             if _CONFIG.verbose:
                 diagnostics = _get_kernel_diagnostics(first_x.dtype) or {}
                 if diagnostics:
@@ -1099,20 +1137,21 @@ def _fused_temporal_conv_lif_state_depthwise_impl(
                         f"tf32_enabled={diagnostics.get('tf32_enabled')} "
                         f"tensor_core_usage_mode={diagnostics.get('tensor_core_usage_mode')}"
                     )
-                print(f"[TRITON][HIT][temporal][{kernel_key}] {shape_desc}")
-            return spikes, membrane
+                print(f"[TRITON][HIT][{op_name}][{kernel_key}] {shape_desc}")
+            return result.spikes, result.v_next
         except Exception as exc:
             _CALL_STATS["fallback"] += 1
             _CALL_STATS["temporal_fallback"] += 1
-            _record_fallback("temporal", [str(exc)], shape_desc)
+            _record_fallback(op_name, [str(exc)], shape_desc)
+            _record_temporal_conv_signature(op_name, signature, "fallback", [str(exc)])
             if _strict_temporal_lif_triton_enabled():
                 raise
 
     _CALL_STATS["fallback"] += 1
     _CALL_STATS["temporal_fallback"] += 1
     reason = "backend is not triton" if _CONFIG.backend != "triton" else "first_x is not CUDA or xs is empty"
-    _record_fallback("temporal_dispatch", [reason], shape_desc)
-    _record_temporal_conv_signature("temporal", _conv_signature_key(first_x, weight, stride, padding, dilation, groups), "fallback", [reason])
+    _record_fallback(f"{op_name}_dispatch", [reason], shape_desc)
+    _record_temporal_conv_signature(op_name, signature, "fallback", [reason])
 
     return fused_temporal_conv_lif_state_torch(
         xs,
@@ -1128,6 +1167,26 @@ def _fused_temporal_conv_lif_state_depthwise_impl(
         tau,
         detach_reset,
     )
+
+
+def _fused_temporal_pointwise_conv_lif_state_impl(*args):
+    return _fused_temporal_conv_lif_state_kind_impl(
+        "fused_temporal_pointwise_conv_lif_state",
+        run_triton_fused_temporal_pointwise_conv_lif_state,
+        *args,
+    )
+
+
+def _fused_temporal_depthwise_conv_lif_state_impl(*args):
+    return _fused_temporal_conv_lif_state_kind_impl(
+        "fused_temporal_depthwise_conv_lif_state",
+        run_triton_fused_temporal_depthwise_conv_lif_state,
+        *args,
+    )
+
+
+def _fused_temporal_conv_lif_state_depthwise_impl(*args):
+    return _fused_temporal_depthwise_conv_lif_state_impl(*args)
 
 
 def _fused_temporal_conv_lif_state_packed_out_impl(
@@ -1183,6 +1242,7 @@ def _fused_temporal_conv_lif_state_packed_out_impl(
                 strict=_CONFIG.strict_triton,
                 verbose=_CONFIG.verbose,
                 compute_dtype=compute_dtype,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
@@ -1263,14 +1323,28 @@ def _fused_temporal_conv_add_lif_state_depthwise_impl(
     if _CONFIG.backend == "triton" and first_x is not None and first_x.is_cuda:
         try:
             compute_dtype = "float16" if first_x.dtype == torch.float16 else "float32"
-            x_seq = torch.stack(tuple(xs), dim=0).contiguous()
-            residual_seq = torch.stack(tuple(residuals), dim=0).contiguous()
-            from kernels import fused_depthwise
-
-            kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
-            spikes, membrane = fused_depthwise.run_fused_temporal_depthwise_residual_autotuned(
-                x_seq, residual_seq, weight.contiguous(), bias.contiguous(), kernel_key=kernel_key, v_init=v_init
+            result = run_triton_fused_temporal_conv_add_lif_state(
+                xs,
+                residuals,
+                weight,
+                bias,
+                v_init,
+                stride,
+                padding,
+                dilation,
+                groups,
+                v_threshold,
+                v_reset,
+                tau,
+                detach_reset,
+                strict=_CONFIG.strict_triton,
+                verbose=_CONFIG.verbose,
+                compute_dtype=compute_dtype,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
+            kernel_key = result.kernel_key
+            if not kernel_key.startswith("depthwise_"):
+                raise RuntimeError(f"depthwise residual op requires depthwise kernel, got {kernel_key}")
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
             _CALL_STATS[f"temporal_{kernel_key}"] = _CALL_STATS.get(f"temporal_{kernel_key}", 0) + 1
@@ -1288,7 +1362,7 @@ def _fused_temporal_conv_add_lif_state_depthwise_impl(
                         f"tensor_core_usage_mode={diagnostics.get('tensor_core_usage_mode')}"
                     )
                 print(f"[TRITON][HIT][temporal][{kernel_key}] {shape_desc}")
-            return spikes, membrane
+            return result.spikes, result.v_next
         except Exception as exc:
             _CALL_STATS["fallback"] += 1
             _CALL_STATS["temporal_fallback"] += 1
@@ -1403,6 +1477,7 @@ def _fused_temporal_conv_add_lif_state_impl(
                 strict=_CONFIG.strict_triton,
                 verbose=_CONFIG.verbose,
                 compute_dtype=compute_dtype,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
@@ -1542,6 +1617,7 @@ def _fused_temporal_lif_state_impl(
                 detach_reset,
                 strict=_CONFIG.strict_triton,
                 verbose=_CONFIG.verbose,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
@@ -1615,6 +1691,7 @@ def _fused_temporal_lif_avgpool_linear_impl(
                 detach_reset,
                 strict=_CONFIG.strict_triton,
                 verbose=_CONFIG.verbose,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
@@ -1826,6 +1903,7 @@ def _fused_temporal_linear_lif_state_packed_out_impl(
                 v_out,
                 strict=_CONFIG.strict_triton,
                 verbose=_CONFIG.verbose,
+                use_autotune=_CONFIG.use_triton_autotune,
             )
             _CALL_STATS["triton"] += 1
             _CALL_STATS["temporal_triton"] += 1
@@ -1890,7 +1968,19 @@ def register_snn_custom_ops():
             "int groups, float v_threshold, float v_reset, float tau, bool detach_reset"
             ") -> (Tensor, Tensor)"
         )
-        # Depthwise-specific op to allow FX to request depthwise-only kernels
+        def_lib.define(
+            "fused_temporal_pointwise_conv_lif_state("
+            "Tensor[] xs, Tensor weight, Tensor bias, Tensor v_init, int[] stride, int[] padding, int[] dilation, "
+            "int groups, float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
+        def_lib.define(
+            "fused_temporal_depthwise_conv_lif_state("
+            "Tensor[] xs, Tensor weight, Tensor bias, Tensor v_init, int[] stride, int[] padding, int[] dilation, "
+            "int groups, float v_threshold, float v_reset, float tau, bool detach_reset"
+            ") -> (Tensor, Tensor)"
+        )
+        # Compatibility alias for older callers.
         def_lib.define(
             "fused_temporal_conv_lif_state_depthwise("
             "Tensor[] xs, Tensor weight, Tensor bias, Tensor v_init, int[] stride, int[] padding, int[] dilation, "
@@ -1984,7 +2074,13 @@ def register_snn_custom_ops():
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CPU")
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CUDA")
         impl_lib.impl("fused_temporal_conv_lif_state", _fused_temporal_conv_lif_state_meta, "Meta")
-        # Depthwise implementations: CUDA path dispatches to depthwise wrapper; CPU/Meta fall back to existing impl
+        impl_lib.impl("fused_temporal_pointwise_conv_lif_state", _fused_temporal_pointwise_conv_lif_state_impl, "CUDA")
+        impl_lib.impl("fused_temporal_pointwise_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CPU")
+        impl_lib.impl("fused_temporal_pointwise_conv_lif_state", _fused_temporal_conv_lif_state_meta, "Meta")
+        impl_lib.impl("fused_temporal_depthwise_conv_lif_state", _fused_temporal_depthwise_conv_lif_state_impl, "CUDA")
+        impl_lib.impl("fused_temporal_depthwise_conv_lif_state", _fused_temporal_conv_lif_state_impl, "CPU")
+        impl_lib.impl("fused_temporal_depthwise_conv_lif_state", _fused_temporal_conv_lif_state_meta, "Meta")
+        # Compatibility alias; CUDA path dispatches to the depthwise-only wrapper.
         impl_lib.impl("fused_temporal_conv_lif_state_depthwise", _fused_temporal_conv_lif_state_depthwise_impl, "CUDA")
         impl_lib.impl("fused_temporal_conv_lif_state_depthwise", _fused_temporal_conv_lif_state_impl, "CPU")
         impl_lib.impl("fused_temporal_conv_lif_state_depthwise", _fused_temporal_conv_lif_state_meta, "Meta")

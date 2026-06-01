@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from runtime.snn_custom_ops import lif_forward_state_torch
 from runtime.triton_convlif_backend import (
-    run_triton_fused_temporal_conv_lif_state,
+    run_triton_fused_temporal_depthwise_conv_lif_state,
 )
 
 
@@ -81,7 +81,7 @@ def run_case(args, stride: int) -> Dict:
         return _lif_loop(x_seq, weight, bias, v_init, stride)
 
     def fixed_fn():
-        return run_triton_fused_temporal_conv_lif_state(
+        return run_triton_fused_temporal_depthwise_conv_lif_state(
             xs,
             weight,
             bias,
@@ -98,7 +98,7 @@ def run_case(args, stride: int) -> Dict:
         )
 
     def autotuned_fn():
-        return run_triton_fused_temporal_conv_lif_state(
+        return run_triton_fused_temporal_depthwise_conv_lif_state(
             xs,
             weight,
             bias,

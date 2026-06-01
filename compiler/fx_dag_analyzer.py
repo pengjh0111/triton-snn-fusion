@@ -107,6 +107,9 @@ def _is_fused_convlif(node: torch.fx.Node) -> bool:
         "snn_custom.fused_conv_lif_forward_state.default",
         "snn_custom.fused_conv_lif_state.default",
         "snn_custom.fused_temporal_conv_lif_state.default",
+        "snn_custom.fused_temporal_pointwise_conv_lif_state.default",
+        "snn_custom.fused_temporal_depthwise_conv_lif_state.default",
+        "snn_custom.fused_temporal_conv_lif_state_depthwise.default",
     )
 
 
@@ -115,6 +118,9 @@ def _is_fused_convlif_state(node: torch.fx.Node) -> bool:
         "snn_custom.fused_conv_lif_forward_state.default",
         "snn_custom.fused_conv_lif_state.default",
         "snn_custom.fused_temporal_conv_lif_state.default",
+        "snn_custom.fused_temporal_pointwise_conv_lif_state.default",
+        "snn_custom.fused_temporal_depthwise_conv_lif_state.default",
+        "snn_custom.fused_temporal_conv_lif_state_depthwise.default",
     )
 
 
