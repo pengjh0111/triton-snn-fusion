@@ -305,6 +305,7 @@ class ChronosFXStandaloneExecutor:
         example_inputs: Optional[Tuple[Any, ...]] = None,
         debug: bool = False,
         schedule_policy: str = "topo",
+        sm_saturation_threshold: int = 400_000,
     ):
         self.gm = gm
         self.removed_v_final_outputs = 0
@@ -314,6 +315,7 @@ class ChronosFXStandaloneExecutor:
         if schedule_policy not in ("topo", "ready"):
             raise ValueError(f"unsupported FX standalone schedule_policy={schedule_policy!r}")
         self.schedule_policy = schedule_policy
+        self.sm_saturation_threshold = int(sm_saturation_threshold)
         self.nodes: List[torch.fx.Node] = list(gm.graph.nodes)
         self.placeholders = [node for node in self.nodes if node.op == "placeholder"]
         self.output_node = next((node for node in self.nodes if node.op == "output"), None)
@@ -338,6 +340,10 @@ class ChronosFXStandaloneExecutor:
         self.node_to_stream: Dict[torch.fx.Node, Optional[int]] = {}
         self.requested_num_streams = self.num_streams
         self.effective_num_streams = self.num_streams
+        self._multistream_gate_decided: bool = False
+        self._multistream_gate_enabled: bool = True
+        self._multistream_gate_reason: str = ""
+        self._multistream_gate_input_elements: int = 0
         self._affinity_hits = 0
         self._affinity_misses = 0
         self._same_stream_edges = 0
@@ -538,7 +544,7 @@ class ChronosFXStandaloneExecutor:
                     self.compute_users[dep].add(node)
 
     def _build_execution_plan(self) -> List[_ExecStep]:
-        if self.schedule_policy == "ready":
+        if self.schedule_policy == "ready" and self.effective_num_streams > 1:
             ordered_nodes = self._build_ready_schedule_order()
         else:
             ordered_nodes = list(self.compute_nodes)
@@ -554,7 +560,8 @@ class ChronosFXStandaloneExecutor:
         ]
         if self.debug:
             self._print_schedule_diagnostics()
-            self._print_stream_stats(plan)
+            if self.streams:
+                self._print_stream_stats(plan)
         return plan
 
     def _build_ready_schedule_order(self) -> List[torch.fx.Node]:
@@ -970,9 +977,6 @@ class ChronosFXStandaloneExecutor:
         remaining: Dict[torch.fx.Node, int] = defaultdict(int)
         for node in self.nodes:
             remaining[node] = len(node.users)
-        for step in self.execution_plan:
-            for dep in self.producer_compute_deps.get(step.node, ()):
-                remaining[dep] += 1
         return remaining
 
     def _is_env_prune_protected(self, node: torch.fx.Node) -> bool:
@@ -1005,9 +1009,6 @@ class ChronosFXStandaloneExecutor:
     ) -> None:
         direct_deps = set(self.deps.get(node, ()))
         for dep in direct_deps:
-            remaining_uses[dep] -= 1
-            self._prune_env_node_if_dead(dep, env, remaining_uses)
-        for dep in self.producer_compute_deps.get(node, ()):
             remaining_uses[dep] -= 1
             self._prune_env_node_if_dead(dep, env, remaining_uses)
         self._prune_env_node_if_dead(node, env, remaining_uses)
@@ -1082,16 +1083,98 @@ class ChronosFXStandaloneExecutor:
             )
         return output
 
+    def _decide_multistream_gate(self, inputs: Tuple[Any, ...]) -> bool:
+        """
+        Decide once whether this executor should use multi-stream scheduling.
+
+        The heuristic estimates fused-kernel granularity from the largest CUDA
+        input tensor and disables multi-stream when SM saturation is likely.
+        """
+        cuda_tensors = [
+            value
+            for value in inputs
+            if isinstance(value, torch.Tensor) and value.is_cuda
+        ]
+        if not cuda_tensors:
+            self._multistream_gate_reason = "no_cuda_input_tensors"
+            return False
+
+        image_like_tensors = [
+            tensor
+            for tensor in cuda_tensors
+            if tensor.dim() == 4 and int(tensor.shape[1]) <= 4
+        ]
+        input_tensors = image_like_tensors if image_like_tensors else cuda_tensors
+        max_input_elements = max(tensor.numel() for tensor in input_tensors)
+        self._multistream_gate_input_elements = int(max_input_elements)
+        estimated_feature_elements = max_input_elements * 4
+
+        if not self.compute_nodes:
+            self._analyze_compute_dependencies()
+        max_width = self._max_fused_ready_width() if self.compute_nodes else self.num_streams
+
+        if max_width <= 1:
+            self._multistream_gate_reason = f"max_fused_ready_width={max_width}_no_parallelism"
+            return False
+
+        fused_window_lengths: List[int] = []
+        for node in self.compute_nodes:
+            if not _is_chronos_fused_temporal_op(node) or not node.args:
+                continue
+            first_arg = node.args[0]
+            if isinstance(first_arg, (tuple, list)):
+                fused_window_lengths.append(len(first_arg))
+
+        if fused_window_lengths and min(fused_window_lengths) <= 1:
+            self._multistream_gate_reason = (
+                f"min_fused_input_list_len={min(fused_window_lengths)}"
+                f"_max_fused_ready_width={max_width}"
+                f"_explicit_window_wavefront"
+            )
+            return True
+
+        threshold = self.sm_saturation_threshold
+        if estimated_feature_elements > threshold:
+            self._multistream_gate_reason = (
+                f"estimated_feature_elements={estimated_feature_elements}"
+                f">threshold={threshold}"
+                f"_sm_saturation_likely"
+            )
+            return False
+
+        self._multistream_gate_reason = (
+            f"estimated_feature_elements={estimated_feature_elements}"
+            f"<=threshold={threshold}"
+            f"_multistream_viable"
+        )
+        return True
+
     def _ensure_cuda_schedule(self, inputs: Tuple[Any, ...]) -> bool:
         if self.num_streams <= 1 or not torch.cuda.is_available():
             return False
         tensors = [value for value in inputs if isinstance(value, torch.Tensor)]
         if not tensors or not any(t.is_cuda for t in tensors):
             return False
+
+        if not self._multistream_gate_decided:
+            self._multistream_gate_enabled = self._decide_multistream_gate(inputs)
+            self._multistream_gate_decided = True
+            if self.debug:
+                print(
+                    f"[FX_MULTISTREAM_GATE] "
+                    f"enabled={self._multistream_gate_enabled} "
+                    f"max_input_elements={self._multistream_gate_input_elements} "
+                    f"sm_saturation_threshold={self.sm_saturation_threshold} "
+                    f"reason={self._multistream_gate_reason}"
+                )
+
         if not self.streams:
-            self._analyze_compute_dependencies()
+            if not self.node_kinds:
+                self._analyze_compute_dependencies()
             max_fused_ready_width = self._max_fused_ready_width()
-            if max_fused_ready_width <= 1:
+            if not self._multistream_gate_enabled:
+                effective = 1
+            elif max_fused_ready_width <= 1:
                 effective = 1
             elif max_fused_ready_width == 2:
                 effective = min(self.num_streams, 2)
@@ -1101,7 +1184,9 @@ class ChronosFXStandaloneExecutor:
             if self.debug:
                 print(
                     f"[FX_STREAM_CLAMP] requested={self.num_streams} effective={self.effective_num_streams} "
-                    f"max_fused_ready_width={max_fused_ready_width}"
+                    f"max_fused_ready_width={max_fused_ready_width} "
+                    f"gate_enabled={self._multistream_gate_enabled} "
+                    f"gate_reason={self._multistream_gate_reason}"
                 )
             self.streams = [torch.cuda.Stream(device=tensors[0].device) for _ in range(self.effective_num_streams)]
             self._plan_compiled = False
@@ -1114,6 +1199,10 @@ class ChronosFXStandaloneExecutor:
 
     def _run_multistream(self, inputs: Tuple[Any, ...]) -> Any:
         if not self._ensure_cuda_schedule(inputs):
+            # Multi-stream gating should only disable side-stream scheduling.
+            # Keep the execution path identical to the normal FX executor here:
+            # the pooled/out variant can add torch.stack + packed-out overhead,
+            # which is a regression for large window=1 conv-heavy graphs.
             return self._run_serial(inputs)
 
         env = self._bind_placeholders(inputs)
@@ -1159,7 +1248,10 @@ class ChronosFXStandaloneExecutor:
                 if step.record_event is not None:
                     step.record_event.record(stream)
 
-            self._consume_env_inputs(step.node, env, remaining_uses)
+            # Keep scheduled execution conservative: FX metadata/getitem chains
+            # can share tensor producers in ways that are not represented by
+            # producer-event deps. Dynamic env pruning may delete those values
+            # before a later metadata materialization resolves them.
             self._update_env_live_stats(env)
 
             if self.debug:
@@ -1211,17 +1303,31 @@ class ChronosFXStandaloneExecutor:
                 self._static_output = None
             torch.cuda.synchronize()
 
-            # streams and events must exist before capture.
-            if self.num_streams > 1 and not self._ensure_cuda_schedule(self._static_inputs):
-                self._graph_fallback_reason = "CUDA schedule could not be initialized before capture"
-                if self.debug:
-                    print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
-                return
-            if self.num_streams > 1 and not self.streams:
-                self._graph_fallback_reason = "CUDA streams were not populated before capture"
-                if self.debug:
-                    print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
-                return
+            if self.num_streams > 1:
+                # streams and events must exist before capture when the
+                # multi-stream schedule is enabled. If the gate disables
+                # multi-stream, capture the serial FX path instead.
+                schedule_ready = self._ensure_cuda_schedule(self._static_inputs)
+                if not schedule_ready:
+                    gate_disabled = self._multistream_gate_decided and not self._multistream_gate_enabled
+                    if not gate_disabled:
+                        self._graph_fallback_reason = "CUDA schedule could not be initialized before capture"
+                        if self.debug:
+                            print(
+                                "[CUDA_GRAPH] enabled=True captured=False fallback=True "
+                                f"reason={self._graph_fallback_reason}"
+                            )
+                        return
+                    if self.debug:
+                        print(
+                            "[CUDA_GRAPH] multi_stream_schedule=False "
+                            f"capturing=serial reason={self._multistream_gate_reason}"
+                        )
+                elif not self.streams:
+                    self._graph_fallback_reason = "CUDA streams were not populated before capture"
+                    if self.debug:
+                        print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
+                    return
             graph = torch.cuda.CUDAGraph()
             with torch.cuda.graph(graph):
                 self._static_output = self._run_uncaptured(self._static_inputs)
@@ -1262,6 +1368,7 @@ def build_fx_standalone_backend(
     example_inputs: Optional[Tuple[Any, ...]] = None,
     debug: bool = False,
     schedule_policy: str = "topo",
+    sm_saturation_threshold: int = 400_000,
 ):
     executor = ChronosFXStandaloneExecutor(
         gm,
@@ -1270,6 +1377,7 @@ def build_fx_standalone_backend(
         example_inputs=example_inputs,
         debug=debug,
         schedule_policy=schedule_policy,
+        sm_saturation_threshold=sm_saturation_threshold,
     )
     return executor
 
@@ -1280,6 +1388,7 @@ def make_fx_standalone_torch_compile_backend(
     use_cuda_graph: bool = False,
     debug: bool = False,
     schedule_policy: str = "topo",
+    sm_saturation_threshold: int = 400_000,
 ):
     def backend(gm: torch.fx.GraphModule, example_inputs, **_compile_kwargs):
         return build_fx_standalone_backend(
@@ -1289,6 +1398,7 @@ def make_fx_standalone_torch_compile_backend(
             example_inputs=tuple(example_inputs),
             debug=debug,
             schedule_policy=schedule_policy,
+            sm_saturation_threshold=sm_saturation_threshold,
         )
 
     return backend
