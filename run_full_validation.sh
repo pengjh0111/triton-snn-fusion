@@ -9,7 +9,7 @@ mkdir -p ${OUT_ROOT}
 
 WINDOWS=(1 2 4 8 16)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2")
-MODELS=("resnet18")
+MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2")
 
 ############################################
 # FP32 FULL VALIDATION
@@ -79,7 +79,7 @@ for MODEL in "${MODELS[@]}"; do
   elif [[ "${MODEL}" == "vgg16" ]]; then
     BATCH_SIZES=(1 4)
   else
-    BATCH_SIZES=(16)
+    BATCH_SIZES=(1 4 8 16)
   fi
 
   for BATCH_SIZE in "${BATCH_SIZES[@]}"; do
@@ -103,7 +103,7 @@ for MODEL in "${MODELS[@]}"; do
         --dtype fp32 \
         --fused-op-backend triton \
         --rewrite-backend-mode standalone \
-        --fx-standalone-streams 16 \
+        --fx-standalone-streams 32 \
         --fx-standalone-cudagraph \
         --fx-standalone-schedule-policy ready \
         --enable-temporal-rewrite \
