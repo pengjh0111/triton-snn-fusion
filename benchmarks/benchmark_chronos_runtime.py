@@ -588,6 +588,7 @@ def parse_args():
     parser.add_argument("--fx-standalone-streams", type=int, default=1)
     parser.add_argument("--fx-standalone-cudagraph", action="store_true")
     parser.add_argument("--fx-standalone-debug", action="store_true")
+    parser.add_argument("--fx-standalone-schedule-policy", choices=("topo", "ready"), default="topo")
 
     parser.add_argument("--strict-triton", action="store_true")
 
@@ -686,6 +687,12 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.rewrite_backend_mode == "standalone" and args.fx_standalone_cudagraph and args.enable_cudagraphs:
+        print(
+            "[FX_STANDALONE] warning: disabling outer --enable-cudagraphs because "
+            "--fx-standalone-cudagraph captures the standalone executor internally"
+        )
+        args.enable_cudagraphs = False
 
     if args.device.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError(

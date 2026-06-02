@@ -9,12 +9,65 @@ mkdir -p ${OUT_ROOT}
 
 WINDOWS=(1 2 4 8 16)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2")
-MODELS=("resnet18")
+MODELS=("mobilenetv2")
 
 ############################################
 # FP32 FULL VALIDATION
 ############################################
 
+# for MODEL in "${MODELS[@]}"; do
+
+#   #
+#   # per-model batch size
+#   #
+
+#   if [[ "${MODEL}" == "vgg11" ]]; then
+#     BATCH_SIZE=8
+#   elif [[ "${MODEL}" == "vgg16" ]]; then
+#     BATCH_SIZE=4
+#   else
+#     BATCH_SIZE=16
+#   fi
+
+#   for W in "${WINDOWS[@]}"; do
+
+#     echo "========================================="
+#     echo "[FP32] MODEL=${MODEL} WINDOW=${W} BATCH=${BATCH_SIZE}"
+#     echo "========================================="
+
+#     OUT_DIR=${OUT_ROOT}/${MODEL}/fp32_w${W}
+#     mkdir -p ${OUT_DIR}
+
+#     python3 benchmarks/benchmark_chronos_runtime.py \
+#       --models ${MODEL} \
+#       --lif-impl chronos \
+#       --T 16 \
+#       --batch-size ${BATCH_SIZE} \
+#       --height 224 \
+#       --width 224 \
+#       --device cuda \
+#       --dtype fp32 \
+#       --fused-op-backend triton \
+#       --rewrite-backend-mode inductor \
+#       --enable-temporal-rewrite \
+#       --enable-temporal-schedule \
+#       --enable-spatial-batching \
+#       --spatial-batching-ops conv bn add maxpool avgpool flatten linear \
+#       --enable-cudagraphs \
+#       --cudagraph-mode reduce-overhead \
+#       --temporal-fuse-window ${W} \
+#       --temporal-schedule-window ${W} \
+#       --max-patterns 1000000 \
+#       --warmup 20 \
+#       --repeat 100 \
+#       --include-s-cases \
+#       --out-dir ${OUT_DIR} \
+#       2>&1 | tee ${OUT_DIR}/runtime.log
+
+#   done
+# done
+
+# multi-stream
 for MODEL in "${MODELS[@]}"; do
 
   #
@@ -48,12 +101,14 @@ for MODEL in "${MODELS[@]}"; do
       --device cuda \
       --dtype fp32 \
       --fused-op-backend triton \
-      --rewrite-backend-mode inductor \
+      --rewrite-backend-mode standalone \
+      --fx-standalone-streams 16 \
+      --fx-standalone-cudagraph \
+      --fx-standalone-schedule-policy ready \
       --enable-temporal-rewrite \
       --enable-temporal-schedule \
       --enable-spatial-batching \
       --spatial-batching-ops conv bn add maxpool avgpool flatten linear \
-      --enable-cudagraphs \
       --cudagraph-mode reduce-overhead \
       --temporal-fuse-window ${W} \
       --temporal-schedule-window ${W} \

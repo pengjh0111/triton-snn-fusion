@@ -487,13 +487,6 @@ def _check_output_buffers(
 
 KERNEL_VARIANTS = {
     "k1_s1_p0": {"function": "_fused_conv_lif_temporal_general_kernel_k1_s1_p0_impl", "kernel": 1, "stride": 1, "pad": 0},
-    "k1_s1_p0_direct": {
-        "function": "_fused_pointwise_conv_lif_temporal_kernel_k1_s1_p0_impl",
-        "kernel": 1,
-        "stride": 1,
-        "pad": 0,
-        "pointwise_direct": True,
-    },
     "k3_s1_p1": {"function": "_fused_conv_lif_temporal_general_kernel_k3_s1_p1_impl", "kernel": 3, "stride": 1, "pad": 1},
     "k3_s2_p1": {"function": "_fused_conv_lif_temporal_general_kernel_k3_s2_p1_impl", "kernel": 3, "stride": 2, "pad": 1},
     "k5_s1_p2": {"function": "_fused_conv_lif_temporal_general_kernel_k5_s1_p2_impl", "kernel": 5, "stride": 1, "pad": 2},
@@ -520,14 +513,10 @@ def _is_depthwise_kernel_key(kernel_key: str) -> bool:
     return bool(KERNEL_VARIANTS.get(kernel_key, {}).get("depthwise", False))
 
 
-def _is_pointwise_kernel_key(kernel_key: str) -> bool:
-    return kernel_key in ("k1_s1_p0", "k1_s1_p0_direct")
-
-
 def _default_config_for_key(kernel_key: str) -> Dict[str, int]:
     if _is_depthwise_kernel_key(kernel_key):
         return {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 1, "num_stages": 3}
-    if kernel_key in ("k1_s1_p0", "k1_s1_p0_direct"):
+    if kernel_key == "k1_s1_p0":
         return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
     return {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
 
@@ -536,10 +525,6 @@ def _pointwise_config_for_shape(in_channels: int, out_channels: int, height: int
     # MobileNetV1 pointwise layers are bandwidth/occupancy sensitive across
     # spatial scales. Keep a compact selector so regular conv autotune remains
     # untouched while k1_s1_p0 does not inherit the old two-config default.
-    if height <= 14 and out_channels >= 4 * in_channels:
-        return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
-    if 14 <= height <= 56 and in_channels >= 4 * out_channels:
-        return {"BLOCK_M": 32, "BLOCK_OC": 64, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2}
     if height >= 112 and in_channels <= 64:
         return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 16, "num_warps": 4, "num_stages": 2}
     if height >= 56 and in_channels <= 128:
@@ -555,8 +540,6 @@ def _pointwise_config_for_shape(in_channels: int, out_channels: int, height: int
 
 def _depthwise_config_for_shape(kernel_key: str, channels: int, height: int, width: int) -> Dict[str, int]:
     if kernel_key == "depthwise_k3_s1_p1":
-        if height <= 14 and channels >= 768:
-            return {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 3}
         if height >= 16 and channels <= 64:
             return {"BLOCK_H": 16, "BLOCK_W": 16, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 4}
         if height >= 8 and channels <= 256:
@@ -565,8 +548,6 @@ def _depthwise_config_for_shape(kernel_key: str, channels: int, height: int, wid
             return {"BLOCK_H": 4, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 4, "num_stages": 3}
         return {"BLOCK_H": 2, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 1, "num_stages": 3}
     if kernel_key == "depthwise_k3_s2_p1":
-        if height <= 14 and channels >= 768:
-            return {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 2, "num_stages": 3}
         if height >= 16 and channels <= 128:
             return {"BLOCK_H": 8, "BLOCK_W": 8, "BLOCK_C": 16, "PIXELS_PER_THREAD": 1, "num_warps": 2, "num_stages": 3}
         if height >= 8 and channels <= 256:
@@ -584,7 +565,6 @@ def _emit_general_kernel_source(
     stride: int = 1,
     pad: int = 1,
     residual_add: bool = False,
-    pointwise_direct: bool = False,
 ) -> str:
     """Generate a static-unrolled Triton kernel.
 
@@ -622,9 +602,6 @@ def _emit_general_kernel_source(
         shape = ", ".join(["2"] * levels + ["BLOCK_M", "BLOCK_OC"])
         emit_split_tree(f"acc_g{g}.reshape([{shape}])", levels, g, (), indent + "    ")
 
-    if pointwise_direct and (kernel_size, stride, pad) != (1, 1, 0):
-        raise ValueError("pointwise_direct emitter only supports k1_s1_p0")
-
     k_square = kernel_size * kernel_size
     lines.append(f"def {function_name}(")
     if residual_add:
@@ -648,10 +625,7 @@ def _emit_general_kernel_source(
     lines.append("    pix_hw = m_offsets % (out_height * out_width)")
     lines.append("    pix_h = pix_hw // out_width")
     lines.append("    pix_w = pix_hw % out_width")
-    if pointwise_direct:
-        lines.append("    K_TOTAL: tl.constexpr = in_channels")
-    else:
-        lines.append(f"    K_TOTAL: tl.constexpr = in_channels * {k_square}")
+    lines.append(f"    K_TOTAL: tl.constexpr = in_channels * {k_square}")
     lines.append("    BM_T: tl.constexpr = BLOCK_M * BTILE_T")
     lines.append("    WINDOW_T: tl.constexpr = BTILE_T * REUSE_GROUPS")
     lines.append("    if USE_TF32:")
@@ -670,9 +644,8 @@ def _emit_general_kernel_source(
     lines.append("    cat_m_mask = cat_m_offsets < (num_batches * out_height * out_width)")
     lines.append("    cat_pix_n = cat_m_offsets // (out_height * out_width)")
     lines.append("    cat_pix_hw = cat_m_offsets % (out_height * out_width)")
-    if not pointwise_direct:
-        lines.append("    cat_pix_h = cat_pix_hw // out_width")
-        lines.append("    cat_pix_w = cat_pix_hw % out_width")
+    lines.append("    cat_pix_h = cat_pix_hw // out_width")
+    lines.append("    cat_pix_w = cat_pix_hw % out_width")
     lines.append("    for temporal_base in range(0, T_STEPS, WINDOW_T):")
     for g in range(max_groups):
         lines.append(f"        if REUSE_GROUPS >= {g + 1}:")
@@ -683,28 +656,20 @@ def _emit_general_kernel_source(
     lines.append("        for k_start in range(0, K_TOTAL, BLOCK_K):")
     lines.append("            k_offsets = k_start + tl.arange(0, BLOCK_K)")
     lines.append("            k_mask = k_offsets < K_TOTAL")
-    if pointwise_direct:
-        lines.append("            ci = k_offsets")
-        lines.append("            w_offsets = oc_offsets[None, :] * in_channels + k_offsets[:, None]")
-    else:
-        lines.append(f"            ci = k_offsets // {k_square}")
-        lines.append(f"            kk = k_offsets % {k_square}")
-        lines.append(f"            kh = kk // {kernel_size}")
-        lines.append(f"            kw = kk % {kernel_size}")
-        lines.append(f"            ih = cat_pix_h[:, None] * {stride} + kh[None, :] - {pad}")
-        lines.append(f"            iw = cat_pix_w[:, None] * {stride} + kw[None, :] - {pad}")
-        lines.append("            in_bounds = (ih >= 0) & (ih < height) & (iw >= 0) & (iw < width)")
-        lines.append("            w_offsets = oc_offsets[None, :] * K_TOTAL + k_offsets[:, None]")
+    lines.append(f"            ci = k_offsets // {k_square}")
+    lines.append(f"            kk = k_offsets % {k_square}")
+    lines.append(f"            kh = kk // {kernel_size}")
+    lines.append(f"            kw = kk % {kernel_size}")
+    lines.append(f"            ih = cat_pix_h[:, None] * {stride} + kh[None, :] - {pad}")
+    lines.append(f"            iw = cat_pix_w[:, None] * {stride} + kw[None, :] - {pad}")
+    lines.append("            in_bounds = (ih >= 0) & (ih < height) & (iw >= 0) & (iw < width)")
+    lines.append("            w_offsets = oc_offsets[None, :] * K_TOTAL + k_offsets[:, None]")
     lines.append("            w_tile = tl.load(w_ptr + w_offsets, mask=k_mask[:, None] & oc_mask[None, :], other=0.0)")
     for g in range(max_groups):
         lines.append(f"            if REUSE_GROUPS >= {g + 1}:")
         lines.append(f"                step_g{g} = temporal_base + {g} * BTILE_T + local_t")
-        if pointwise_direct:
-            lines.append(f"                x_offsets_g{g} = (step_g{g}[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]")
-            lines.append(f"                x_g{g} = tl.load(x_ptr + x_offsets_g{g}, mask=cat_m_mask[:, None] & (step_g{g}[:, None] < T_STEPS) & k_mask[None, :], other=0.0)")
-        else:
-            lines.append(f"                x_offsets_g{g} = (step_g{g}[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw")
-            lines.append(f"                x_g{g} = tl.load(x_ptr + x_offsets_g{g}, mask=cat_m_mask[:, None] & (step_g{g}[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)")
+        lines.append(f"                x_offsets_g{g} = (step_g{g}[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw")
+        lines.append(f"                x_g{g} = tl.load(x_ptr + x_offsets_g{g}, mask=cat_m_mask[:, None] & (step_g{g}[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)")
         lines.append("                if USE_TF32:")
         lines.append(f"                    acc_g{g} = tl.dot(x_g{g}, w_tile, acc_g{g}, input_precision='tf32')")
         lines.append("                else:")
@@ -854,7 +819,7 @@ def _emit_depthwise_kernel_source(
 
 _kernel_namespace = {"tl": tl}
 _kernel_sources = []
-for _kernel_key, _variant in KERNEL_VARIANTS.items():
+for _variant in KERNEL_VARIANTS.values():
     if _variant.get("depthwise"):
         _kernel_sources.append(
             _emit_depthwise_kernel_source(
@@ -870,10 +835,9 @@ for _kernel_key, _variant in KERNEL_VARIANTS.items():
             kernel_size=_variant["kernel"],
             stride=_variant["stride"],
             pad=_variant["pad"],
-            pointwise_direct=bool(_variant.get("pointwise_direct", False)),
         )
     )
-for _kernel_key, _variant in KERNEL_VARIANTS.items():
+for _variant in KERNEL_VARIANTS.values():
     if _variant.get("depthwise"):
         _kernel_sources.append(
             _emit_depthwise_kernel_source(
@@ -891,7 +855,6 @@ for _kernel_key, _variant in KERNEL_VARIANTS.items():
             stride=_variant["stride"],
             pad=_variant["pad"],
             residual_add=True,
-            pointwise_direct=bool(_variant.get("pointwise_direct", False)),
         )
     )
 _kernel_sources.append("_fused_conv_lif_temporal_general_kernel_impl = _fused_conv_lif_temporal_general_kernel_k3_s1_p1_impl")
@@ -929,7 +892,7 @@ _autotuned_kernels = {
             _make_dwconv_autotune_configs()
             if KERNEL_VARIANTS[kernel_key].get("depthwise")
             else _make_pointwise_autotune_configs()
-            if _is_pointwise_kernel_key(kernel_key)
+            if kernel_key == "k1_s1_p0"
             else _make_autotune_configs()
         ),
         key=[
@@ -948,7 +911,7 @@ _autotuned_kernels = {
                 _prune_dwconv_configs
                 if KERNEL_VARIANTS[kernel_key].get("depthwise")
                 else _prune_pointwise_configs
-                if _is_pointwise_kernel_key(kernel_key)
+                if kernel_key == "k1_s1_p0"
                 else _prune_temporal_configs
             )
         },
@@ -963,7 +926,7 @@ _residual_autotuned_kernels = {
             _make_dwconv_autotune_configs()
             if KERNEL_VARIANTS[kernel_key].get("depthwise")
             else _make_pointwise_autotune_configs()
-            if _is_pointwise_kernel_key(kernel_key)
+            if kernel_key == "k1_s1_p0"
             else _make_autotune_configs()
         ),
         key=[
@@ -982,7 +945,7 @@ _residual_autotuned_kernels = {
                 _prune_dwconv_configs
                 if KERNEL_VARIANTS[kernel_key].get("depthwise")
                 else _prune_pointwise_configs
-                if _is_pointwise_kernel_key(kernel_key)
+                if kernel_key == "k1_s1_p0"
                 else _prune_temporal_configs
             )
         },
@@ -1040,7 +1003,7 @@ def run_fused_temporal_general(
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
     if spatial_config is None and _is_depthwise_kernel_key(kernel_key):
         spatial_config = _depthwise_config_for_shape(kernel_key, out_channels, height, width)
-    elif spatial_config is None and _is_pointwise_kernel_key(kernel_key):
+    elif spatial_config is None and kernel_key == "k1_s1_p0":
         spatial_config = _pointwise_config_for_shape(in_channels, out_channels, height, width)
     elif spatial_config is None:
         spatial_config = _default_config_for_key(kernel_key)
@@ -1164,7 +1127,7 @@ def run_fused_temporal_general_residual(
     out_height, out_width = _conv_out_hw(height, width, variant["kernel"], variant["stride"], variant["pad"])
     if spatial_config is None and _is_depthwise_kernel_key(kernel_key):
         spatial_config = _depthwise_config_for_shape(kernel_key, out_channels, height, width)
-    elif spatial_config is None and _is_pointwise_kernel_key(kernel_key):
+    elif spatial_config is None and kernel_key == "k1_s1_p0":
         spatial_config = _pointwise_config_for_shape(in_channels, out_channels, height, width)
     elif spatial_config is None:
         spatial_config = _default_config_for_key(kernel_key)

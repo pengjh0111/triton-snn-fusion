@@ -22,7 +22,10 @@ torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
 
 import runtime.snn_custom_ops as snn_custom_ops
-from runtime.fx_standalone_executor import build_fx_standalone_backend
+from runtime.fx_standalone_executor import (
+    build_fx_standalone_backend,
+    prune_graph_output_v_final_states,
+)
 from compiler.chronos_compile import (
     build_chronos_compile_config,
     compile_with_chronos_options,
@@ -1053,12 +1056,16 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         if args.rewrite_backend_mode == "eager":
             return gm.forward
         if args.rewrite_backend_mode == "standalone":
+            removed_v_final_outputs = prune_graph_output_v_final_states(gm)
+            if removed_v_final_outputs:
+                print(f"[STATE_PRUNE] removed_v_final_outputs={removed_v_final_outputs}")
             return build_fx_standalone_backend(
                 gm,
                 num_streams=args.fx_standalone_streams,
                 use_cuda_graph=args.fx_standalone_cudagraph,
                 example_inputs=tuple(example_inputs),
                 debug=args.fx_standalone_debug,
+                schedule_policy=args.fx_standalone_schedule_policy,
             )
         gm.meta.pop("dynamo_compile_id", None)
         if hasattr(gm, "_param_name_to_source"):
@@ -1310,6 +1317,7 @@ def parse_args():
     parser.add_argument("--fx-standalone-streams", type=int, default=1)
     parser.add_argument("--fx-standalone-cudagraph", action="store_true")
     parser.add_argument("--fx-standalone-debug", action="store_true")
+    parser.add_argument("--fx-standalone-schedule-policy", choices=("topo", "ready"), default="topo")
     parser.add_argument("--strict-triton", action="store_true")
     parser.add_argument("--disable-triton-autotune", action="store_true")
     parser.add_argument("--disable-rewrite", action="store_true")
@@ -1356,6 +1364,12 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.rewrite_backend_mode == "standalone" and args.fx_standalone_cudagraph and args.enable_cudagraphs:
+        print(
+            "[FX_STANDALONE] warning: disabling outer --enable-cudagraphs because "
+            "--fx-standalone-cudagraph captures the standalone executor internally"
+        )
+        args.enable_cudagraphs = False
     if args.device.startswith("cuda") and not torch.cuda.is_available():
         raise RuntimeError("CUDA was requested, but torch.cuda.is_available() is False")
     if args.dtype == "fp16" and args.rtol == 1e-4 and args.atol == 1e-4:

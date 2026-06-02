@@ -1686,6 +1686,26 @@ def _debug_conv_classify(name: str, kind: str, folded_weight, stride, padding, g
     )
 
 
+def _annotate_chronos_fused_temporal_node(
+    node: torch.fx.Node,
+    *,
+    op_kind: str,
+    layer_id: str,
+    window_id: int,
+    patterns: List[Any],
+) -> None:
+    timesteps = [int(getattr(pattern, "timestep_index", index)) for index, pattern in enumerate(patterns)]
+    if timesteps:
+        time_range = (min(timesteps), max(timesteps) + 1)
+    else:
+        time_range = (0, 0)
+    node.meta["chronos_op_kind"] = op_kind
+    node.meta["chronos_layer_id"] = layer_id
+    node.meta["chronos_window_id"] = int(window_id)
+    node.meta["chronos_time_range"] = time_range
+    node.meta["chronos_window_size"] = len(patterns)
+
+
 def _insert_binary_after(
     gm: torch.fx.GraphModule,
     target,
@@ -2078,6 +2098,13 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
                     args=(xs, weight_node, bias_node, v_init, stride, padding, dilation, groups, v_threshold, v_reset, tau, detach_reset),
                 )
                 temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_{conv_kind}_conv_lif_state"
+                _annotate_chronos_fused_temporal_node(
+                    temporal_tuple,
+                    op_kind=conv_kind,
+                    layer_id=window.layer_id,
+                    window_id=window.window_id,
+                    patterns=patterns,
+                )
 
             ok, reason = _all_inputs_available_for_node(gm, xs + [v_init, weight_node, bias_node], temporal_tuple)
             if not ok:
@@ -2291,6 +2318,13 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
                     ),
                 )
                 temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_conv_bn_add_lif_state"
+                _annotate_chronos_fused_temporal_node(
+                    temporal_tuple,
+                    op_kind="residual",
+                    layer_id=window.layer_id,
+                    window_id=window.window_id,
+                    patterns=patterns,
+                )
 
             ok, reason = _all_inputs_available_for_node(
                 gm,
@@ -2422,6 +2456,13 @@ def rewrite_temporal_lif_state_to_fused(
                     args=(x_seq, v_init, v_threshold, v_reset, tau, detach_reset),
                 )
                 temporal_tuple.name = f"{first.lif_node.name}_temporal_fused_lif_state"
+                _annotate_chronos_fused_temporal_node(
+                    temporal_tuple,
+                    op_kind="lif",
+                    layer_id=window.layer_id,
+                    window_id=window.window_id,
+                    patterns=patterns,
+                )
 
             ok, reason = _all_inputs_available_for_node(gm, xs + [v_init], x_seq)
             if not ok:
@@ -2609,6 +2650,13 @@ def rewrite_temporal_linear_lif_state_to_fused(
                     args=(x_seq, weight, bias, v_init, v_threshold, v_reset, tau, detach_reset, spike_stack, v_final),
                 )
                 temporal_op.name = f"{first.linear_node.name}_temporal_fused_linear_lif_state_out"
+                _annotate_chronos_fused_temporal_node(
+                    temporal_op,
+                    op_kind="linear",
+                    layer_id=window.layer_id,
+                    window_id=window.window_id,
+                    patterns=patterns,
+                )
             v_final_for_users = _clone_temporal_state_after(
                 gm,
                 v_final,
@@ -2745,6 +2793,13 @@ def rewrite_temporal_lif_avgpool_linear_to_fused(
                     args=(x_seq, v_init, first.fc_weight, fc_bias, v_threshold, v_reset, tau, detach_reset),
                 )
                 temporal_tuple.name = f"{first.lif_node.name}_temporal_fused_lif_avgpool_linear"
+                _annotate_chronos_fused_temporal_node(
+                    temporal_tuple,
+                    op_kind="linear",
+                    layer_id=window.layer_id,
+                    window_id=window.window_id,
+                    patterns=patterns,
+                )
 
             ok, reason = _all_inputs_available_for_node(gm, xs, x_seq)
             if not ok:

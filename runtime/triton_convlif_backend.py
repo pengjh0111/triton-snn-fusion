@@ -86,7 +86,7 @@ def classify_conv_lif_runtime_kind(weight, stride, padding, dilation, groups) ->
     kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
     if kernel_key.startswith("depthwise_"):
         return "depthwise"
-    if kernel_key in ("k1_s1_p0", "k1_s1_p0_direct"):
+    if kernel_key == "k1_s1_p0":
         return "pointwise"
     if kernel_key != "unsupported":
         return "regular"
@@ -261,7 +261,6 @@ def _run_triton_temporal_by_key(
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     if kernel_key in (
         "k1_s1_p0",
-        "k1_s1_p0_direct",
         "k3_s1_p1",
         "k3_s2_p1",
         "k5_s1_p2",
@@ -286,28 +285,12 @@ def _run_triton_temporal_by_key(
 def _validate_temporal_conv_kind(kind: str, kernel_key: str) -> None:
     if kind == "regular" and kernel_key.startswith("depthwise_"):
         raise RuntimeError(f"regular conv op cannot dispatch depthwise kernel {kernel_key}")
-    if kind == "regular" and kernel_key in ("k1_s1_p0", "k1_s1_p0_direct"):
-        raise RuntimeError(f"regular conv op cannot dispatch pointwise kernel {kernel_key}")
-    if kind == "pointwise" and kernel_key not in ("k1_s1_p0", "k1_s1_p0_direct"):
+    if kind == "regular" and kernel_key == "k1_s1_p0":
+        raise RuntimeError("regular conv op cannot dispatch pointwise kernel k1_s1_p0")
+    if kind == "pointwise" and kernel_key != "k1_s1_p0":
         raise RuntimeError(f"pointwise conv op requires k1_s1_p0 kernel, got {kernel_key}")
     if kind == "depthwise" and not kernel_key.startswith("depthwise_"):
         raise RuntimeError(f"depthwise conv op requires depthwise kernel, got {kernel_key}")
-
-
-def _select_temporal_backend_key(kind: str, kernel_key: str) -> str:
-    if kind == "pointwise" and kernel_key == "k1_s1_p0":
-        return "k1_s1_p0_direct"
-    return kernel_key
-
-
-def _kernel_path_label(kind: str, kernel_key: str) -> Tuple[str, bool, bool]:
-    if kind == "depthwise":
-        return f"{kernel_key}_stencil", False, False
-    if kind == "pointwise" and kernel_key == "k1_s1_p0_direct":
-        return "pw_k1_s1_p0_specialized", True, False
-    if kind == "pointwise":
-        return "k1_s1_p0_general_im2col", True, True
-    return "general", True, True
 
 
 def _debug_dispatch(verbose: bool, op_name: str, backend: str, xs_or_seq, weight, stride, padding, groups) -> None:
@@ -324,17 +307,6 @@ def _debug_dispatch(verbose: bool, op_name: str, backend: str, xs_or_seq, weight
         f"[CHRONOS_DISPATCH] op={op_name} backend={backend} "
         f"x_shape={x_shape} w_shape={w_shape} stride={tuple(_as_pair(stride))} "
         f"padding={tuple(_as_pair(padding))} groups={int(groups)}"
-    )
-
-
-def _debug_kernel_path(verbose: bool, kind: str, kernel_key: str) -> None:
-    if not verbose:
-        return
-    backend, uses_tl_dot, uses_im2col = _kernel_path_label(kind, kernel_key)
-    unchanged = kind == "regular"
-    print(
-        f"[CHRONOS_KERNEL_PATH] op={kind} backend={backend} "
-        f"uses_tl_dot={uses_tl_dot} uses_im2col={uses_im2col} unchanged={unchanged}"
     )
 
 
@@ -609,9 +581,7 @@ def _run_triton_fused_temporal_conv_lif_state_kind(
         if kernel_key == "unsupported":
             raise RuntimeError("unsupported dispatch key after support check")
         _validate_temporal_conv_kind(kind, kernel_key)
-        kernel_key = _select_temporal_backend_key(kind, kernel_key)
-        _debug_dispatch(verbose, op_name, _kernel_path_label(kind, kernel_key)[0], xs, weight, stride, padding, groups)
-        _debug_kernel_path(verbose, kind, kernel_key)
+        _debug_dispatch(verbose, op_name, kernel_key, xs, weight, stride, padding, groups)
         spikes, membrane = _run_triton_temporal_by_key(kernel_key, x_seq, weight, bias, use_autotune=use_autotune, v_init=v_init)
         return TritonConvLIFResult(
             spikes,
@@ -691,7 +661,6 @@ def run_triton_fused_temporal_conv_lif_state_packed_out(
         kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
         if kernel_key == "unsupported":
             raise RuntimeError("unsupported dispatch key after support check")
-        kernel_key = _select_temporal_backend_key(classify_conv_lif_runtime_kind(weight, stride, padding, dilation, groups), kernel_key)
         spikes, membrane = _run_triton_temporal_by_key(
             kernel_key,
             x_seq,
@@ -809,7 +778,6 @@ def run_triton_fused_temporal_conv_add_lif_state(
         kernel_key = classify_conv_lif_config(weight, stride, padding, dilation, groups)
         if kernel_key == "unsupported":
             raise RuntimeError("unsupported dispatch key after support check")
-        kernel_key = _select_temporal_backend_key(classify_conv_lif_runtime_kind(weight, stride, padding, dilation, groups), kernel_key)
         if use_autotune:
             spikes, membrane = run_fused_temporal_general_residual_autotuned(
                 x_seq,
