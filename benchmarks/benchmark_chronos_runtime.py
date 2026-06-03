@@ -317,49 +317,50 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         )
         execution_modes["baseline_multi_step_mode_compile"] = "multi_step_mode_native"
 
-    if args.sweep_temporal_windows:
-        candidate_windows = args.temporal_window_candidates
-    else:
-        candidate_windows = [args.temporal_fuse_window]
-
-    candidate_windows = [
-        w for w in candidate_windows
-        if w <= args.T and args.T % w == 0
-    ]
-
     chronos_rewrite_counters = {}
 
-    for tw in candidate_windows:
-        local_args = copy.deepcopy(args)
-        local_args.temporal_fuse_window = tw
+    if not args.baseline_only:
+        if args.sweep_temporal_windows:
+            candidate_windows = args.temporal_window_candidates
+        else:
+            candidate_windows = [args.temporal_fuse_window]
 
-        if local_args.temporal_schedule_window is None:
-            local_args.temporal_schedule_window = tw
+        candidate_windows = [
+            w for w in candidate_windows
+            if w <= args.T and args.T % w == 0
+        ]
 
-        rewrite_counters = RewriteCounters()
+        for tw in candidate_windows:
+            local_args = copy.deepcopy(args)
+            local_args.temporal_fuse_window = tw
 
-        chronos_backend = make_rewrite_backend(
-            local_args,
-            out_dir / f"chronos_single_step_loop_compile_w{tw}",
-            rewrite_counters,
-        )
+            if local_args.temporal_schedule_window is None:
+                local_args.temporal_schedule_window = tw
 
-        case_name = f"chronos_single_step_loop_compile_w{tw}"
+            rewrite_counters = RewriteCounters()
 
-        cases[case_name] = (
-            SingleStepModeLoopWrapper(
-                copy.deepcopy(base_layer_s),
-                local_args.T,
-            ).to(
-                device=local_args.device,
-                dtype=dtype,
-            ).eval(),
-            True,
-            chronos_backend,
-        )
-        execution_modes[case_name] = "chronos_single_step_loop_temporal_fusion"
+            chronos_backend = make_rewrite_backend(
+                local_args,
+                out_dir / f"chronos_single_step_loop_compile_w{tw}",
+                rewrite_counters,
+            )
 
-        chronos_rewrite_counters[case_name] = rewrite_counters
+            case_name = f"chronos_single_step_loop_compile_w{tw}"
+
+            cases[case_name] = (
+                SingleStepModeLoopWrapper(
+                    copy.deepcopy(base_layer_s),
+                    local_args.T,
+                ).to(
+                    device=local_args.device,
+                    dtype=dtype,
+                ).eval(),
+                True,
+                chronos_backend,
+            )
+            execution_modes[case_name] = "chronos_single_step_loop_temporal_fusion"
+
+            chronos_rewrite_counters[case_name] = rewrite_counters
 
     results = {}
     summary_rows = []
@@ -671,6 +672,11 @@ def parse_args():
         action="store_true",
         help="Run only Chronos temporal-fusion cases and skip all baseline cases.",
     )
+    parser.add_argument(
+        "--baseline-only",
+        action="store_true",
+        help="Run only baseline cases and skip Chronos temporal-fusion cases.",
+    )
 
     parser.add_argument("--require-direct-resnet32-api", action="store_true")
 
@@ -687,6 +693,8 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if args.chronos_only and args.baseline_only:
+        raise ValueError("--chronos-only and --baseline-only are mutually exclusive")
     if args.rewrite_backend_mode == "standalone" and args.fx_standalone_cudagraph and args.enable_cudagraphs:
         print(
             "[FX_STANDALONE] warning: disabling outer --enable-cudagraphs because "

@@ -11,6 +11,41 @@ WINDOWS=(1 2 4 8 16)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2")
 MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2")
 
+RUN_MODE=all
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --chronos-only)
+      RUN_MODE=chronos
+      shift
+      ;;
+    --baseline-only)
+      RUN_MODE=baseline
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: $0 [--chronos-only | --baseline-only]"
+      echo "  --chronos-only   run only Chronos standalone cases"
+      echo "  --baseline-only  run only the four configured baseline cases"
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      echo "Usage: $0 [--chronos-only | --baseline-only]" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ "${RUN_MODE}" == "chronos" ]]; then
+  CASE_ARGS=(--chronos-only)
+elif [[ "${RUN_MODE}" == "baseline" ]]; then
+  CASE_ARGS=(--baseline-only --include-s-cases)
+else
+  CASE_ARGS=(--include-s-cases)
+fi
+
+echo "[RUN_MODE] ${RUN_MODE}"
+
 ############################################
 # FP32 FULL VALIDATION
 ############################################
@@ -82,14 +117,27 @@ for MODEL in "${MODELS[@]}"; do
     BATCH_SIZES=(1 4 8 16)
   fi
 
+  if [[ "${RUN_MODE}" == "baseline" ]]; then
+    ACTIVE_WINDOWS=("baseline")
+  else
+    ACTIVE_WINDOWS=("${WINDOWS[@]}")
+  fi
+
   for BATCH_SIZE in "${BATCH_SIZES[@]}"; do
-    for W in "${WINDOWS[@]}"; do
+    for W_TOKEN in "${ACTIVE_WINDOWS[@]}"; do
+
+      if [[ "${W_TOKEN}" == "baseline" ]]; then
+        W=1
+        OUT_DIR=${OUT_ROOT}/${MODEL}/fp32_b${BATCH_SIZE}_baseline
+      else
+        W=${W_TOKEN}
+        OUT_DIR=${OUT_ROOT}/${MODEL}/fp32_b${BATCH_SIZE}_w${W}
+      fi
 
       echo "========================================="
-      echo "[FP32] MODEL=${MODEL} WINDOW=${W} BATCH=${BATCH_SIZE}"
+      echo "[FP32] MODE=${RUN_MODE} MODEL=${MODEL} WINDOW=${W_TOKEN} BATCH=${BATCH_SIZE}"
       echo "========================================="
 
-      OUT_DIR=${OUT_ROOT}/${MODEL}/fp32_b${BATCH_SIZE}_w${W}
       mkdir -p ${OUT_DIR}
 
       python3 benchmarks/benchmark_chronos_runtime.py \
@@ -116,7 +164,7 @@ for MODEL in "${MODELS[@]}"; do
         --max-patterns 1000000 \
         --warmup 20 \
         --repeat 100 \
-        --include-s-cases \
+        "${CASE_ARGS[@]}" \
         --out-dir ${OUT_DIR} \
         2>&1 | tee ${OUT_DIR}/runtime.log
 
