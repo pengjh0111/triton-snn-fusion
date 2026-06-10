@@ -198,6 +198,21 @@ def _run_triton_fused_temporal_linear_lif_state_packed_impl(
     v_out=None,
     use_autotune: bool = True,
 ) -> TritonTemporalLinearLIFResult:
+    original_spike_shape = None
+    original_v_shape = None
+    if isinstance(x_seq, torch.Tensor) and x_seq.dim() > 3:
+        if not isinstance(weight, torch.Tensor) or weight.dim() != 2:
+            raise RuntimeError("temporal Linear+LIF Triton flatten path requires rank-2 weight")
+        original_spike_shape = tuple(x_seq.shape[:-1]) + (int(weight.shape[0]),)
+        original_v_shape = tuple(x_seq.shape[1:-1]) + (int(weight.shape[0]),)
+        x_seq = x_seq.contiguous().reshape(int(x_seq.shape[0]), -1, int(x_seq.shape[-1]))
+        if isinstance(v_init, torch.Tensor) and v_init.dim() > 0:
+            v_init = v_init.contiguous().reshape(-1, int(weight.shape[0]))
+        if isinstance(spike_out, torch.Tensor):
+            spike_out = spike_out.reshape(int(x_seq.shape[0]), -1, int(weight.shape[0]))
+        if isinstance(v_out, torch.Tensor):
+            v_out = v_out.reshape(-1, int(weight.shape[0]))
+
     reasons = check_temporal_linear_lif_support(
         x_seq,
         weight,
@@ -232,12 +247,16 @@ def _run_triton_fused_temporal_linear_lif_state_packed_impl(
             v_last_out=v_out,
             use_autotune=use_autotune,
         )
+        if original_spike_shape is not None:
+            spikes = spikes.reshape(original_spike_shape)
+            v_next = v_next.reshape(original_v_shape)
         diagnostics = {
             "kernel_kind": "temporal_linear_lif",
             **diagnostics,
             "membrane_dtype": str(x_seq.dtype),
             "spike_dtype": str(x_seq.dtype),
             "stack_materialized": stack_materialized,
+            "flattened_leading_dims": original_spike_shape is not None,
         }
         return TritonTemporalLinearLIFResult(
             spikes=spikes,

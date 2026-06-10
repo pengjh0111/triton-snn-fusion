@@ -590,8 +590,17 @@ def fused_temporal_linear_lif_state_packed_torch(
     tau: float,
     detach_reset: bool,
 ):
-    if x_seq.dim() != 3:
-        raise RuntimeError(f"fused_temporal_linear_lif_state_packed requires x_seq [T,N,Fin], got dim={x_seq.dim()}")
+    if x_seq.dim() < 3:
+        raise RuntimeError(
+            f"fused_temporal_linear_lif_state_packed requires x_seq [T,...,Fin], got dim={x_seq.dim()}"
+        )
+    if weight.dim() != 2:
+        raise RuntimeError(f"fused_temporal_linear_lif_state_packed requires rank-2 weight, got dim={weight.dim()}")
+    if int(x_seq.shape[-1]) != int(weight.shape[1]):
+        raise RuntimeError(
+            "fused_temporal_linear_lif_state_packed input feature mismatch: "
+            f"x_seq.shape[-1]={int(x_seq.shape[-1])}, weight.shape[1]={int(weight.shape[1])}"
+        )
     v = v_init
     spikes = []
     effective_bias = bias if isinstance(bias, torch.Tensor) and bias.numel() > 0 else None
@@ -834,17 +843,20 @@ def _fused_temporal_linear_lif_state_packed_meta(
     tau: float,
     detach_reset: bool,
 ):
-    if x_seq.dim() != 3:
-        raise RuntimeError(f"fused_temporal_linear_lif_state_packed requires x_seq [T,N,Fin], got dim={x_seq.dim()}")
+    if x_seq.dim() < 3:
+        raise RuntimeError(
+            f"fused_temporal_linear_lif_state_packed requires x_seq [T,...,Fin], got dim={x_seq.dim()}"
+        )
     if weight.dim() != 2:
         raise RuntimeError(f"fused_temporal_linear_lif_state_packed requires rank-2 weight, got dim={weight.dim()}")
-    if int(x_seq.shape[2]) != int(weight.shape[1]):
+    if int(x_seq.shape[-1]) != int(weight.shape[1]):
         raise RuntimeError(
             "fused_temporal_linear_lif_state_packed input feature mismatch: "
-            f"x_seq.shape[2]={int(x_seq.shape[2])}, weight.shape[1]={int(weight.shape[1])}"
+            f"x_seq.shape[-1]={int(x_seq.shape[-1])}, weight.shape[1]={int(weight.shape[1])}"
         )
-    spike_shape = (x_seq.shape[0], x_seq.shape[1], weight.shape[0])
-    v_shape = (x_seq.shape[1], weight.shape[0])
+    leading_shape = tuple(x_seq.shape[1:-1])
+    spike_shape = (x_seq.shape[0],) + leading_shape + (weight.shape[0],)
+    v_shape = leading_shape + (weight.shape[0],)
     return x_seq.new_empty(spike_shape), x_seq.new_empty(v_shape)
 
 

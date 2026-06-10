@@ -1794,18 +1794,32 @@ def _insert_temporal_linear_lif_out_buffers(
     *,
     T: int,
 ) -> Tuple[torch.fx.Node, torch.fx.Node]:
-    n = _insert_size_after(gm, x_seq, 1, x_seq)
+    with gm.graph.inserting_after(x_seq):
+        x_shape = gm.graph.call_method("size", args=(x_seq,))
+        x_shape.name = f"{x_seq.name}_shape"
     if isinstance(weight, torch.fx.Node):
-        out_features = _insert_size_after(gm, weight, 0, n)
+        out_features = _insert_size_after(gm, weight, 0, x_shape)
         prev = out_features
     else:
         out_features = int(weight.shape[0])
-        prev = n
+        prev = x_shape
     with gm.graph.inserting_after(prev):
-        spike_out = gm.graph.call_method("new_empty", args=(x_seq, (int(T), n, out_features)))
+        spike_prefix = gm.graph.call_function(operator.getitem, args=(x_shape, slice(None, -1, None)))
+        spike_prefix.name = f"{x_seq.name}_spike_prefix"
+    with gm.graph.inserting_after(spike_prefix):
+        spike_shape = gm.graph.call_function(operator.add, args=(spike_prefix, (out_features,)))
+        spike_shape.name = f"{x_seq.name}_spike_shape"
+    with gm.graph.inserting_after(spike_shape):
+        v_prefix = gm.graph.call_function(operator.getitem, args=(x_shape, slice(1, -1, None)))
+        v_prefix.name = f"{x_seq.name}_v_prefix"
+    with gm.graph.inserting_after(v_prefix):
+        v_shape = gm.graph.call_function(operator.add, args=(v_prefix, (out_features,)))
+        v_shape.name = f"{x_seq.name}_v_shape"
+    with gm.graph.inserting_after(v_shape):
+        spike_out = gm.graph.call_method("new_empty", args=(x_seq, spike_shape))
         spike_out.name = f"{x_seq.name}_spike_out"
     with gm.graph.inserting_after(spike_out):
-        v_out = gm.graph.call_method("new_empty", args=(x_seq, (n, out_features)))
+        v_out = gm.graph.call_method("new_empty", args=(x_seq, v_shape))
         v_out.name = f"{x_seq.name}_v_out"
     return spike_out, v_out
 

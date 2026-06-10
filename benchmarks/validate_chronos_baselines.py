@@ -251,7 +251,7 @@ class MultiStepModeWrapper(nn.Module):
         self.T = T
 
     def forward(self, x):
-        x_seq = x.unsqueeze(0).repeat(self.T, 1, 1, 1, 1)
+        x_seq = x.unsqueeze(0).repeat((self.T,) + (1,) * x.dim())
         y_seq = self.layer(x_seq)
         return y_seq.mean(0)
 
@@ -270,6 +270,8 @@ CHRONOS_MODEL_CHOICES = [
     "vgg16",
     "mobilenetv1",
     "mobilenetv2",
+    "spiketransformer",
+    "spikebert",
 ]
 
 
@@ -590,6 +592,159 @@ class ChronosMobileNetV2(nn.Module):
         return self.layer(x)
 
 
+class ChronosSpikeTransformerBlock(nn.Module):
+    def __init__(
+        self,
+        *,
+        dim: int,
+        heads: int,
+        mlp_ratio: int = 4,
+        lif_impl: str = "chronos",
+    ):
+        super().__init__()
+        if dim % heads != 0:
+            raise ValueError(f"transformer dim={dim} must be divisible by heads={heads}")
+        self.dim = int(dim)
+        self.heads = int(heads)
+        self.head_dim = self.dim // self.heads
+        self.scale = self.head_dim ** -0.5
+        mlp_dim = self.dim * int(mlp_ratio)
+
+        self.norm1 = nn.LayerNorm(self.dim)
+        self.qkv = nn.Linear(self.dim, self.dim * 3, bias=False)
+        self.proj = nn.Linear(self.dim, self.dim, bias=False)
+        self.attn_if = _make_lif_node(lif_impl)
+
+        self.norm2 = nn.LayerNorm(self.dim)
+        self.fc1 = nn.Linear(self.dim, mlp_dim, bias=False)
+        self.fc1_if = _make_lif_node(lif_impl)
+        self.fc2 = nn.Linear(mlp_dim, self.dim, bias=False)
+        self.fc2_if = _make_lif_node(lif_impl)
+        self.mlp_res_if = _make_lif_node(lif_impl)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        residual = x
+        y = self.norm1(x)
+        qkv = self.qkv(y)
+        batch, seq_len, _dim3 = qkv.shape
+        qkv = qkv.view(batch, seq_len, 3, self.heads, self.head_dim)
+        qkv = qkv.permute(2, 0, 3, 1, 4)
+        q = qkv[0]
+        k = qkv[1]
+        v = qkv[2]
+        attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale
+        attn = torch.softmax(attn, dim=-1)
+        y = torch.matmul(attn, v)
+        y = y.transpose(1, 2).reshape(batch, seq_len, self.dim)
+        y = self.proj(y)
+        x = self.attn_if(residual + y)
+
+        residual = x
+        y = self.norm2(x)
+        y = self.fc1_if(self.fc1(y))
+        y = self.fc2_if(self.fc2(y))
+        x = self.mlp_res_if(residual + y)
+        return x
+
+
+class ChronosSpikeTransformer(nn.Module):
+    def __init__(
+        self,
+        *,
+        input_dim: int = 768,
+        dim: int = 256,
+        depth: int = 8,
+        heads: int = 8,
+        num_classes: int = 100,
+        lif_impl: str = "chronos",
+        step_mode: str = "s",
+    ):
+        super().__init__()
+        self.step_mode = step_mode
+        self.input_proj = nn.Linear(int(input_dim), int(dim), bias=False)
+        self.input_if = _make_lif_node(lif_impl)
+        self.blocks = nn.ModuleList(
+            [
+                ChronosSpikeTransformerBlock(dim=int(dim), heads=int(heads), lif_impl=lif_impl)
+                for _ in range(int(depth))
+            ]
+        )
+        self.norm = nn.LayerNorm(int(dim))
+        self.classifier = nn.Linear(int(dim), int(num_classes), bias=False)
+
+    def _forward_single(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.input_if(self.input_proj(x))
+        for block in self.blocks:
+            x = block(x)
+        x = self.norm(x)
+        x = x.mean(dim=1)
+        return self.classifier(x)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if x.dim() == 4:
+            return torch.stack([self._forward_single(x[t]) for t in range(x.shape[0])], dim=0)
+        return self._forward_single(x)
+
+
+class ChronosSpikeBERT(nn.Module):
+    def __init__(
+        self,
+        *,
+        vocab_size: int = 30522,
+        dim: int = 256,
+        depth: int = 8,
+        heads: int = 8,
+        num_classes: int = 100,
+        lif_impl: str = "chronos",
+        step_mode: str = "s",
+    ):
+        super().__init__()
+        self.step_mode = step_mode
+        self.embedding = nn.Embedding(int(vocab_size), int(dim))
+        self.embedding_if = _make_lif_node(lif_impl)
+        self.blocks = nn.ModuleList(
+            [
+                ChronosSpikeTransformerBlock(dim=int(dim), heads=int(heads), lif_impl=lif_impl)
+                for _ in range(int(depth))
+            ]
+        )
+        self.norm = nn.LayerNorm(int(dim))
+        self.classifier = nn.Linear(int(dim), int(num_classes), bias=False)
+
+    def _forward_single(self, token_ids: torch.Tensor) -> torch.Tensor:
+        x = self.embedding_if(self.embedding(token_ids))
+        for block in self.blocks:
+            x = block(x)
+        x = self.norm(x)
+        x = x.mean(dim=1)
+        return self.classifier(x)
+
+    def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
+        if token_ids.dim() == 3:
+            return torch.stack([self._forward_single(token_ids[t]) for t in range(token_ids.shape[0])], dim=0)
+        return self._forward_single(token_ids)
+
+
+def make_model_input(model_name: str, args, dtype: torch.dtype) -> torch.Tensor:
+    if model_name == "spiketransformer":
+        return torch.randn(
+            args.batch_size,
+            args.sequence_length,
+            args.transformer_input_dim,
+            device=args.device,
+            dtype=dtype,
+        )
+    if model_name == "spikebert":
+        return torch.randint(
+            low=0,
+            high=args.transformer_vocab_size,
+            size=(args.batch_size, args.sequence_length),
+            device=args.device,
+            dtype=torch.int64,
+        )
+    return torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=dtype)
+
+
 def _make_vgg_layer(model_name: str, step_mode: str, lif_impl: str = "chronos") -> nn.Module:
     spiking_neuron = _lif_node_class(lif_impl)
     if model_name == "vgg11":
@@ -618,6 +773,13 @@ def make_resnet_layer(
     step_mode: str = "s",
     model_channels: int = 64,
     lif_impl: str = "chronos",
+    sequence_length: int = 256,
+    transformer_depth: int = 8,
+    transformer_dim: int = 256,
+    transformer_heads: int = 8,
+    transformer_input_dim: int = 768,
+    transformer_vocab_size: int = 30522,
+    transformer_num_classes: int = 100,
 ) -> nn.Module:
     spiking_neuron = _lif_node_class(lif_impl)
     if model_name == "resnet18":
@@ -653,6 +815,26 @@ def make_resnet_layer(
         return ChronosMobileNetV2(
             channels=model_channels,
             num_classes=10,
+            step_mode=step_mode,
+            lif_impl=lif_impl,
+        )
+    elif model_name == "spiketransformer":
+        return ChronosSpikeTransformer(
+            input_dim=transformer_input_dim,
+            dim=transformer_dim,
+            depth=transformer_depth,
+            heads=transformer_heads,
+            num_classes=transformer_num_classes,
+            step_mode=step_mode,
+            lif_impl=lif_impl,
+        )
+    elif model_name == "spikebert":
+        return ChronosSpikeBERT(
+            vocab_size=transformer_vocab_size,
+            dim=transformer_dim,
+            depth=transformer_depth,
+            heads=transformer_heads,
+            num_classes=transformer_num_classes,
             step_mode=step_mode,
             lif_impl=lif_impl,
         )
@@ -1151,6 +1333,13 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         step_mode="s",
         model_channels=args.model_channels,
         lif_impl=args.lif_impl,
+        sequence_length=args.sequence_length,
+        transformer_depth=args.transformer_depth,
+        transformer_dim=args.transformer_dim,
+        transformer_heads=args.transformer_heads,
+        transformer_input_dim=args.transformer_input_dim,
+        transformer_vocab_size=args.transformer_vocab_size,
+        transformer_num_classes=args.transformer_num_classes,
     ).to(device=args.device, dtype=dtype).eval()
     base_layer_m = make_resnet_layer(
         model_name,
@@ -1158,8 +1347,15 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         step_mode="m",
         model_channels=args.model_channels,
         lif_impl=args.lif_impl,
+        sequence_length=args.sequence_length,
+        transformer_depth=args.transformer_depth,
+        transformer_dim=args.transformer_dim,
+        transformer_heads=args.transformer_heads,
+        transformer_input_dim=args.transformer_input_dim,
+        transformer_vocab_size=args.transformer_vocab_size,
+        transformer_num_classes=args.transformer_num_classes,
     ).to(device=args.device, dtype=dtype).eval()
-    x = torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=dtype)
+    x = make_model_input(model_name, args, dtype)
 
     models = {
         "baseline_s_eager": SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(args.device).eval(),
@@ -1305,6 +1501,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Validate Chronos FX Conv+BN+LIF rewrite against baseline s/m eager/compile.")
     parser.add_argument("--models", nargs="+", default=["resnet18", "resnet34"], choices=CHRONOS_MODEL_CHOICES)
     parser.add_argument("--model-channels", type=int, default=64, help="Base channel width for handcrafted alexnet/zfnet models.")
+    parser.add_argument("--sequence-length", type=int, default=256)
+    parser.add_argument("--transformer-depth", type=int, default=8)
+    parser.add_argument("--transformer-dim", type=int, default=256)
+    parser.add_argument("--transformer-heads", type=int, default=8)
+    parser.add_argument("--transformer-input-dim", type=int, default=768)
+    parser.add_argument("--transformer-vocab-size", type=int, default=30522)
+    parser.add_argument("--transformer-num-classes", type=int, default=100)
     parser.add_argument("--lif-impl", choices=LIF_IMPL_CHOICES, default="chronos", help="LIF implementation used when constructing benchmark models.")
     parser.add_argument("--T", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=1)

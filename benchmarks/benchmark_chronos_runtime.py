@@ -33,6 +33,7 @@ from benchmarks.validate_chronos_baselines import (
     MultiStepModeWrapper,
     SingleStepModeLoopWrapper,
     RewriteCounters,
+    make_model_input,
     make_resnet_layer,
     make_rewrite_backend,
     reset_lif_modules,
@@ -228,6 +229,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         step_mode="s",
         model_channels=args.model_channels,
         lif_impl=args.lif_impl,
+        sequence_length=args.sequence_length,
+        transformer_depth=args.transformer_depth,
+        transformer_dim=args.transformer_dim,
+        transformer_heads=args.transformer_heads,
+        transformer_input_dim=args.transformer_input_dim,
+        transformer_vocab_size=args.transformer_vocab_size,
+        transformer_num_classes=args.transformer_num_classes,
     )
     base_layer_m = make_resnet_layer(
         model_name,
@@ -235,6 +243,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         step_mode="m",
         model_channels=args.model_channels,
         lif_impl=args.lif_impl,
+        sequence_length=args.sequence_length,
+        transformer_depth=args.transformer_depth,
+        transformer_dim=args.transformer_dim,
+        transformer_heads=args.transformer_heads,
+        transformer_input_dim=args.transformer_input_dim,
+        transformer_vocab_size=args.transformer_vocab_size,
+        transformer_num_classes=args.transformer_num_classes,
     )
 
     base_layer_s = base_layer_s.to(
@@ -246,14 +261,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         dtype=dtype,
     ).eval()
 
-    x = torch.randn(
-        args.batch_size,
-        3,
-        args.height,
-        args.width,
-        device=args.device,
-        dtype=dtype,
-    )
+    x = make_model_input(model_name, args, dtype)
 
     snn_custom_ops.configure_fused_op(
         backend=args.fused_op_backend,
@@ -547,6 +555,13 @@ def parse_args():
         default=64,
         help="Base channel width for handcrafted alexnet/zfnet models.",
     )
+    parser.add_argument("--sequence-length", type=int, default=256)
+    parser.add_argument("--transformer-depth", type=int, default=8)
+    parser.add_argument("--transformer-dim", type=int, default=256)
+    parser.add_argument("--transformer-heads", type=int, default=8)
+    parser.add_argument("--transformer-input-dim", type=int, default=768)
+    parser.add_argument("--transformer-vocab-size", type=int, default=30522)
+    parser.add_argument("--transformer-num-classes", type=int, default=100)
 
     parser.add_argument(
         "--lif-impl",
