@@ -1039,9 +1039,23 @@ def make_temporal_linear_lif_windows(
         return []
     windows: List[TemporalLinearLifWindow] = []
     for group in groups:
+        group_window_ids = {pattern.window_id for pattern in group.patterns}
+        group_timesteps = [pattern.timestep_index for pattern in group.patterns]
+        # Transformer-style graphs may not have Conv/BN/LIF markers, so the
+        # generic temporal annotation pass cannot split the FX graph into
+        # timestep blocks. In that case collection falls back to monotonic
+        # timestep indices but leaves window_id at 0. Split those groups by the
+        # requested linear temporal window here so --temporal-fuse-window still
+        # changes the final linear-LIF IR.
+        use_timestep_window = (
+            len(group_window_ids) == 1
+            and len(group_timesteps) > window_size
+            and max(group_timesteps, default=0) >= window_size
+        )
         by_window: Dict[int, List[TemporalLinearLifPattern]] = {}
         for pattern in group.patterns:
-            by_window.setdefault(pattern.window_id, []).append(pattern)
+            window_id = pattern.timestep_index // window_size if use_timestep_window else pattern.window_id
+            by_window.setdefault(window_id, []).append(pattern)
         for window_id, items in sorted(by_window.items()):
             items = sorted(items, key=lambda pattern: pattern.timestep_index)
             if len(items) < window_size and not allow_tail:

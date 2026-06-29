@@ -24,6 +24,7 @@ torch.set_float32_matmul_precision("high")
 import runtime.snn_custom_ops as snn_custom_ops
 from runtime.fx_standalone_executor import (
     build_fx_standalone_backend,
+    get_last_cudagraph_status as get_fx_standalone_cudagraph_status,
     prune_graph_output_v_final_states,
 )
 from compiler.chronos_compile import (
@@ -1380,6 +1381,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     results: Dict[str, RunResult] = {}
     outputs: Dict[str, Optional[torch.Tensor]] = {}
     cudagraph_status_by_case: Dict[str, Dict[str, Any]] = {}
+    fx_standalone_cudagraph_status_by_case: Dict[str, Dict[str, Any]] = {}
     _, compile_config = build_chronos_compile_config(
         backend="inductor",
         enable_cudagraphs=args.enable_cudagraphs,
@@ -1410,6 +1412,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         )
         results[case_name] = result
         outputs[case_name] = out
+        fx_standalone_cudagraph_status_by_case[case_name] = {}
         if not result.ok:
             print(f"[FAIL] {case_name}: {result.error.splitlines()[-1] if result.error else 'unknown error'}")
 
@@ -1437,6 +1440,11 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
             graph_count=graph_count,
             counter_diff=counter_diff,
         )
+        fx_standalone_cudagraph_status_by_case[case_name] = (
+            get_fx_standalone_cudagraph_status()
+            if args.rewrite_backend_mode == "standalone"
+            else {}
+        )
         results[case_name] = result
         outputs[case_name] = out
         if not result.ok:
@@ -1454,7 +1462,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     call_stats = snn_custom_ops.get_fused_op_call_stats()
     payload = {
         "model": model_name,
-        "input_shape": [args.batch_size, 3, args.height, args.width],
+        "input_shape": list(x.shape),
         "model_channels": args.model_channels,
         "lif_impl": args.lif_impl,
         "dtype": args.dtype,
@@ -1470,6 +1478,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         "rewrite_counters": {name: asdict(counters) for name, counters in rewrite_counters.items()},
         "fused_op_call_stats": call_stats,
         "cudagraph_status_by_case": cudagraph_status_by_case,
+        "fx_standalone_cudagraph_status_by_case": fx_standalone_cudagraph_status_by_case,
     }
     write_summary(out_dir / "summary.json", payload)
 

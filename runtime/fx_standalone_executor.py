@@ -17,6 +17,23 @@ import torch.fx
 from torch.fx.node import map_arg
 
 
+_LAST_CUDAGRAPH_STATUS: Dict[str, Any] = {
+    "enabled": False,
+    "captured": False,
+    "fallback": False,
+    "mode": "",
+    "reason": "not_run",
+}
+
+
+def get_last_cudagraph_status() -> Dict[str, Any]:
+    return dict(_LAST_CUDAGRAPH_STATUS)
+
+
+def _set_last_cudagraph_status(**kwargs: Any) -> None:
+    _LAST_CUDAGRAPH_STATUS.update(kwargs)
+
+
 def _iter_nodes(value: Any) -> Iterable[torch.fx.Node]:
     if isinstance(value, torch.fx.Node):
         yield value
@@ -189,9 +206,31 @@ def _is_metadata_inline_node(node: torch.fx.Node) -> bool:
     return False
 
 
+def _is_allocation_like_node(node: torch.fx.Node) -> bool:
+    if node.op == "call_method" and node.target in (
+        "new_empty",
+        "new_zeros",
+        "new_ones",
+        "clone",
+    ):
+        return True
+    if node.op == "call_function":
+        text = _target_text(node.target)
+        return (
+            node.target in (torch.empty, torch.empty_like, torch.zeros, torch.zeros_like, torch.ones, torch.ones_like)
+            or "new_empty" in text
+            or "new_zeros" in text
+            or "empty_like" in text
+            or "zeros_like" in text
+        )
+    return False
+
+
 def _classify_exec_node(node: torch.fx.Node) -> str:
     if _is_metadata_inline_node(node):
         return _METADATA_INLINE
+    if _is_allocation_like_node(node):
+        return _MAIN_STREAM_COMPUTE
     if _is_chronos_fused_temporal_op(node):
         return _SIDE_STREAM_COMPUTE
     if node.op in ("call_function", "call_method", "call_module"):
@@ -361,6 +400,7 @@ class ChronosFXStandaloneExecutor:
         self._graph = None
         self._graph_captured = False
         self._graph_fallback_reason = ""
+        self._graph_capture_mode = ""
         self._static_inputs: Optional[Tuple[Any, ...]] = None
         self._static_output: Any = None
 
@@ -1195,11 +1235,47 @@ class ChronosFXStandaloneExecutor:
             return self._run_single_stream_pooled(inputs)
         return self._run_serial(inputs)
 
+    def _capture_with_mode(self, mode: str) -> Tuple[bool, str]:
+        if self._static_inputs is None:
+            return False, "static inputs are not initialized"
+        if mode == "multistream":
+            # streams and events must exist before capture.
+            if self.num_streams > 1 and not self._ensure_cuda_schedule(self._static_inputs):
+                return False, "CUDA schedule could not be initialized before capture"
+            if self.num_streams > 1 and not self.streams:
+                return False, "CUDA streams were not populated before capture"
+            runner = self._run_uncaptured
+        elif mode == "single_stream_pooled":
+            runner = self._run_single_stream_pooled
+        else:
+            return False, f"unknown capture mode={mode}"
+
+        graph = torch.cuda.CUDAGraph()
+        try:
+            with torch.cuda.graph(graph):
+                self._static_output = runner(self._static_inputs)
+        except Exception as exc:
+            self._static_output = None
+            return False, f"{type(exc).__name__}: {repr(exc)}"
+
+        self._graph = graph
+        self._graph_captured = True
+        self._graph_capture_mode = mode
+        return True, "none"
+
     def _try_capture(self, example_inputs: Tuple[Any, ...]) -> None:
+        _set_last_cudagraph_status(
+            enabled=True,
+            captured=False,
+            fallback=True,
+            mode="",
+            reason="capture_started",
+        )
         if not torch.cuda.is_available() or not any(
             isinstance(value, torch.Tensor) and value.is_cuda for value in example_inputs
         ):
             self._graph_fallback_reason = "CUDA graph requested without CUDA tensor inputs"
+            _set_last_cudagraph_status(reason=self._graph_fallback_reason)
             if self.debug:
                 print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
             return
@@ -1217,33 +1293,74 @@ class ChronosFXStandaloneExecutor:
                 self._static_output = None
             torch.cuda.synchronize()
 
-            # streams and events must exist before capture.
-            if self.num_streams > 1 and not self._ensure_cuda_schedule(self._static_inputs):
-                self._graph_fallback_reason = "CUDA schedule could not be initialized before capture"
+            primary_mode = "multistream" if self.num_streams > 1 else "single_stream_pooled"
+            captured, reason = self._capture_with_mode(primary_mode)
+            if not captured and self.num_streams > 1:
+                self._graph = None
+                self._graph_captured = False
+                self._graph_fallback_reason = reason
+                try:
+                    torch.cuda.synchronize()
+                    torch.cuda.empty_cache()
+                except Exception:
+                    pass
                 if self.debug:
-                    print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
-                return
-            if self.num_streams > 1 and not self.streams:
-                self._graph_fallback_reason = "CUDA streams were not populated before capture"
+                    print(
+                        "[CUDA_GRAPH] primary_capture_failed "
+                        f"mode={primary_mode} reason={reason}; retry_mode=single_stream_pooled"
+                    )
+                for _ in range(2):
+                    warmup_output = self._run_single_stream_pooled(self._static_inputs)
+                    del warmup_output
+                    self._static_output = None
+                torch.cuda.synchronize()
+                captured, retry_reason = self._capture_with_mode("single_stream_pooled")
+                if not captured:
+                    reason = f"{reason}; single_stream_pooled_retry={retry_reason}"
+
+            if not captured:
+                self._graph = None
+                self._graph_captured = False
+                self._graph_fallback_reason = reason
+                _set_last_cudagraph_status(
+                    enabled=True,
+                    captured=False,
+                    fallback=True,
+                    mode="",
+                    reason=reason,
+                )
                 if self.debug:
-                    print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={self._graph_fallback_reason}")
+                    print(f"[CUDA_GRAPH] enabled=True captured=False fallback=True reason={reason}")
                 return
-            graph = torch.cuda.CUDAGraph()
-            with torch.cuda.graph(graph):
-                self._static_output = self._run_uncaptured(self._static_inputs)
-            self._graph = graph
-            self._graph_captured = True
+
+            _set_last_cudagraph_status(
+                enabled=True,
+                captured=True,
+                fallback=False,
+                mode=self._graph_capture_mode,
+                reason="none",
+            )
             if self.debug:
                 device = next(value.device for value in example_inputs if isinstance(value, torch.Tensor) and value.is_cuda)
                 print(
                     f"[MEMORY] after_capture allocated={torch.cuda.memory_allocated(device)} "
                     f"reserved={torch.cuda.memory_reserved(device)}"
                 )
-                print("[CUDA_GRAPH] enabled=True captured=True fallback=False reason=none")
+                print(
+                    "[CUDA_GRAPH] enabled=True captured=True fallback=False "
+                    f"mode={self._graph_capture_mode} reason=none"
+                )
         except Exception as exc:
             self._graph = None
             self._graph_captured = False
             self._graph_fallback_reason = f"{type(exc).__name__}: {exc}"
+            _set_last_cudagraph_status(
+                enabled=True,
+                captured=False,
+                fallback=True,
+                mode="",
+                reason=self._graph_fallback_reason,
+            )
             if self.debug:
                 print(
                     "[CUDA_GRAPH] enabled=True captured=False fallback=True "

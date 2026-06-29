@@ -9,7 +9,7 @@ mkdir -p ${OUT_ROOT}
 
 WINDOWS=(1 2 4 8 16)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2" "spiketransformer" "spikebert")
-MODELS=("spiketransformer" "spikebert")
+MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2")
 
 RUN_MODE=all
 while [[ $# -gt 0 ]]; do
@@ -150,7 +150,7 @@ for MODEL in "${MODELS[@]}"; do
         --device cuda \
         --dtype fp32 \
         --fused-op-backend triton \
-        --rewrite-backend-mode standalone \
+        --rewrite-backend-mode inductor \
         --fx-standalone-streams 32 \
         --fx-standalone-cudagraph \
         --fx-standalone-schedule-policy ready \

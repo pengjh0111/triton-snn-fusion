@@ -20,6 +20,7 @@ torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
 
 import runtime.snn_custom_ops as snn_custom_ops
+from runtime.fx_standalone_executor import get_last_cudagraph_status as get_fx_standalone_cudagraph_status
 from compiler.chronos_compile import (
     build_chronos_compile_config,
     compile_with_chronos_options,
@@ -326,6 +327,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         execution_modes["baseline_multi_step_mode_compile"] = "multi_step_mode_native"
 
     chronos_rewrite_counters = {}
+    candidate_windows = []
 
     if not args.baseline_only:
         if args.sweep_temporal_windows:
@@ -374,6 +376,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     summary_rows = []
     fused_stats_by_case = {}
     cudagraph_status_by_case = {}
+    fx_standalone_cudagraph_status_by_case = {}
 
     for case_name, (model, compile_mode, backend) in cases.items():
         snn_custom_ops.reset_fused_op_call_stats()
@@ -412,6 +415,11 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             counter_diff=counter_diff,
         )
         cudagraph_status_by_case[case_name] = cudagraph_status
+        fx_standalone_cudagraph_status_by_case[case_name] = (
+            get_fx_standalone_cudagraph_status()
+            if args.rewrite_backend_mode == "standalone" and case_name in chronos_rewrite_counters
+            else {}
+        )
         fused_stats_by_case[case_name] = case_fused_stats
         results[case_name] = asdict(result)
         results[case_name]["execution_mode"] = execution_modes.get(case_name, "")
@@ -495,12 +503,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
     payload = {
         "model": model_name,
-        "input_shape": [
-            args.batch_size,
-            3,
-            args.height,
-            args.width,
-        ],
+        "input_shape": list(x.shape),
         "model_channels": args.model_channels,
         "lif_impl": args.lif_impl,
         "T": args.T,
@@ -523,6 +526,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         "fused_op_call_stats_last_case": fused_stats,
         "fused_op_call_stats_by_case": fused_stats_by_case,
         "cudagraph_status_by_case": cudagraph_status_by_case,
+        "fx_standalone_cudagraph_status_by_case": fx_standalone_cudagraph_status_by_case,
     }
 
     write_path = out_dir / "benchmark_summary.json"
