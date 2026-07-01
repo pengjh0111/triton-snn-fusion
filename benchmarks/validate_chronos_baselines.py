@@ -627,16 +627,17 @@ class ChronosSpikeTransformerBlock(nn.Module):
         residual = x
         y = self.norm1(x)
         qkv = self.qkv(y)
-        batch, seq_len, _dim3 = qkv.shape
-        qkv = qkv.view(batch, seq_len, 3, self.heads, self.head_dim)
-        qkv = qkv.permute(2, 0, 3, 1, 4)
+        leading_shape = qkv.shape[:-2]
+        seq_len = qkv.shape[-2]
+        qkv = qkv.reshape(*leading_shape, seq_len, 3, self.heads, self.head_dim)
+        qkv = qkv.movedim(-3, 0).transpose(-3, -2)
         q = qkv[0]
         k = qkv[1]
         v = qkv[2]
         attn = torch.matmul(q, k.transpose(-2, -1)) * self.scale
         attn = torch.softmax(attn, dim=-1)
         y = torch.matmul(attn, v)
-        y = y.transpose(1, 2).reshape(batch, seq_len, self.dim)
+        y = y.transpose(-3, -2).reshape(*leading_shape, seq_len, self.dim)
         y = self.proj(y)
         x = self.attn_if(residual + y)
 
@@ -672,19 +673,19 @@ class ChronosSpikeTransformer(nn.Module):
         )
         self.norm = nn.LayerNorm(int(dim))
         self.classifier = nn.Linear(int(dim), int(num_classes), bias=False)
+        functional.set_step_mode(self.input_if, step_mode=step_mode)
+        functional.set_step_mode(self.blocks, step_mode=step_mode)
 
-    def _forward_single(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward_impl(self, x: torch.Tensor) -> torch.Tensor:
         x = self.input_if(self.input_proj(x))
         for block in self.blocks:
             x = block(x)
         x = self.norm(x)
-        x = x.mean(dim=1)
+        x = x.mean(dim=-2)
         return self.classifier(x)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.dim() == 4:
-            return torch.stack([self._forward_single(x[t]) for t in range(x.shape[0])], dim=0)
-        return self._forward_single(x)
+        return self._forward_impl(x)
 
 
 class ChronosSpikeBERT(nn.Module):
@@ -711,19 +712,19 @@ class ChronosSpikeBERT(nn.Module):
         )
         self.norm = nn.LayerNorm(int(dim))
         self.classifier = nn.Linear(int(dim), int(num_classes), bias=False)
+        functional.set_step_mode(self.embedding_if, step_mode=step_mode)
+        functional.set_step_mode(self.blocks, step_mode=step_mode)
 
-    def _forward_single(self, token_ids: torch.Tensor) -> torch.Tensor:
+    def _forward_impl(self, token_ids: torch.Tensor) -> torch.Tensor:
         x = self.embedding_if(self.embedding(token_ids))
         for block in self.blocks:
             x = block(x)
         x = self.norm(x)
-        x = x.mean(dim=1)
+        x = x.mean(dim=-2)
         return self.classifier(x)
 
     def forward(self, token_ids: torch.Tensor) -> torch.Tensor:
-        if token_ids.dim() == 3:
-            return torch.stack([self._forward_single(token_ids[t]) for t in range(token_ids.shape[0])], dim=0)
-        return self._forward_single(token_ids)
+        return self._forward_impl(token_ids)
 
 
 def make_model_input(model_name: str, args, dtype: torch.dtype) -> torch.Tensor:
