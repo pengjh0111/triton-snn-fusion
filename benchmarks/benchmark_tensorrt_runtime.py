@@ -114,6 +114,13 @@ def export_onnx(
     width: int,
     opset: int,
     out_dir: Path,
+    sequence_length: int = 256,
+    transformer_depth: int = 8,
+    transformer_dim: int = 256,
+    transformer_heads: int = 8,
+    transformer_input_dim: int = 768,
+    transformer_vocab_size: int = 30522,
+    transformer_num_classes: int = 100,
 ):
     dtype = resolve_dtype(precision)
     onnx_path = (
@@ -145,6 +152,13 @@ def export_onnx(
             step_mode="s",
             model_channels=model_channels,
             lif_impl=lif_impl,
+            sequence_length=sequence_length,
+            transformer_depth=transformer_depth,
+            transformer_dim=transformer_dim,
+            transformer_heads=transformer_heads,
+            transformer_input_dim=transformer_input_dim,
+            transformer_vocab_size=transformer_vocab_size,
+            transformer_num_classes=transformer_num_classes,
         )
         model = SingleStepModeLoopWrapper(
             layer=layer,
@@ -173,14 +187,23 @@ def export_onnx(
         "wrapper=SingleStepModeLoopWrapper"
     )
 
-    x = torch.randn(
-        batch_size,
-        3,
-        height,
-        width,
-        device="cuda",
-        dtype=dtype,
-    )
+    if model_name == "spiketransformer":
+        x = torch.randn(
+            batch_size, sequence_length, transformer_input_dim,
+            device="cuda", dtype=dtype,
+        )
+    elif model_name == "spikebert":
+        x = torch.randint(
+            0, transformer_vocab_size, (batch_size, sequence_length),
+            device="cuda", dtype=torch.int64,
+        )
+    else:
+        x = torch.randn(
+            batch_size, 3, height, width,
+            device="cuda", dtype=dtype,
+        )
+    result["input_shape"] = list(x.shape)
+    result["input_dtype"] = str(x.dtype)
 
     reset_lif_modules(model)
     model_for_export = copy.deepcopy(model)
@@ -410,6 +433,13 @@ def main():
         default=64,
         help="Base channel width for handcrafted alexnet/zfnet models.",
     )
+    parser.add_argument("--sequence-length", type=int, default=256)
+    parser.add_argument("--transformer-depth", type=int, default=8)
+    parser.add_argument("--transformer-dim", type=int, default=256)
+    parser.add_argument("--transformer-heads", type=int, default=8)
+    parser.add_argument("--transformer-input-dim", type=int, default=768)
+    parser.add_argument("--transformer-vocab-size", type=int, default=30522)
+    parser.add_argument("--transformer-num-classes", type=int, default=100)
 
     parser.add_argument(
         "--lif-impl",
@@ -495,6 +525,13 @@ def main():
                     width=args.width,
                     opset=args.opset,
                     out_dir=run_dir,
+                    sequence_length=args.sequence_length,
+                    transformer_depth=args.transformer_depth,
+                    transformer_dim=args.transformer_dim,
+                    transformer_heads=args.transformer_heads,
+                    transformer_input_dim=args.transformer_input_dim,
+                    transformer_vocab_size=args.transformer_vocab_size,
+                    transformer_num_classes=args.transformer_num_classes,
                 )
 
                 if not export_result["onnx_export_ok"]:

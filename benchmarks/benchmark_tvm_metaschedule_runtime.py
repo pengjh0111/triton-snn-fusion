@@ -22,6 +22,8 @@ CHRONOS_MODEL_CHOICES = [
     "vgg16",
     "mobilenetv1",
     "mobilenetv2",
+    "spiketransformer",
+    "spikebert",
 ]
 LIF_IMPL_CHOICES = ["chronos", "spikingjelly"]
 
@@ -179,10 +181,14 @@ def run_tvm_graph_executor(lib, input_data, repeat: int, number: int, dev, graph
 
 def benchmark_onnx_with_tvm(
     onnx_path: Path,
+    model_name: str,
     precision: str,
     batch_size: int,
     height: int,
     width: int,
+    sequence_length: int,
+    transformer_input_dim: int,
+    transformer_vocab_size: int,
     target_text: str,
     dev_id: int,
     max_trials_global: int,
@@ -217,7 +223,12 @@ def benchmark_onnx_with_tvm(
         if not dev.exist:
             raise RuntimeError(f"TVM CUDA device {dev_id} is not available")
 
-        input_shape = (batch_size, 3, height, width)
+        if model_name == "spiketransformer":
+            input_shape = (batch_size, sequence_length, transformer_input_dim)
+        elif model_name == "spikebert":
+            input_shape = (batch_size, sequence_length)
+        else:
+            input_shape = (batch_size, 3, height, width)
         mod, params = load_onnx_as_relay(onnx_path, input_shape, relay, onnx)
         result["tvm_import_ok"] = True
 
@@ -249,9 +260,14 @@ def benchmark_onnx_with_tvm(
         except Exception as exc:
             result["lib_export_error"] = str(exc)
 
-        dtype = resolve_np_dtype(precision)
         rng = np.random.default_rng(0)
-        input_data = rng.standard_normal(input_shape).astype(dtype)
+        if model_name == "spikebert":
+            input_data = rng.integers(
+                0, transformer_vocab_size, size=input_shape, dtype=np.int64
+            )
+        else:
+            dtype = resolve_np_dtype(precision)
+            input_data = rng.standard_normal(input_shape).astype(dtype)
         bench = run_tvm_graph_executor(
             lib=lib,
             input_data=input_data,
@@ -290,6 +306,13 @@ def main():
     )
     parser.add_argument("--T", type=int, default=16)
     parser.add_argument("--model-channels", type=int, default=64)
+    parser.add_argument("--sequence-length", type=int, default=256)
+    parser.add_argument("--transformer-depth", type=int, default=8)
+    parser.add_argument("--transformer-dim", type=int, default=256)
+    parser.add_argument("--transformer-heads", type=int, default=8)
+    parser.add_argument("--transformer-input-dim", type=int, default=768)
+    parser.add_argument("--transformer-vocab-size", type=int, default=30522)
+    parser.add_argument("--transformer-num-classes", type=int, default=100)
     parser.add_argument("--lif-impl", choices=LIF_IMPL_CHOICES, default="chronos")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--height", type=int, default=224)
@@ -359,6 +382,13 @@ def main():
                         width=args.width,
                         opset=args.opset,
                         out_dir=run_dir,
+                        sequence_length=args.sequence_length,
+                        transformer_depth=args.transformer_depth,
+                        transformer_dim=args.transformer_dim,
+                        transformer_heads=args.transformer_heads,
+                        transformer_input_dim=args.transformer_input_dim,
+                        transformer_vocab_size=args.transformer_vocab_size,
+                        transformer_num_classes=args.transformer_num_classes,
                     )
 
                 if not export_result["onnx_export_ok"]:
@@ -373,10 +403,14 @@ def main():
                 else:
                     tvm_result = benchmark_onnx_with_tvm(
                         onnx_path=Path(export_result["onnx_path"]),
+                        model_name=model_name,
                         precision=precision,
                         batch_size=args.batch_size,
                         height=args.height,
                         width=args.width,
+                        sequence_length=args.sequence_length,
+                        transformer_input_dim=args.transformer_input_dim,
+                        transformer_vocab_size=args.transformer_vocab_size,
                         target_text=args.target,
                         dev_id=args.dev_id,
                         max_trials_global=args.max_trials_global,

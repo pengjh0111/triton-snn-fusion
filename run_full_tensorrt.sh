@@ -7,17 +7,40 @@ cd /data/Triton-to-tile-IR/Tile_IR_Test/Chronos
 OUT_ROOT=test/tensorrt_full_validation
 mkdir -p ${OUT_ROOT}
 
-# MODELS=(
-#   "resnet18"
-#   "resnet34"
-#   "alexnet"
-#   "zfnet"
-#   "vgg11"
-#   "vgg16"
-# )
+BATCH_SIZE_OVERRIDE=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --batch-size)
+      if [[ $# -lt 2 || ! "$2" =~ ^[1-9][0-9]*$ ]]; then
+        echo "--batch-size requires a positive integer" >&2
+        exit 2
+      fi
+      BATCH_SIZE_OVERRIDE="$2"
+      shift 2
+      ;;
+    -h|--help)
+      echo "Usage: $0 [--batch-size N]"
+      echo "  --batch-size N  use N for every model; otherwise use per-model defaults"
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
 MODELS=(
+  "resnet18"
+  "resnet34"
+  "alexnet"
+  "zfnet"
+  "vgg11"
+  "vgg16"
   "mobilenetv1"
   "mobilenetv2"
+  "spiketransformer"
+  "spikebert"
 )
 PRECISIONS=(
   "tf32"
@@ -33,7 +56,9 @@ for MODEL in "${MODELS[@]}"; do
   # per-model batch size
   #
 
-  if [[ "${MODEL}" == "vgg11" ]]; then
+  if [[ -n "${BATCH_SIZE_OVERRIDE}" ]]; then
+    BATCH_SIZE=${BATCH_SIZE_OVERRIDE}
+  elif [[ "${MODEL}" == "vgg11" ]]; then
     BATCH_SIZE=8
   elif [[ "${MODEL}" == "vgg16" ]]; then
     BATCH_SIZE=4
@@ -47,7 +72,7 @@ for MODEL in "${MODELS[@]}"; do
     echo "[TensorRT] MODEL=${MODEL} PREC=${PREC}"
     echo "========================================="
 
-    OUT_DIR=${OUT_ROOT}/${MODEL}/${PREC}
+    OUT_DIR=${OUT_ROOT}/${MODEL}/${PREC}_b${BATCH_SIZE}
     mkdir -p ${OUT_DIR}
 
 python3 benchmarks/benchmark_tensorrt_runtime.py \
@@ -59,6 +84,13 @@ python3 benchmarks/benchmark_tensorrt_runtime.py \
       --batch-size ${BATCH_SIZE} \
       --height 224 \
       --width 224 \
+      --sequence-length 256 \
+      --transformer-depth 8 \
+      --transformer-dim 256 \
+      --transformer-heads 8 \
+      --transformer-input-dim 768 \
+      --transformer-vocab-size 30522 \
+      --transformer-num-classes 100 \
       --workspace-mb 4096 \
       --warmup-ms 2000 \
       --duration-sec 10 \
