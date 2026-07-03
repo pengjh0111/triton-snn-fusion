@@ -33,8 +33,8 @@ def check_temporal_lif_support(
         return ["x_seq must be a tensor"]
     if not x_seq.is_cuda:
         reasons.append("unsupported_device: x_seq is not CUDA")
-    if x_seq.dim() != 5:
-        reasons.append(f"unsupported_rank: x_seq.dim must be 5, got {x_seq.dim()}")
+    if x_seq.dim() < 2:
+        reasons.append(f"unsupported_rank: x_seq must have shape [T,...], got dim={x_seq.dim()}")
     if x_seq.dtype not in (torch.float32, torch.float16):
         reasons.append(f"unsupported_dtype: x_seq dtype must be float32 or float16, got {x_seq.dtype}")
     if x_seq.dim() >= 1 and int(x_seq.shape[0]) not in (1, 2, 4, 8, 16):
@@ -42,7 +42,7 @@ def check_temporal_lif_support(
     if not isinstance(v_init, torch.Tensor):
         reasons.append("v_init must be a tensor")
     elif v_init.dim() != 0:
-        if x_seq.dim() == 5 and tuple(v_init.shape) != tuple(x_seq.shape[1:]):
+        if x_seq.dim() >= 2 and tuple(v_init.shape) != tuple(x_seq.shape[1:]):
             reasons.append(f"unsupported_membrane_state: v_init shape {tuple(v_init.shape)} does not match {tuple(x_seq.shape[1:])}")
         if v_init.device != x_seq.device or v_init.dtype != x_seq.dtype:
             reasons.append(
@@ -63,6 +63,7 @@ def run_triton_fused_temporal_lif_state(
     detach_reset: bool,
     strict: bool = False,
     verbose: bool = False,
+    use_autotune: bool = True,
 ) -> TritonTemporalLIFResult:
     reasons = check_temporal_lif_support(x_seq, v_init, v_threshold, v_reset, tau, detach_reset)
     strict = strict_temporal_lif_enabled(strict)

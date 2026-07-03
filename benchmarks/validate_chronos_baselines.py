@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import torch
 import torch.nn as nn
+from torch.fx.passes.fake_tensor_prop import FakeTensorProp
 from spikingjelly.activation_based import functional, layer, neuron, surrogate
 from spikingjelly.activation_based.model import spiking_resnet, spiking_vgg
 
@@ -876,6 +877,10 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         save_graph_files(gm, local_dir, "original")
 
         placeholder_values = build_placeholder_values(gm, example_inputs)
+        try:
+            FakeTensorProp(gm).propagate(*example_inputs)
+        except Exception as exc:
+            print(f"[FX_SHAPE_PROP][SKIP] {type(exc).__name__}: {exc}")
         lif_state_count = count_lif_state_nodes(gm)
         temporal_replaced_patterns = 0
         temporal_log: List[str] = []

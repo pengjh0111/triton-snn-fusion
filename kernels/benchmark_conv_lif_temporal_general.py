@@ -753,6 +753,13 @@ def _emit_depthwise_kernel_source(
     lines.append("        v_state = tl.load(v_ptr + v_offsets, mask=spatial_mask[:, :, None] & c_mask[None, None, :], other=0.0).to(tl.float32)")
     lines.append("    else:")
     lines.append("        v_state = tl.load(v_ptr + v_offsets, mask=spatial_mask[:, :, None] & c_mask[None, None, :], other=0.0).to(tl.float16)")
+    for ky in range(3):
+        for kx in range(3):
+            lines.append(f"    w_offsets_{ky}_{kx} = c_offsets * 9 + {ky * 3 + kx}")
+            lines.append(
+                f"    w_{ky}_{kx} = tl.load("
+                f"w_ptr + w_offsets_{ky}_{kx}, mask=c_mask, other=0.0)"
+            )
     lines.append("    for temporal_base in range(0, T_STEPS, WINDOW_T):")
     for g in range(MAX_REUSE_GROUPS):
         lines.append(f"        if REUSE_GROUPS >= {g + 1}:")
@@ -778,15 +785,10 @@ def _emit_depthwise_kernel_source(
                         f"(step * num_batches + pix_n[:, None, None]) * in_channels * height * width + "
                         f"c_offsets[None, None, :] * height * width + ih_{ky}_{kx} * width + iw_{ky}_{kx}"
                     )
-                    lines.append(f"                    w_offsets_{ky}_{kx} = c_offsets * 9 + {ky * 3 + kx}")
                     lines.append(
                         f"                    x_{ky}_{kx} = tl.load("
                         f"x_ptr + x_offsets_{ky}_{kx}, "
                         f"mask=spatial_mask[:, :, None] & c_mask[None, None, :] & in_bounds_{ky}_{kx}, other=0.0, cache_modifier='.ca')"
-                    )
-                    lines.append(
-                        f"                    w_{ky}_{kx} = tl.load("
-                        f"w_ptr + w_offsets_{ky}_{kx}, mask=c_mask, other=0.0)"
                     )
                     lines.append(f"                    acc += x_{ky}_{kx} * w_{ky}_{kx}[None, None, :]")
             if residual_add:

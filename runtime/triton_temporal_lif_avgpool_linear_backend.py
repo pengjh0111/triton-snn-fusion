@@ -66,6 +66,7 @@ def run_triton_fused_temporal_lif_avgpool_linear(
     detach_reset: bool,
     strict: bool = False,
     verbose: bool = False,
+    use_autotune: bool = True,
 ) -> TritonTemporalLIFAvgPoolLinearResult:
     reasons = check_temporal_lif_avgpool_linear_support(x_seq, v_init, fc_weight, fc_bias, tau)
     strict = strict_temporal_lif_avgpool_linear_enabled(strict)

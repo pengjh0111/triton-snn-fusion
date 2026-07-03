@@ -104,8 +104,8 @@ def run_fused_temporal_lif_state_kernel(
     detach_reset: bool,
     block_size: int = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    if x_seq.dim() != 5:
-        raise RuntimeError(f"x_seq must have shape [T, N, C, H, W], got dim={x_seq.dim()}")
+    if x_seq.dim() < 2:
+        raise RuntimeError(f"x_seq must have shape [T, ...], got dim={x_seq.dim()}")
     if not x_seq.is_cuda:
         raise RuntimeError("x_seq must be a CUDA tensor")
     if x_seq.dtype not in (torch.float32, torch.float16):

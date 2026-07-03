@@ -10,16 +10,10 @@ TEMPORAL_POW2_CANDIDATES = (1, 2, 4, 8, 16)
 
 def _make_autotune_configs():
     configs = []
-    for btile_t, reuse_groups in (
-        (1, 1),
-        (1, 2),
-        (2, 1),
-        (2, 2),
-        (4, 1),
-        (4, 2),
-        (8, 1),
-        (16, 1),
-    ):
+    # Keep the temporal tile in separate accumulators.  Four groups is the
+    # largest useful reuse window before register pressure dominates these
+    # relatively small linear layers.
+    for btile_t, reuse_groups in ((1, 1), (1, 2), (1, 4)):
         for block_m, block_n, block_k, num_warps in (
             (8, 32, 64, 4),
             (16, 32, 64, 4),
@@ -135,49 +129,91 @@ def _fused_temporal_linear_lif_state_kernel(
     else:
         v = tl.load(v_init + v_offsets, mask=row_mask[:, None] & col_mask[None, :], other=0.0)
 
-    for group_start in tl.static_range(0, T, BTILE_T * REUSE_GROUPS):
-        for reuse_group in tl.static_range(0, REUSE_GROUPS):
-            for local_t in tl.static_range(0, BTILE_T):
-                t = group_start + reuse_group * BTILE_T + local_t
-                acc = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
-                for k0 in range(0, in_features, BLOCK_K):
-                    ks = k0 + tl.arange(0, BLOCK_K)
-                    a = tl.load(
-                        x_seq + t * n_batches * in_features + rows[:, None] * in_features + ks[None, :],
-                        mask=row_mask[:, None] & (ks[None, :] < in_features),
-                        other=0.0,
-                    )
-                    b = tl.load(
-                        weight + cols[None, :] * in_features + ks[:, None],
-                        mask=(ks[:, None] < in_features) & col_mask[None, :],
-                        other=0.0,
-                    )
-                    if USE_TF32:
-                        acc = tl.dot(a, b, acc, input_precision="tf32")
-                    else:
-                        acc = tl.dot(a, b, acc)
+    if HAS_BIAS:
+        bval = tl.load(bias + cols, mask=col_mask, other=0.0)
 
-                if HAS_BIAS:
-                    bval = tl.load(bias + cols, mask=col_mask, other=0.0)
-                    acc += bval[None, :]
+    # K is outside the temporal reuse group: each weight tile is loaded once
+    # and consumed by up to four timesteps.
+    for group_start in tl.static_range(0, T, REUSE_GROUPS):
+        acc0 = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+        if REUSE_GROUPS >= 2:
+            acc1 = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+        if REUSE_GROUPS >= 4:
+            acc2 = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
+            acc3 = tl.zeros((BLOCK_M, BLOCK_N), dtype=tl.float32)
 
-                if TAU_LE_ONE:
-                    v_before_spike = v + acc
-                else:
-                    v_before_spike = v + (acc - v) * tau_inv
-
-                pred = v_before_spike >= v_threshold
-                spike = pred.to(tl.float32)
-                if SOFT_RESET:
-                    v = v_before_spike - spike * v_threshold
-                else:
-                    v = tl.where(pred, v_before_spike * 0.0 + v_reset, v_before_spike)
-
-                tl.store(
-                    spike_seq + t * n_batches * out_features + v_offsets,
-                    spike,
-                    mask=row_mask[:, None] & col_mask[None, :],
+        for k0 in range(0, in_features, BLOCK_K):
+            ks = k0 + tl.arange(0, BLOCK_K)
+            k_mask = ks < in_features
+            b = tl.load(
+                weight + cols[None, :] * in_features + ks[:, None],
+                mask=k_mask[:, None] & col_mask[None, :],
+                other=0.0,
+            )
+            a0 = tl.load(
+                x_seq + group_start * n_batches * in_features + rows[:, None] * in_features + ks[None, :],
+                mask=row_mask[:, None] & k_mask[None, :],
+                other=0.0,
+            )
+            if USE_TF32:
+                acc0 = tl.dot(a0, b, acc0, input_precision="tf32")
+            else:
+                acc0 = tl.dot(a0, b, acc0)
+            if REUSE_GROUPS >= 2:
+                a1 = tl.load(
+                    x_seq + (group_start + 1) * n_batches * in_features + rows[:, None] * in_features + ks[None, :],
+                    mask=row_mask[:, None] & k_mask[None, :],
+                    other=0.0,
                 )
+                if USE_TF32:
+                    acc1 = tl.dot(a1, b, acc1, input_precision="tf32")
+                else:
+                    acc1 = tl.dot(a1, b, acc1)
+            if REUSE_GROUPS >= 4:
+                a2 = tl.load(
+                    x_seq + (group_start + 2) * n_batches * in_features + rows[:, None] * in_features + ks[None, :],
+                    mask=row_mask[:, None] & k_mask[None, :],
+                    other=0.0,
+                )
+                a3 = tl.load(
+                    x_seq + (group_start + 3) * n_batches * in_features + rows[:, None] * in_features + ks[None, :],
+                    mask=row_mask[:, None] & k_mask[None, :],
+                    other=0.0,
+                )
+                if USE_TF32:
+                    acc2 = tl.dot(a2, b, acc2, input_precision="tf32")
+                    acc3 = tl.dot(a3, b, acc3, input_precision="tf32")
+                else:
+                    acc2 = tl.dot(a2, b, acc2)
+                    acc3 = tl.dot(a3, b, acc3)
+
+        for local_t in tl.static_range(0, REUSE_GROUPS):
+            if local_t == 0:
+                acc = acc0
+            elif local_t == 1:
+                acc = acc1
+            elif local_t == 2:
+                acc = acc2
+            else:
+                acc = acc3
+            if HAS_BIAS:
+                acc += bval[None, :]
+            if TAU_LE_ONE:
+                v_before_spike = v + acc
+            else:
+                v_before_spike = v + (acc - v) * tau_inv
+            pred = v_before_spike >= v_threshold
+            spike = pred.to(tl.float32)
+            if SOFT_RESET:
+                v = v_before_spike - spike * v_threshold
+            else:
+                v = tl.where(pred, v_before_spike * 0.0 + v_reset, v_before_spike)
+            t = group_start + local_t
+            tl.store(
+                spike_seq + t * n_batches * out_features + v_offsets,
+                spike,
+                mask=row_mask[:, None] & col_mask[None, :],
+            )
 
     tl.store(v_last + v_offsets, v, mask=row_mask[:, None] & col_mask[None, :])
 
@@ -320,7 +356,7 @@ def run_fused_temporal_linear_lif_state_kernel(
         SOFT_RESET=float(v_reset) < 0.0,
         USE_TF32=use_tf32,
         V_INIT_IS_SCALAR=v_init_is_scalar,
-        AUTOTUNE_VERSION=2,
+        AUTOTUNE_VERSION=3,
         **launch_kwargs,
     )
     if use_autotune:
