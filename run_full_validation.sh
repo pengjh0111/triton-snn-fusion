@@ -176,7 +176,7 @@ done
 # # FP16 CORRECTNESS
 # ############################################
 
-# python3 test/test_fused_convlif_kernel_configs.py \
+# python3 benchmarks/helpers/fused_convlif_kernel_configs.py \
 #   --device cuda \
 #   --dtype fp16 \
 #   --out-dir ${OUT_ROOT}/fp16_correctness \

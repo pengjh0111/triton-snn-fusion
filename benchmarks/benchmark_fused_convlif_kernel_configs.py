@@ -15,7 +15,7 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.set_float32_matmul_precision("high")
 
-from test.test_fused_convlif_kernel_configs import CASES, _dtype_from_arg, _pair, make_case_tensors, torch_temporal_ref
+from benchmarks.helpers.fused_convlif_kernel_configs import CASES, _dtype_from_arg, _pair, make_case_tensors, torch_temporal_ref
 from kernels.benchmark_conv_lif_temporal_general import format_kernel_dtype_diagnostics
 from runtime.triton_convlif_backend import (
     classify_conv_lif_config,

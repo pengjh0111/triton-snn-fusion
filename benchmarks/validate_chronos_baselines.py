@@ -86,7 +86,7 @@ from compiler.fx_temporal_graph_validation import (
 )
 from compiler.fx_temporal_scheduler import reorder_fx_graph_by_temporal_windows
 from compiler.fx_temporal_spatial_canonicalize import canonicalize_temporal_spatial_ir
-from test.models_for_fx_test import CustomStatefulIFNode, reset_custom_stateful_lif_modules
+from benchmarks.helpers.models_for_fx import CustomStatefulIFNode, reset_custom_stateful_lif_modules
 
 
 LIF_IMPL_CHOICES = ("chronos", "spikingjelly")

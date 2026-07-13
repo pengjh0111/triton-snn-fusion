@@ -23,7 +23,7 @@ from benchmarks.validate_chronos_baselines import (
     make_resnet_layer,
     reset_lif_modules,
 )
-from test.models_for_fx_test import CustomStatefulIFNode
+from benchmarks.helpers.models_for_fx import CustomStatefulIFNode
 
 
 ################################################################################
