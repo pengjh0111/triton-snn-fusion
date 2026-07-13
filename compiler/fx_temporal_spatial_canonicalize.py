@@ -12,6 +12,12 @@ class TemporalSpatialCanonicalizeStats:
     canonicalize_cat_chunk_removed: int = 0
     canonicalize_chunk_cat_removed: int = 0
     canonicalize_getitem_cat_removed: int = 0
+    canonicalize_stack_getitem_removed: int = 0
+    canonicalize_getitem_stack_removed: int = 0
+    canonicalize_stack_chunk_removed: int = 0
+    canonicalize_getitem_stack_chunk_removed: int = 0
+    canonicalize_cat_linear_chunk_removed: int = 0
+    canonicalize_cat_linear_chunk_getitem_replaced: int = 0
     temporal_mean_rewrites: int = 0
     temporal_mean_removed_getitems: int = 0
     temporal_mean_removed_adds: int = 0
@@ -66,6 +72,17 @@ def _is_chunk(node: torch.fx.Node) -> bool:
     return node.op == "call_function" and (node.target is torch.chunk or "chunk" in _target_text(node))
 
 
+def _is_stack(node: torch.fx.Node) -> bool:
+    return node.op == "call_function" and (node.target is torch.stack or "stack" in _target_text(node))
+
+
+def _is_linear_call(node: torch.fx.Node) -> bool:
+    if node.op != "call_function":
+        return False
+    text = _target_text(node)
+    return "linear" in text and "snn_custom" not in text
+
+
 def _is_add(node: torch.fx.Node) -> bool:
     return node.op == "call_function" and (
         node.target is operator.add or node.target is torch.add or "add" in _target_text(node)
@@ -112,6 +129,48 @@ def _cat_inputs(node: torch.fx.Node) -> Optional[List[torch.fx.Node]]:
     if not all(isinstance(item, torch.fx.Node) for item in first):
         return None
     return list(first)
+
+
+def _cat_dim(node: torch.fx.Node) -> Optional[int]:
+    if not _is_cat(node):
+        return None
+    dim = node.kwargs.get("dim", None)
+    if dim is None and len(node.args) > 1:
+        dim = node.args[1]
+    if dim is None:
+        dim = 0
+    return dim if isinstance(dim, int) else None
+
+
+def _stack_inputs_and_dim(node: torch.fx.Node) -> Tuple[Optional[List[torch.fx.Node]], Optional[int]]:
+    if not _is_stack(node) or not node.args:
+        return None, None
+    first = node.args[0]
+    if not isinstance(first, (tuple, list)):
+        return None, None
+    if not all(isinstance(item, torch.fx.Node) for item in first):
+        return None, None
+    dim = node.kwargs.get("dim", None)
+    if dim is None and len(node.args) > 1:
+        dim = node.args[1]
+    if dim is None:
+        dim = 0
+    if not isinstance(dim, int):
+        return None, None
+    return list(first), dim
+
+
+def _ordered_getitems_from_same_source(inputs: List[torch.fx.Node]) -> Optional[torch.fx.Node]:
+    if not inputs:
+        return None
+    if not all(_is_getitem(item) and isinstance(item.args[0], torch.fx.Node) for item in inputs):
+        return None
+    source = inputs[0].args[0]
+    if any(item.args[0] is not source for item in inputs):
+        return None
+    if [_getitem_index(item) for item in inputs] != list(range(len(inputs))):
+        return None
+    return source
 
 
 def _collect_chunk_getitems(chunk_node: torch.fx.Node) -> Optional[Dict[int, torch.fx.Node]]:
@@ -184,6 +243,140 @@ def _replace_cat_of_chunk(gm: torch.fx.GraphModule, stats: TemporalSpatialCanoni
             gm.graph.erase_node(chunk)
         stats.canonicalize_chunk_cat_removed += 1
         stats.canonicalize_getitem_cat_removed += len(inputs)
+        changed = True
+    return changed
+
+
+def _replace_stack_of_getitems(gm: torch.fx.GraphModule, stats: TemporalSpatialCanonicalizeStats) -> bool:
+    changed = False
+    for stack in list(gm.graph.nodes):
+        inputs, dim = _stack_inputs_and_dim(stack)
+        if not inputs or dim != 0:
+            continue
+        if not all(_is_getitem(item) and isinstance(item.args[0], torch.fx.Node) for item in inputs):
+            continue
+        source = inputs[0].args[0]
+        if isinstance(source, torch.fx.Node) and _is_chunk(source):
+            continue
+        if any(item.args[0] is not source for item in inputs):
+            continue
+        indices = [_getitem_index(item) for item in inputs]
+        if indices != list(range(len(inputs))):
+            continue
+
+        stack.replace_all_uses_with(source)
+        if len(stack.users) == 0:
+            gm.graph.erase_node(stack)
+
+        removed_getitems = 0
+        for item in reversed(inputs):
+            if len(item.users) == 0:
+                gm.graph.erase_node(item)
+                removed_getitems += 1
+
+        stats.canonicalize_stack_getitem_removed += 1
+        stats.canonicalize_getitem_stack_removed += removed_getitems
+        changed = True
+    return changed
+
+
+def _replace_stack_of_chunk_getitems(gm: torch.fx.GraphModule, stats: TemporalSpatialCanonicalizeStats) -> bool:
+    changed = False
+    for stack in list(gm.graph.nodes):
+        inputs, dim = _stack_inputs_and_dim(stack)
+        if not inputs or dim != 0:
+            continue
+        chunk = _ordered_getitems_from_same_source(inputs)
+        if not isinstance(chunk, torch.fx.Node) or not _is_chunk(chunk):
+            continue
+        source = _chunk_input(chunk)
+        count = _chunk_count(chunk)
+        if source is None or count != len(inputs):
+            continue
+
+        with gm.graph.inserting_before(stack):
+            replacement = gm.graph.call_method("unflatten", args=(source, 0, (len(inputs), -1)))
+            replacement.meta.update(getattr(stack, "meta", {}))
+        stack.replace_all_uses_with(replacement)
+        if len(stack.users) == 0:
+            gm.graph.erase_node(stack)
+
+        removed_getitems = 0
+        for item in reversed(inputs):
+            if len(item.users) == 0:
+                gm.graph.erase_node(item)
+                removed_getitems += 1
+        if len(chunk.users) == 0:
+            gm.graph.erase_node(chunk)
+
+        stats.canonicalize_stack_chunk_removed += 1
+        stats.canonicalize_getitem_stack_chunk_removed += removed_getitems
+        changed = True
+    return changed
+
+
+def _replace_cat_linear_chunk_with_batched_linear(
+    gm: torch.fx.GraphModule,
+    stats: TemporalSpatialCanonicalizeStats,
+) -> bool:
+    changed = False
+    for chunk in list(gm.graph.nodes):
+        if not _is_chunk(chunk):
+            continue
+        linear = _chunk_input(chunk)
+        if not isinstance(linear, torch.fx.Node) or not _is_linear_call(linear):
+            continue
+        if not linear.args or not isinstance(linear.args[0], torch.fx.Node):
+            continue
+        cat = linear.args[0]
+        if not isinstance(cat, torch.fx.Node) or not _is_cat(cat) or _cat_dim(cat) != 0:
+            continue
+        if len(cat.users) != 1 or len(linear.users) != 1:
+            continue
+
+        inputs = _cat_inputs(cat)
+        if not inputs:
+            continue
+        source = _ordered_getitems_from_same_source(inputs)
+        if not isinstance(source, torch.fx.Node):
+            continue
+        if _chunk_count(chunk) != len(inputs):
+            continue
+        getitems = _collect_chunk_getitems(chunk)
+        if getitems is None or sorted(getitems) != list(range(len(inputs))):
+            continue
+
+        with gm.graph.inserting_before(linear):
+            batched_linear = gm.graph.call_function(
+                linear.target,
+                args=(source, *linear.args[1:]),
+                kwargs=dict(linear.kwargs),
+            )
+            batched_linear.meta.update(getattr(linear, "meta", {}))
+
+        replaced_getitems = 0
+        for idx in range(len(inputs)):
+            old_getitem = getitems[idx]
+            with gm.graph.inserting_before(old_getitem):
+                new_getitem = gm.graph.call_function(operator.getitem, args=(batched_linear, idx))
+                new_getitem.meta.update(getattr(old_getitem, "meta", {}))
+            old_getitem.replace_all_uses_with(new_getitem)
+            if len(old_getitem.users) == 0:
+                gm.graph.erase_node(old_getitem)
+            replaced_getitems += 1
+
+        if len(chunk.users) == 0:
+            gm.graph.erase_node(chunk)
+        if len(linear.users) == 0:
+            gm.graph.erase_node(linear)
+        if len(cat.users) == 0:
+            gm.graph.erase_node(cat)
+        for item in reversed(inputs):
+            if len(item.users) == 0:
+                gm.graph.erase_node(item)
+
+        stats.canonicalize_cat_linear_chunk_removed += 1
+        stats.canonicalize_cat_linear_chunk_getitem_replaced += replaced_getitems
         changed = True
     return changed
 
@@ -285,6 +478,22 @@ def _is_temporal_stack_timestep_getitem(node: torch.fx.Node) -> bool:
     return _is_getitem(node) and isinstance(_getitem_index(node), int) and isinstance(node.args[0], torch.fx.Node)
 
 
+def _reduce_temporal_getitem_source(
+    gm: torch.fx.GraphModule,
+    source: torch.fx.Node,
+    temporal_len: int,
+    *,
+    reduce: str,
+) -> torch.fx.Node:
+    if _is_chunk(source):
+        chunk_input = _chunk_input(source)
+        if chunk_input is None:
+            raise ValueError("chunk source has no tensor input")
+        view = gm.graph.call_method("unflatten", args=(chunk_input, 0, (temporal_len, -1)))
+        return gm.graph.call_method(reduce, args=(view,), kwargs={"dim": 0})
+    return gm.graph.call_method(reduce, args=(source,), kwargs={"dim": 0})
+
+
 def _rewrite_temporal_sum_div_to_mean(
     gm: torch.fx.GraphModule,
     stats: TemporalSpatialCanonicalizeStats,
@@ -315,9 +524,12 @@ def _rewrite_temporal_sum_div_to_mean(
         if not grouped_terms:
             continue
         valid_groups = True
-        for group in grouped_terms.values():
+        for source, group in grouped_terms.items():
             indices = [_getitem_index(term) for term in group]
             if sorted(indices) != list(range(len(group))):
+                valid_groups = False
+                break
+            if _is_chunk(source) and _chunk_count(source) != len(group):
                 valid_groups = False
                 break
         if not valid_groups:
@@ -326,10 +538,20 @@ def _rewrite_temporal_sum_div_to_mean(
         with gm.graph.inserting_before(div):
             if len(grouped_terms) == 1:
                 stack = next(iter(grouped_terms))
-                replacement = gm.graph.call_method("mean", args=(stack,), kwargs={"dim": 0})
+                replacement = _reduce_temporal_getitem_source(
+                    gm,
+                    stack,
+                    len(terms),
+                    reduce="mean",
+                )
             else:
                 partial_sums = [
-                    gm.graph.call_method("sum", args=(stack,), kwargs={"dim": 0})
+                    _reduce_temporal_getitem_source(
+                        gm,
+                        stack,
+                        len(grouped_terms[stack]),
+                        reduce="sum",
+                    )
                     for stack in grouped_terms
                 ]
                 replacement = partial_sums[0]
@@ -431,7 +653,10 @@ def canonicalize_temporal_spatial_ir(
     max_iter: int = 8,
     dump_dir: Optional[Path] = None,
     strict: bool = False,
-    rewrite_temporal_mean: bool = False,
+    rewrite_temporal_mean: bool = True,
+    canonicalize_stack_getitem: bool = True,
+    canonicalize_chunk_stack: bool = True,
+    canonicalize_cat_linear_chunk: bool = True,
     drop_intermediate_states: bool = False,
     preserve_output_contract: bool = True,
 ) -> TemporalSpatialCanonicalizeStats:
@@ -450,10 +675,6 @@ def canonicalize_temporal_spatial_ir(
             f"returned_states={stats.ir_returned_states_before}"
         )
         changed_once = False
-        if rewrite_temporal_mean:
-            changed_once |= _rewrite_temporal_sum_div_to_mean(gm, stats)
-        else:
-            print("[CHRONOS_TEMPORAL_MEAN_REWRITE] enabled=False")
         changed_once |= _prune_final_return_states(
             gm,
             stats,
@@ -464,8 +685,18 @@ def canonicalize_temporal_spatial_ir(
             stats.iterations = iteration + 1
             changed = changed_once
             changed_once = False
+            if canonicalize_chunk_stack:
+                changed |= _replace_stack_of_chunk_getitems(gm, stats)
+            if canonicalize_stack_getitem:
+                changed |= _replace_stack_of_getitems(gm, stats)
+            if canonicalize_cat_linear_chunk:
+                changed |= _replace_cat_linear_chunk_with_batched_linear(gm, stats)
             changed |= _replace_cat_of_chunk(gm, stats)
             changed |= _replace_chunk_of_cat(gm, stats)
+            if rewrite_temporal_mean:
+                changed |= _rewrite_temporal_sum_div_to_mean(gm, stats)
+            else:
+                print("[CHRONOS_TEMPORAL_MEAN_REWRITE] enabled=False")
             before = _count_all_nodes(gm)
             gm.graph.eliminate_dead_code()
             after = _count_all_nodes(gm)
@@ -494,6 +725,12 @@ def canonicalize_temporal_spatial_ir(
             f"cat_chunk_removed={stats.canonicalize_cat_chunk_removed} "
             f"chunk_cat_removed={stats.canonicalize_chunk_cat_removed} "
             f"getitem_cat_removed={stats.canonicalize_getitem_cat_removed} "
+            f"stack_getitem_removed={stats.canonicalize_stack_getitem_removed} "
+            f"getitem_stack_removed={stats.canonicalize_getitem_stack_removed} "
+            f"stack_chunk_removed={stats.canonicalize_stack_chunk_removed} "
+            f"getitem_stack_chunk_removed={stats.canonicalize_getitem_stack_chunk_removed} "
+            f"cat_linear_chunk_removed={stats.canonicalize_cat_linear_chunk_removed} "
+            f"cat_linear_chunk_getitem_replaced={stats.canonicalize_cat_linear_chunk_getitem_replaced} "
             f"temporal_mean_rewrites={stats.temporal_mean_rewrites} "
             f"state_pruned={stats.state_prune_removed_final_return_states} "
             f"dead={stats.canonicalize_dead_nodes_removed} "
