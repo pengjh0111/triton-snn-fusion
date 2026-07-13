@@ -192,6 +192,8 @@ class RewriteCounters:
     spatial_batched_flatten: int = 0
     spatial_batched_linear: int = 0
     spatial_batched_elementwise: int = 0
+    spatial_batched_layer_norm: int = 0
+    spatial_batched_attention: int = 0
     spatial_temporal_stack_bn_groups: int = 0
     spatial_temporal_stack_add_groups: int = 0
     spatial_temporal_stack_pool_groups: int = 0
@@ -208,6 +210,12 @@ class RewriteCounters:
     canonicalize_cat_chunk_removed: int = 0
     canonicalize_chunk_cat_removed: int = 0
     canonicalize_getitem_cat_removed: int = 0
+    canonicalize_stack_getitem_removed: int = 0
+    canonicalize_getitem_stack_removed: int = 0
+    canonicalize_stack_chunk_removed: int = 0
+    canonicalize_getitem_stack_chunk_removed: int = 0
+    canonicalize_cat_linear_chunk_removed: int = 0
+    canonicalize_cat_linear_chunk_getitem_replaced: int = 0
     temporal_mean_rewrites: int = 0
     temporal_mean_removed_getitems: int = 0
     temporal_mean_removed_adds: int = 0
@@ -1158,6 +1166,8 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                 counters.spatial_batched_flatten += spatial_stats.spatial_batched_flatten
                 counters.spatial_batched_linear += spatial_stats.spatial_batched_linear
                 counters.spatial_batched_elementwise += spatial_stats.spatial_batched_elementwise
+                counters.spatial_batched_layer_norm += spatial_stats.spatial_batched_layer_norm
+                counters.spatial_batched_attention += spatial_stats.spatial_batched_attention
                 counters.spatial_temporal_stack_bn_groups += spatial_stats.spatial_temporal_stack_bn_groups
                 counters.spatial_temporal_stack_add_groups += spatial_stats.spatial_temporal_stack_add_groups
                 counters.spatial_temporal_stack_pool_groups += spatial_stats.spatial_temporal_stack_pool_groups
@@ -1186,12 +1196,20 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
             gm,
             dump_dir=local_dir,
             strict=False,
-            rewrite_temporal_mean=getattr(args, "enable_temporal_mean_rewrite", False),
+            rewrite_temporal_mean=not getattr(args, "disable_temporal_mean_rewrite", False),
             drop_intermediate_states=getattr(args, "drop_intermediate_states", False),
         )
         counters.canonicalize_cat_chunk_removed += canonicalize_stats.canonicalize_cat_chunk_removed
         counters.canonicalize_chunk_cat_removed += canonicalize_stats.canonicalize_chunk_cat_removed
         counters.canonicalize_getitem_cat_removed += canonicalize_stats.canonicalize_getitem_cat_removed
+        counters.canonicalize_stack_getitem_removed += canonicalize_stats.canonicalize_stack_getitem_removed
+        counters.canonicalize_getitem_stack_removed += canonicalize_stats.canonicalize_getitem_stack_removed
+        counters.canonicalize_stack_chunk_removed += canonicalize_stats.canonicalize_stack_chunk_removed
+        counters.canonicalize_getitem_stack_chunk_removed += canonicalize_stats.canonicalize_getitem_stack_chunk_removed
+        counters.canonicalize_cat_linear_chunk_removed += canonicalize_stats.canonicalize_cat_linear_chunk_removed
+        counters.canonicalize_cat_linear_chunk_getitem_replaced += (
+            canonicalize_stats.canonicalize_cat_linear_chunk_getitem_replaced
+        )
         counters.temporal_mean_rewrites += canonicalize_stats.temporal_mean_rewrites
         counters.temporal_mean_removed_getitems += canonicalize_stats.temporal_mean_removed_getitems
         counters.temporal_mean_removed_adds += canonicalize_stats.temporal_mean_removed_adds
@@ -1551,6 +1569,7 @@ def parse_args():
     parser.add_argument("--disable-temporal-linear-lif-rewrite", action="store_true")
     parser.add_argument("--drop-intermediate-states", action="store_true")
     parser.add_argument("--enable-temporal-mean-rewrite", action="store_true")
+    parser.add_argument("--disable-temporal-mean-rewrite", action="store_true")
     parser.add_argument("--enable-temporal-rewrite", action="store_true")
     parser.add_argument("--temporal-fuse-window", type=int, default=1)
     parser.add_argument("--temporal-allow-tail", action="store_true")

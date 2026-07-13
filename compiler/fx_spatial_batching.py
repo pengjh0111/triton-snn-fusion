@@ -74,6 +74,8 @@ class SpatialBatchingStats:
     spatial_batched_flatten: int = 0
     spatial_batched_linear: int = 0
     spatial_batched_elementwise: int = 0
+    spatial_batched_layer_norm: int = 0
+    spatial_batched_attention: int = 0
     spatial_temporal_stack_bn_groups: int = 0
     spatial_temporal_stack_add_groups: int = 0
     spatial_temporal_stack_pool_groups: int = 0
@@ -212,6 +214,254 @@ def _match_batched_chunk_getitem(node: torch.fx.Node) -> Optional[BatchedChunkIn
     )
 
 
+@dataclass
+class TransformerAttentionItem:
+    output_node: torch.fx.Node
+    input_node: torch.fx.Node
+    layer_norm_node: torch.fx.Node
+    qkv_linear_node: torch.fx.Node
+    qkv_reshape_node: torch.fx.Node
+    qkv_movedim_node: torch.fx.Node
+    qkv_transpose_node: torch.fx.Node
+    q_node: torch.fx.Node
+    k_node: torch.fx.Node
+    v_node: torch.fx.Node
+    k_transpose_node: torch.fx.Node
+    qk_matmul_node: torch.fx.Node
+    scale_node: torch.fx.Node
+    softmax_node: torch.fx.Node
+    av_matmul_node: torch.fx.Node
+    out_transpose_node: torch.fx.Node
+    timestep: int
+    source_kind: str
+    source_node: torch.fx.Node
+    normalized_shape: Any
+    norm_weight: Any
+    norm_bias: Any
+    norm_eps: Any
+    qkv_weight: Any
+    qkv_bias: Any
+    reshape_args: Tuple[Any, ...]
+    scale: Any
+    softmax_dim: Any
+    output_shape_args: Tuple[Any, ...]
+
+
+@dataclass
+class LayerNormStackItem:
+    output_node: torch.fx.Node
+    input_node: torch.fx.Node
+    timestep: int
+    source_kind: str
+    source_node: torch.fx.Node
+    normalized_shape: Any
+    norm_weight: Any
+    norm_bias: Any
+    norm_eps: Any
+
+
+def _call_method_target(node: torch.fx.Node, name: str) -> bool:
+    return node.op == "call_method" and str(node.target) == name
+
+
+def _single_tensor_arg(node: torch.fx.Node) -> Optional[torch.fx.Node]:
+    if not node.args or not isinstance(node.args[0], torch.fx.Node):
+        return None
+    return node.args[0]
+
+
+def _stack_items(node: torch.fx.Node) -> Optional[Tuple[List[torch.fx.Node], int]]:
+    if not _is_stack_node(node) or not node.args:
+        return None
+    values = node.args[0]
+    if not isinstance(values, (list, tuple)) or not values:
+        return None
+    if not all(isinstance(item, torch.fx.Node) for item in values):
+        return None
+    dim = node.args[1] if len(node.args) > 1 else node.kwargs.get("dim", 0)
+    try:
+        dim = int(dim)
+    except Exception:
+        return None
+    if dim != 0:
+        return None
+    return list(values), dim
+
+
+def _node_temporal_source(node: torch.fx.Node) -> Optional[Tuple[str, torch.fx.Node, int]]:
+    temporal_stack = _match_temporal_stack_getitem(node)
+    if temporal_stack is not None:
+        return ("temporal_stack", temporal_stack.spike_stack, temporal_stack.timestep)
+    previous = _match_batched_chunk_getitem(node)
+    if previous is not None:
+        return ("previous_batched", previous.batched_node, previous.timestep)
+    timestep = _get_chronos_meta(node, "timestep")
+    if isinstance(timestep, int):
+        return ("plain", node, timestep)
+    return None
+
+
+def _layer_norm_args(node: torch.fx.Node) -> Optional[Tuple[Any, Any, Any, Any]]:
+    if not _is_layer_norm_node(node) or len(node.args) < 2:
+        return None
+    normalized_shape = node.args[1]
+    weight = node.args[2] if len(node.args) > 2 else node.kwargs.get("weight", None)
+    bias = node.args[3] if len(node.args) > 3 else node.kwargs.get("bias", None)
+    eps = node.args[4] if len(node.args) > 4 else node.kwargs.get("eps", 1e-5)
+    return normalized_shape, weight, bias, eps
+
+
+def _match_layer_norm_stack_item(node: torch.fx.Node) -> Optional[LayerNormStackItem]:
+    args = _layer_norm_args(node)
+    if args is None:
+        return None
+    input_node = _single_tensor_arg(node)
+    if input_node is None:
+        return None
+    source = _node_temporal_source(input_node)
+    if source is None:
+        return None
+    source_kind, source_node, timestep = source
+    normalized_shape, weight, bias, eps = args
+    return LayerNormStackItem(
+        output_node=node,
+        input_node=input_node,
+        timestep=timestep,
+        source_kind=source_kind,
+        source_node=source_node,
+        normalized_shape=normalized_shape,
+        norm_weight=weight,
+        norm_bias=bias,
+        norm_eps=eps,
+    )
+
+
+def _linear_args(node: torch.fx.Node) -> Optional[Tuple[torch.fx.Node, Any, Any]]:
+    if not _is_linear_node(None, node):  # gm is not needed for call_function nodes.
+        return None
+    if len(node.args) < 2 or not isinstance(node.args[0], torch.fx.Node):
+        return None
+    weight = node.args[1]
+    bias = node.args[2] if len(node.args) > 2 else node.kwargs.get("bias", None)
+    return node.args[0], weight, bias
+
+
+def _match_transformer_attention_output(node: torch.fx.Node) -> Optional[TransformerAttentionItem]:
+    if not _call_method_target(node, "reshape"):
+        return None
+    if len(node.args) < 2:
+        return None
+    output_shape_args = tuple(node.args[1:])
+    out_transpose = _single_tensor_arg(node)
+    if out_transpose is None or not _call_method_target(out_transpose, "transpose"):
+        return None
+    if tuple(out_transpose.args[1:3]) != (-3, -2):
+        return None
+    av_matmul = _single_tensor_arg(out_transpose)
+    if av_matmul is None or not _is_matmul_node(av_matmul) or len(av_matmul.args) < 2:
+        return None
+    softmax_node, v_node = av_matmul.args[:2]
+    if not isinstance(softmax_node, torch.fx.Node) or not isinstance(v_node, torch.fx.Node):
+        return None
+    if not _is_softmax_node(softmax_node):
+        return None
+    softmax_dim = softmax_node.kwargs.get("dim", None)
+    if softmax_dim is None and len(softmax_node.args) > 1:
+        softmax_dim = softmax_node.args[1]
+    scale_node = _single_tensor_arg(softmax_node)
+    if scale_node is None or scale_node.op != "call_function" or scale_node.target is not operator.mul:
+        return None
+    if len(scale_node.args) != 2:
+        return None
+    qk_matmul = None
+    scale = None
+    if isinstance(scale_node.args[0], torch.fx.Node):
+        qk_matmul = scale_node.args[0]
+        scale = scale_node.args[1]
+    elif isinstance(scale_node.args[1], torch.fx.Node):
+        qk_matmul = scale_node.args[1]
+        scale = scale_node.args[0]
+    if qk_matmul is None or not _is_matmul_node(qk_matmul) or len(qk_matmul.args) < 2:
+        return None
+    q_node, k_transpose = qk_matmul.args[:2]
+    if not isinstance(q_node, torch.fx.Node) or not isinstance(k_transpose, torch.fx.Node):
+        return None
+    if not _call_method_target(k_transpose, "transpose") or tuple(k_transpose.args[1:3]) != (-2, -1):
+        return None
+    k_node = _single_tensor_arg(k_transpose)
+    if k_node is None:
+        return None
+
+    def _qkv_getitem(item: torch.fx.Node, expected_index: int) -> Optional[torch.fx.Node]:
+        if item.op != "call_function" or item.target is not operator.getitem or len(item.args) < 2:
+            return None
+        if item.args[1] != expected_index or not isinstance(item.args[0], torch.fx.Node):
+            return None
+        return item.args[0]
+
+    qkv_transpose = _qkv_getitem(q_node, 0)
+    if qkv_transpose is None or _qkv_getitem(k_node, 1) is not qkv_transpose or _qkv_getitem(v_node, 2) is not qkv_transpose:
+        return None
+    if not _call_method_target(qkv_transpose, "transpose") or tuple(qkv_transpose.args[1:3]) != (-3, -2):
+        return None
+    movedim = _single_tensor_arg(qkv_transpose)
+    if movedim is None or not _call_method_target(movedim, "movedim") or tuple(movedim.args[1:3]) != (-3, 0):
+        return None
+    qkv_reshape = _single_tensor_arg(movedim)
+    if qkv_reshape is None or not _call_method_target(qkv_reshape, "reshape") or len(qkv_reshape.args) < 2:
+        return None
+    reshape_args = tuple(qkv_reshape.args[1:])
+    qkv_linear = _single_tensor_arg(qkv_reshape)
+    if qkv_linear is None:
+        return None
+    linear = _linear_args(qkv_linear)
+    if linear is None:
+        return None
+    layer_norm_node, qkv_weight, qkv_bias = linear
+    ln_args = _layer_norm_args(layer_norm_node)
+    if ln_args is None:
+        return None
+    input_node = _single_tensor_arg(layer_norm_node)
+    if input_node is None:
+        return None
+    source = _node_temporal_source(input_node)
+    if source is None:
+        return None
+    source_kind, source_node, timestep = source
+    normalized_shape, norm_weight, norm_bias, norm_eps = ln_args
+    return TransformerAttentionItem(
+        output_node=node,
+        input_node=input_node,
+        layer_norm_node=layer_norm_node,
+        qkv_linear_node=qkv_linear,
+        qkv_reshape_node=qkv_reshape,
+        qkv_movedim_node=movedim,
+        qkv_transpose_node=qkv_transpose,
+        q_node=q_node,
+        k_node=k_node,
+        v_node=v_node,
+        k_transpose_node=k_transpose,
+        qk_matmul_node=qk_matmul,
+        scale_node=scale_node,
+        softmax_node=softmax_node,
+        av_matmul_node=av_matmul,
+        out_transpose_node=out_transpose,
+        timestep=timestep,
+        source_kind=source_kind,
+        source_node=source_node,
+        normalized_shape=normalized_shape,
+        norm_weight=norm_weight,
+        norm_bias=norm_bias,
+        norm_eps=norm_eps,
+        qkv_weight=qkv_weight,
+        qkv_bias=qkv_bias,
+        reshape_args=reshape_args,
+        scale=scale,
+        softmax_dim=softmax_dim,
+        output_shape_args=output_shape_args,
+    )
+
+
 def _is_maxpool_node(gm: torch.fx.GraphModule, node: torch.fx.Node) -> bool:
     if node.op == "call_module":
         try:
@@ -246,6 +496,31 @@ def _is_linear_node(gm: torch.fx.GraphModule, node: torch.fx.Node) -> bool:
         return False
     text = _target_text(node.target)
     return node.target is F.linear or "linear" in text
+
+
+def _is_layer_norm_node(node: torch.fx.Node) -> bool:
+    if node.op != "call_function":
+        return False
+    text = _target_text(node.target)
+    return node.target is F.layer_norm or "layer_norm" in text
+
+
+def _is_matmul_node(node: torch.fx.Node) -> bool:
+    if node.op != "call_function":
+        return False
+    text = _target_text(node.target)
+    return node.target is torch.matmul or "matmul" in text
+
+
+def _is_softmax_node(node: torch.fx.Node) -> bool:
+    if node.op != "call_function":
+        return False
+    text = _target_text(node.target)
+    return node.target is torch.softmax or "softmax" in text
+
+
+def _is_stack_node(node: torch.fx.Node) -> bool:
+    return node.op == "call_function" and node.target is torch.stack
 
 
 def _is_batch_norm_node(gm: torch.fx.GraphModule, node: torch.fx.Node) -> bool:
@@ -879,6 +1154,269 @@ def rewrite_spatial_batch_group(
     return True, ""
 
 
+def _transformer_item_signature(item: TransformerAttentionItem) -> Tuple[Any, ...]:
+    return (
+        _node_ref(item.source_node),
+        _node_ref(item.normalized_shape),
+        _node_ref(item.norm_weight),
+        _node_ref(item.norm_bias),
+        item.norm_eps,
+        _node_ref(item.qkv_weight),
+        _node_ref(item.qkv_bias),
+        item.reshape_args,
+        item.scale,
+        item.softmax_dim,
+        item.output_shape_args,
+    )
+
+
+def _layer_norm_item_signature(item: LayerNormStackItem) -> Tuple[Any, ...]:
+    return (
+        _node_ref(item.source_node),
+        _node_ref(item.normalized_shape),
+        _node_ref(item.norm_weight),
+        _node_ref(item.norm_bias),
+        item.norm_eps,
+    )
+
+
+def _sequence_source_for_items(
+    gm: torch.fx.GraphModule,
+    items: Sequence[Any],
+    insertion_point: torch.fx.Node,
+) -> Optional[torch.fx.Node]:
+    first = items[0]
+    if first.source_kind in {"temporal_stack", "previous_batched"}:
+        return first.source_node
+    if first.source_kind == "plain":
+        with gm.graph.inserting_before(insertion_point):
+            stack = gm.graph.call_function(torch.stack, args=([item.input_node for item in items], 0))
+            stack.name = f"{insertion_point.name}_transformer_input_stack"
+            stack.meta["chronos_origin"] = "transformer_spatial_batch_input_stack"
+            return stack
+    return None
+
+
+def _annotate_transformer_temporal_nodes(items: Sequence[TransformerAttentionItem], temporal_window: int, window_id: int):
+    for occurrence, item in enumerate(items):
+        for node in (
+            item.layer_norm_node,
+            item.qkv_linear_node,
+            item.qkv_reshape_node,
+            item.qkv_movedim_node,
+            item.qkv_transpose_node,
+            item.q_node,
+            item.k_node,
+            item.v_node,
+            item.k_transpose_node,
+            item.qk_matmul_node,
+            item.scale_node,
+            item.softmax_node,
+            item.av_matmul_node,
+            item.out_transpose_node,
+            item.output_node,
+        ):
+            node.meta["chronos_timestep"] = item.timestep
+            node.meta["chronos_window_id"] = window_id
+            node.meta["chronos_occurrence"] = occurrence
+            node.meta["chronos_role"] = "transformer_attention"
+            setattr(node, "_chronos_timestep", item.timestep)
+            setattr(node, "_chronos_window_id", window_id)
+            setattr(node, "_chronos_occurrence", occurrence)
+            setattr(node, "_chronos_role", "transformer_attention")
+
+
+def _replace_attention_zero_state_users(
+    gm: torch.fx.GraphModule,
+    old_stack: torch.fx.Node,
+    new_x_seq: torch.fx.Node,
+):
+    for user in list(old_stack.users):
+        if user.op != "call_function":
+            continue
+        target_text = _target_text(user.target)
+        if "fused_temporal_batched_linear_add_lif_state" not in target_text:
+            continue
+        args = list(user.args)
+        if len(args) < 5 or args[0] is not old_stack:
+            continue
+        v_init = args[4]
+        if not isinstance(v_init, torch.fx.Node):
+            continue
+        if v_init.op != "call_function" or v_init.target is not torch.zeros_like:
+            continue
+        with gm.graph.inserting_before(user):
+            scalar_zero = gm.graph.call_method("new_zeros", args=(new_x_seq, ()))
+            scalar_zero.name = f"{user.name}_spatial_batch_scalar_v_init"
+        args[4] = scalar_zero
+        user.args = tuple(args)
+
+
+def _rewrite_transformer_attention_stack(
+    gm: torch.fx.GraphModule,
+    stack_node: torch.fx.Node,
+    temporal_window: int,
+    stats: SpatialBatchingStats,
+) -> bool:
+    stack = _stack_items(stack_node)
+    if stack is None:
+        return False
+    values, _dim = stack
+    if len(values) != temporal_window:
+        return False
+    items = [_match_transformer_attention_output(value) for value in values]
+    if any(item is None for item in items):
+        return False
+    items = [item for item in items if item is not None]
+    items = sorted(items, key=lambda item: item.timestep)
+    first = items[0]
+    expected_timesteps = list(range(first.timestep, first.timestep + temporal_window))
+    if [item.timestep for item in items] != expected_timesteps:
+        stats.skip("transformer_attention_timesteps", f"stack={stack_node.name} timesteps={[item.timestep for item in items]}")
+        return False
+    if any(_transformer_item_signature(item) != _transformer_item_signature(first) for item in items):
+        stats.skip("transformer_attention_signature", f"stack={stack_node.name} incompatible signatures")
+        return False
+    window_id = first.timestep // temporal_window if temporal_window > 0 else 0
+    x_seq = _sequence_source_for_items(gm, items, stack_node)
+    if x_seq is None:
+        return False
+
+    _annotate_transformer_temporal_nodes(items, temporal_window, window_id)
+
+    qkv_shape = (temporal_window,) + tuple(first.reshape_args)
+    output_shape = (temporal_window,) + tuple(first.output_shape_args)
+    with gm.graph.inserting_before(stack_node):
+        ln = gm.graph.call_function(
+            F.layer_norm,
+            args=(x_seq, first.normalized_shape, first.norm_weight, first.norm_bias, first.norm_eps),
+        )
+        ln.name = f"{stack_node.name}_spatial_batch_attention_layer_norm"
+        qkv = gm.graph.call_function(F.linear, args=(ln, first.qkv_weight, first.qkv_bias))
+        qkv.name = f"{stack_node.name}_spatial_batch_attention_qkv"
+        qkv_reshape = gm.graph.call_method("reshape", args=(qkv,) + qkv_shape)
+        qkv_reshape.name = f"{stack_node.name}_spatial_batch_attention_qkv_reshape"
+        movedim = gm.graph.call_method("movedim", args=(qkv_reshape, -3, 0))
+        movedim.name = f"{stack_node.name}_spatial_batch_attention_movedim"
+        qkv_transpose = gm.graph.call_method("transpose", args=(movedim, -3, -2))
+        qkv_transpose.name = f"{stack_node.name}_spatial_batch_attention_qkv_transpose"
+        q = gm.graph.call_function(operator.getitem, args=(qkv_transpose, 0))
+        q.name = f"{stack_node.name}_spatial_batch_attention_q"
+        k = gm.graph.call_function(operator.getitem, args=(qkv_transpose, 1))
+        k.name = f"{stack_node.name}_spatial_batch_attention_k"
+        v = gm.graph.call_function(operator.getitem, args=(qkv_transpose, 2))
+        v.name = f"{stack_node.name}_spatial_batch_attention_v"
+        k_t = gm.graph.call_method("transpose", args=(k, -2, -1))
+        k_t.name = f"{stack_node.name}_spatial_batch_attention_k_t"
+        qk = gm.graph.call_function(torch.matmul, args=(q, k_t))
+        qk.name = f"{stack_node.name}_spatial_batch_attention_qk"
+        scaled = gm.graph.call_function(operator.mul, args=(qk, first.scale))
+        scaled.name = f"{stack_node.name}_spatial_batch_attention_scaled"
+        attn = gm.graph.call_function(torch.softmax, args=(scaled,), kwargs={"dim": first.softmax_dim})
+        attn.name = f"{stack_node.name}_spatial_batch_attention_softmax"
+        av = gm.graph.call_function(torch.matmul, args=(attn, v))
+        av.name = f"{stack_node.name}_spatial_batch_attention_av"
+        out_t = gm.graph.call_method("transpose", args=(av, -3, -2))
+        out_t.name = f"{stack_node.name}_spatial_batch_attention_out_transpose"
+        out = gm.graph.call_method("reshape", args=(out_t,) + output_shape)
+        out.name = f"{stack_node.name}_spatial_batch_attention"
+
+    _replace_attention_zero_state_users(gm, stack_node, out)
+    stack_node.replace_all_uses_with(out)
+    if len(stack_node.users) == 0:
+        gm.graph.erase_node(stack_node)
+    stats.spatial_batch_groups += 1
+    stats.spatial_batched_ops += temporal_window
+    stats.spatial_batched_attention += temporal_window
+    stats.log.append(
+        f"[SPATIAL_BATCHING][TRANSFORMER_ATTENTION] stack={stack_node.name} "
+        f"window={window_id} size={temporal_window}"
+    )
+    print(stats.log[-1])
+    return True
+
+
+def _rewrite_layer_norm_stack(
+    gm: torch.fx.GraphModule,
+    stack_node: torch.fx.Node,
+    temporal_window: int,
+    stats: SpatialBatchingStats,
+) -> bool:
+    stack = _stack_items(stack_node)
+    if stack is None:
+        return False
+    values, _dim = stack
+    if len(values) != temporal_window:
+        return False
+    items = [_match_layer_norm_stack_item(value) for value in values]
+    if any(item is None for item in items):
+        return False
+    items = [item for item in items if item is not None]
+    items = sorted(items, key=lambda item: item.timestep)
+    first = items[0]
+    expected_timesteps = list(range(first.timestep, first.timestep + temporal_window))
+    if [item.timestep for item in items] != expected_timesteps:
+        stats.skip("layer_norm_timesteps", f"stack={stack_node.name} timesteps={[item.timestep for item in items]}")
+        return False
+    if any(_layer_norm_item_signature(item) != _layer_norm_item_signature(first) for item in items):
+        stats.skip("layer_norm_signature", f"stack={stack_node.name} incompatible signatures")
+        return False
+    x_seq = _sequence_source_for_items(gm, items, stack_node)
+    if x_seq is None:
+        return False
+    window_id = first.timestep // temporal_window if temporal_window > 0 else 0
+    for occurrence, item in enumerate(items):
+        item.output_node.meta["chronos_timestep"] = item.timestep
+        item.output_node.meta["chronos_window_id"] = window_id
+        item.output_node.meta["chronos_occurrence"] = occurrence
+        item.output_node.meta["chronos_role"] = "transformer_layer_norm"
+
+    with gm.graph.inserting_before(stack_node):
+        ln = gm.graph.call_function(
+            F.layer_norm,
+            args=(x_seq, first.normalized_shape, first.norm_weight, first.norm_bias, first.norm_eps),
+        )
+        ln.name = f"{stack_node.name}_spatial_batch_layer_norm"
+        ln.meta["chronos_origin"] = "transformer_spatial_batch_layer_norm"
+
+    stack_node.replace_all_uses_with(ln)
+    if len(stack_node.users) == 0:
+        gm.graph.erase_node(stack_node)
+    stats.spatial_batch_groups += 1
+    stats.spatial_batched_ops += temporal_window
+    stats.spatial_batched_layer_norm += temporal_window
+    stats.log.append(
+        f"[SPATIAL_BATCHING][LAYER_NORM] stack={stack_node.name} window={window_id} size={temporal_window}"
+    )
+    print(stats.log[-1])
+    return True
+
+
+def rewrite_transformer_spatial_batching(
+    gm: torch.fx.GraphModule,
+    temporal_window: int,
+    stats: SpatialBatchingStats,
+) -> int:
+    rewrites = 0
+    # Attention stacks must run before generic layer_norm stack rewrites,
+    # otherwise the strict attention chain no longer exists.
+    for node in list(gm.graph.nodes):
+        if _rewrite_transformer_attention_stack(gm, node, temporal_window, stats):
+            rewrites += 1
+    if rewrites:
+        gm.graph.eliminate_dead_code()
+        gm.graph.lint()
+        gm.recompile()
+    for node in list(gm.graph.nodes):
+        if _rewrite_layer_norm_stack(gm, node, temporal_window, stats):
+            rewrites += 1
+    if rewrites:
+        gm.graph.eliminate_dead_code()
+        gm.graph.lint()
+        gm.recompile()
+    return rewrites
+
+
 def dump_spatial_batching(groups: List[SpatialBatchGroup], stats: SpatialBatchingStats, path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
@@ -898,6 +1436,8 @@ def dump_spatial_batching(groups: List[SpatialBatchGroup], stats: SpatialBatchin
         f"batched_flatten={stats.spatial_batched_flatten}",
         f"batched_linear={stats.spatial_batched_linear}",
         f"batched_elementwise={stats.spatial_batched_elementwise}",
+        f"batched_layer_norm={stats.spatial_batched_layer_norm}",
+        f"batched_attention={stats.spatial_batched_attention}",
         f"temporal_stack_bn_groups={stats.spatial_temporal_stack_bn_groups}",
         f"temporal_stack_add_groups={stats.spatial_temporal_stack_add_groups}",
         f"temporal_stack_pool_groups={stats.spatial_temporal_stack_pool_groups}",
@@ -941,6 +1481,7 @@ def apply_spatial_batching(
     try:
         if enable_chain:
             stats.skip("chain_disabled", "chain-aware spatial batching is deprecated; using per-op batching")
+        rewrite_transformer_spatial_batching(gm, temporal_window, stats)
         all_groups: List[SpatialBatchGroup] = []
         max_iter = 8
         for _iteration in range(max_iter):
@@ -1007,7 +1548,8 @@ def apply_spatial_batching(
             f"conv={stats.spatial_batched_conv} bn={stats.spatial_batched_bn} "
             f"add={stats.spatial_batched_add} pool={stats.spatial_batched_pool} "
             f"flatten={stats.spatial_batched_flatten} linear={stats.spatial_batched_linear} "
-            f"elementwise={stats.spatial_batched_elementwise}"
+            f"elementwise={stats.spatial_batched_elementwise} "
+            f"layer_norm={stats.spatial_batched_layer_norm} attention={stats.spatial_batched_attention}"
         )
         print(
             "[SPATIAL_BATCHING] pool_detail="
