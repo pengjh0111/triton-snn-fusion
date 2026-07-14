@@ -1406,8 +1406,15 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     outputs: Dict[str, Optional[torch.Tensor]] = {}
     cudagraph_status_by_case: Dict[str, Dict[str, Any]] = {}
     fx_standalone_cudagraph_status_by_case: Dict[str, Dict[str, Any]] = {}
-    _, compile_config = build_chronos_compile_config(
+    _, baseline_compile_config = build_chronos_compile_config(
         backend="inductor",
+        enable_cudagraphs=args.enable_cudagraphs,
+        cudagraph_mode=args.cudagraph_mode,
+        fullgraph=False,
+        dynamic=False,
+    )
+    _, rewrite_compile_config = build_chronos_compile_config(
+        backend=args.rewrite_backend_mode,
         enable_cudagraphs=args.enable_cudagraphs,
         cudagraph_mode=args.cudagraph_mode,
         fullgraph=False,
@@ -1428,7 +1435,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         cudagraph_status_by_case[case_name] = summarize_cudagraph_check(
             model=model_name,
             case=case_name,
-            compile_config=compile_config,
+            compile_config=baseline_compile_config,
             compile_mode=compile_mode,
             device=args.device,
             graph_count=graph_count,
@@ -1458,7 +1465,7 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         cudagraph_status_by_case[case_name] = summarize_cudagraph_check(
             model=model_name,
             case=case_name,
-            compile_config=compile_config,
+            compile_config=rewrite_compile_config,
             compile_mode=True,
             device=args.device,
             graph_count=graph_count,
@@ -1496,8 +1503,10 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
         "fused_op_backend": args.fused_op_backend,
         "enable_cudagraphs": args.enable_cudagraphs,
         "cudagraph_mode": args.cudagraph_mode,
-        "compile_mode": compile_config["compile_mode"],
-        "compile_options": compile_config["compile_options"],
+        "compile_mode": baseline_compile_config["compile_mode"],
+        "compile_options": baseline_compile_config["compile_options"],
+        "baseline_compile_config": baseline_compile_config,
+        "rewrite_compile_config": rewrite_compile_config,
         "results": {name: asdict(result) for name, result in results.items()},
         "rewrite_counters": {name: asdict(counters) for name, counters in rewrite_counters.items()},
         "fused_op_call_stats": call_stats,

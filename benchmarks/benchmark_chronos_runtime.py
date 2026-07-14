@@ -203,8 +203,15 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     print(f"\n================ {model_name} ================")
 
     dtype = resolve_dtype(args.dtype)
-    _, compile_config = build_chronos_compile_config(
+    _, baseline_compile_config = build_chronos_compile_config(
         backend="inductor",
+        enable_cudagraphs=args.enable_cudagraphs,
+        cudagraph_mode=args.cudagraph_mode,
+        fullgraph=False,
+        dynamic=False,
+    )
+    _, chronos_compile_config = build_chronos_compile_config(
+        backend=args.rewrite_backend_mode,
         enable_cudagraphs=args.enable_cudagraphs,
         cudagraph_mode=args.cudagraph_mode,
         fullgraph=False,
@@ -217,7 +224,8 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         f"cudnn_allow_tf32={torch.backends.cudnn.allow_tf32} "
         f"float32_matmul_precision={torch.get_float32_matmul_precision()}"
     )
-    print(f"[Compile Summary Config] {compile_config}")
+    print(f"[Compile Summary Config] baseline={baseline_compile_config}")
+    print(f"[Compile Summary Config] chronos={chronos_compile_config}")
 
     torch.manual_seed(args.seed)
 
@@ -405,10 +413,15 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             graph_count = chronos_rewrite_counters[case_name].captured_graphs - int(graph_count_before or 0)
         else:
             graph_count = counter_diff.get("stats", {}).get("unique_graphs")
+        status_compile_config = (
+            chronos_compile_config
+            if case_name in chronos_rewrite_counters
+            else baseline_compile_config
+        )
         cudagraph_status = summarize_cudagraph_check(
             model=model_name,
             case=case_name,
-            compile_config=compile_config,
+            compile_config=status_compile_config,
             compile_mode=compile_mode,
             device=args.device,
             graph_count=graph_count,
@@ -513,8 +526,10 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         "fused_op_backend": args.fused_op_backend,
         "enable_cudagraphs": args.enable_cudagraphs,
         "cudagraph_mode": args.cudagraph_mode,
-        "compile_mode": compile_config["compile_mode"],
-        "compile_options": compile_config["compile_options"],
+        "compile_mode": baseline_compile_config["compile_mode"],
+        "compile_options": baseline_compile_config["compile_options"],
+        "baseline_compile_config": baseline_compile_config,
+        "chronos_compile_config": chronos_compile_config,
         "candidate_windows": candidate_windows,
         "execution_mode": execution_modes,
         "results": results,
