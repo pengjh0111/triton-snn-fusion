@@ -1246,6 +1246,12 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         fused_temporal_lif_avgpool_linear_count = count_fused_temporal_lif_avgpool_linear_nodes(gm)
         save_graph_files(gm, local_dir, "rewritten")
 
+        from compiler.passes.registry import apply_post_fuse_passes
+
+        post_fuse_pass_stats = apply_post_fuse_passes(gm)
+        if post_fuse_pass_stats:
+            save_graph_files(gm, local_dir, "post_fuse_optimized")
+
         counters.lif_state_nodes += lif_state_count
         counters.direct_matches += len(direct_matches)
         counters.conv_bn_matches += len(conv_bn_matches)

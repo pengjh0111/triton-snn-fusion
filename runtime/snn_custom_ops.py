@@ -949,13 +949,27 @@ def _run_transformer_temporal_op(torch_fallback, triton_runner, *args):
     return torch_fallback(*args)
 
 
+def _batched_linear_lif_backend() -> str:
+    # "codegen" (default) dispatches to the generated Conv-style temporal
+    # schedule kernel (kernels/generated_temporal_batched_linear_lif_kernel.py).
+    # "tc" switches back to the older single-window TC kernel in
+    # kernels/generated_temporal_transformer_lif_kernels.py for regression
+    # comparison / fallback if the new kernel needs to be bypassed.
+    return os.environ.get("CHRONOS_BATCHED_LINEAR_LIF_BACKEND", "codegen")
+
+
 def _fused_temporal_batched_linear_lif_state_impl(
     x_seq, weight, bias, v_init, v_threshold, v_reset, tau, detach_reset
 ):
-    from kernels.generated_temporal_transformer_lif_kernels import run_temporal_batched_linear_lif
+    if _batched_linear_lif_backend() == "tc":
+        from kernels.generated_temporal_transformer_lif_kernels import run_temporal_batched_linear_lif
+        runner = lambda *values: run_temporal_batched_linear_lif(*values[:-1])
+    else:
+        from kernels.benchmark_batched_linear_lif_temporal_general import run_fused_batched_linear_lif
+        runner = lambda *values: run_fused_batched_linear_lif(*values[:-1])
     return _run_transformer_temporal_op(
         fused_temporal_batched_linear_lif_state_torch,
-        lambda *values: run_temporal_batched_linear_lif(*values[:-1]),
+        runner,
         x_seq, weight, bias, v_init, v_threshold, v_reset, tau, detach_reset,
     )
 
@@ -963,12 +977,19 @@ def _fused_temporal_batched_linear_lif_state_impl(
 def _fused_temporal_batched_linear_add_lif_state_impl(
     x_seq, residual_seq, weight, bias, v_init, v_threshold, v_reset, tau, detach_reset
 ):
-    from kernels.generated_temporal_transformer_lif_kernels import run_temporal_batched_linear_lif
+    if _batched_linear_lif_backend() == "tc":
+        from kernels.generated_temporal_transformer_lif_kernels import run_temporal_batched_linear_lif
+        runner = lambda x, residual, w, b, v, threshold, reset, tau_value, _detach: run_temporal_batched_linear_lif(
+            x, w, b, v, threshold, reset, tau_value, residual_seq=residual
+        )
+    else:
+        from kernels.benchmark_batched_linear_lif_temporal_general import run_fused_batched_linear_lif
+        runner = lambda x, residual, w, b, v, threshold, reset, tau_value, _detach: run_fused_batched_linear_lif(
+            x, w, b, v, threshold, reset, tau_value, residual_seq=residual
+        )
     return _run_transformer_temporal_op(
         fused_temporal_batched_linear_add_lif_state_torch,
-        lambda x, residual, w, b, v, threshold, reset, tau_value, _detach: run_temporal_batched_linear_lif(
-            x, w, b, v, threshold, reset, tau_value, residual_seq=residual
-        ),
+        runner,
         x_seq, residual_seq, weight, bias, v_init, v_threshold, v_reset, tau, detach_reset,
     )
 
