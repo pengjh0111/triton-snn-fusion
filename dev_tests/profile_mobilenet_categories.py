@@ -32,7 +32,7 @@ from torch.profiler import profile, ProfilerActivity
 import runtime.snn_custom_ops as snn_custom_ops
 
 
-def build_compiled(model_name, T, batch_size, height, width, model_channels, dtype, tmp_dir, rewrite_backend_mode="standalone"):
+def build_compiled(model_name, T, batch_size, height, width, model_channels, dtype, tmp_dir, rewrite_backend_mode="standalone", enable_spatial_batching=True):
     from benchmarks.benchmark_chronos_runtime import parse_args
     from benchmarks.validate_chronos_baselines import (
         RewriteCounters, make_resnet_layer, make_rewrite_backend, make_model_input, SingleStepModeLoopWrapper,
@@ -45,11 +45,12 @@ def build_compiled(model_name, T, batch_size, height, width, model_channels, dty
         "--fused-op-backend", "triton", "--rewrite-backend-mode", rewrite_backend_mode,
         "--fx-standalone-streams", "32", "--fx-standalone-cudagraph", "--fx-standalone-schedule-policy", "ready",
         "--enable-temporal-rewrite", "--enable-temporal-schedule",
-        "--enable-spatial-batching", "--spatial-batching-ops", "conv", "bn", "add", "maxpool", "avgpool", "flatten", "linear",
         "--cudagraph-mode", "reduce-overhead",
         "--temporal-fuse-window", "4", "--temporal-schedule-window", "4",
         "--max-patterns", "1000000", "--warmup", "1", "--repeat", "1",
     ]
+    if enable_spatial_batching:
+        argv += ["--enable-spatial-batching", "--spatial-batching-ops", "conv", "bn", "add", "maxpool", "avgpool", "flatten", "linear"]
     old_argv = sys.argv
     try:
         sys.argv = argv
@@ -85,10 +86,14 @@ def build_compiled(model_name, T, batch_size, height, width, model_channels, dty
 CATEGORY_RULES = [
     ("dwconv_lif", ("depthwise",)),
     ("pwconv_lif", ("k1_s1_p0", "pointwise")),
+    ("classifier_linear_lif", ("temporal_linear_lif",)),
     ("regular_conv_lif", ("fused_temporal_conv", "fused_conv_lif", "conv_lif_temporal_general")),
-    ("residual_add", ("add",)),
-    ("glue", ("stack", "getitem", "reshape", "movedim", "view", "transpose", "cat", "chunk")),
-    ("unfused_conv_bn", ("conv", "batch_norm", "convolution", "cudnn_convolution", "native_batch_norm")),
+    ("residual_add", ("vectorized_elementwise", "aten::add", "elementwise_kernel")),
+    ("unfused_bn", ("batch_norm", "native_batch_norm", "cudnn::bn", "bn_fw", "bn_bw")),
+    ("unfused_conv_bn", ("cutlass", "conv", "convolution", "cudnn_convolution", "implicit_gemm", "wgrad", "dgrad", "fprop")),
+    ("copy_memcpy", ("memcpy", "aten::copy_", "aten::contiguous", "aten::clone")),
+    ("glue", ("stack", "getitem", "reshape", "movedim", "view", "transpose", "cat", "chunk", "catarray")),
+    ("reduce_pool", ("reduce_kernel", "avg_pool", "adaptive_avg", "max_pool")),
 ]
 
 
@@ -100,25 +105,34 @@ def categorize(name: str) -> str:
     return "other"
 
 
-def profile_case(label, model_name, T, batch_size, height, width, model_channels, dtype, tmp_root, reps=10):
-    print(f"\n########## {label} ({model_name}, T={T}, batch={batch_size}, {height}x{width}, ch={model_channels}, {dtype}) ##########")
-    compiled, x = build_compiled(model_name, T, batch_size, height, width, model_channels, dtype, tmp_root / label)
+def profile_case(label, model_name, T, batch_size, height, width, model_channels, dtype, tmp_root, reps=10, enable_spatial_batching=True):
+    print(f"\n########## {label} ({model_name}, T={T}, batch={batch_size}, {height}x{width}, ch={model_channels}, {dtype}, spatial_batching={enable_spatial_batching}) ##########")
+    compiled, x = build_compiled(model_name, T, batch_size, height, width, model_channels, dtype, tmp_root / label, enable_spatial_batching=enable_spatial_batching)
 
     for _ in range(5):
         with torch.no_grad():
             compiled(x)
     torch.cuda.synchronize()
 
-    # Wall-clock via CUDA events.
-    start = torch.cuda.Event(enable_timing=True)
-    end = torch.cuda.Event(enable_timing=True)
-    start.record()
-    for _ in range(reps):
+    # Wall-clock via per-iteration CUDA events (pre-allocated, reused --
+    # allocating a fresh Event object per iteration was observed to correlate
+    # with GPU memory growth under the cudagraph "reduce-overhead" path at
+    # T=16/batch=8 production scale, eventually OOMing after ~40 calls even
+    # though the same config is stable at reps=10 with a single time-window
+    # measurement; not fully root-caused, flagged separately in the report).
+    starts = [torch.cuda.Event(enable_timing=True) for _ in range(reps)]
+    ends = [torch.cuda.Event(enable_timing=True) for _ in range(reps)]
+    for i in range(reps):
+        starts[i].record()
         with torch.no_grad():
             compiled(x)
-    end.record()
+        ends[i].record()
     torch.cuda.synchronize()
-    wall_ms = start.elapsed_time(end) / reps
+    iter_ms = [starts[i].elapsed_time(ends[i]) for i in range(reps)]
+    iter_ms_t = torch.tensor(iter_ms)
+    wall_ms = iter_ms_t.mean().item()
+    wall_ms_std = iter_ms_t.std().item()
+    print(f"wall_ms mean={wall_ms:.4f} std={wall_ms_std:.4f} (n={reps})")
 
     with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
         for _ in range(reps):
@@ -130,6 +144,14 @@ def profile_case(label, model_name, T, batch_size, height, width, model_channels
     totals = defaultdict(float)
     counts = defaultdict(int)
     for e in events:
+        # "Torch-Compiled Region" (and similar dynamo/inductor wrapper scope
+        # markers) get a self_device_time_total that DOUBLE-COUNTS the real
+        # kernels launched underneath them (verified: excluding these makes
+        # the category sum match profiler's own "Self CUDA time total"
+        # exactly; including them does not and can even produce a negative
+        # CPU-gap, which is impossible).
+        if "Compiled Region" in e.key or "CompiledFunction" in e.key:
+            continue
         cat = categorize(e.key)
         totals[cat] += e.self_device_time_total
         counts[cat] += e.count
@@ -148,7 +170,7 @@ def profile_case(label, model_name, T, batch_size, height, width, model_channels
     print(events.table(sort_by="self_cuda_time_total", row_limit=20))
 
     return {
-        "label": label, "wall_ms": wall_ms, "gpu_ms": gpu_total_ms_per_iter,
+        "label": label, "wall_ms": wall_ms, "wall_ms_std": wall_ms_std, "gpu_ms": gpu_total_ms_per_iter,
         "cpu_gap_ms": wall_ms - gpu_total_ms_per_iter,
         "category_us": dict(totals), "category_counts": dict(counts),
     }
@@ -164,6 +186,7 @@ def main():
     parser.add_argument("--model-channels", type=int, default=64)
     parser.add_argument("--dtype", default="fp32")
     parser.add_argument("--reps", type=int, default=10)
+    parser.add_argument("--no-spatial-batching", action="store_true", help="disable Route 1 (spatial batching) to measure its true baseline delta")
     args = parser.parse_args()
 
     if not torch.cuda.is_available():
@@ -177,13 +200,14 @@ def main():
         result = profile_case(
             model_name, model_name, args.T, args.batch_size, args.height, args.width,
             args.model_channels, args.dtype, tmp_root, reps=args.reps,
+            enable_spatial_batching=not args.no_spatial_batching,
         )
         results.append(result)
 
     print("\n\n========== SUMMARY ==========")
-    print(f"{'model':<16}{'wall_ms':>10}{'gpu_ms':>10}{'cpu_gap_ms':>12}")
+    print(f"{'model':<16}{'wall_ms':>10}{'wall_std':>10}{'gpu_ms':>10}{'cpu_gap_ms':>12}")
     for r in results:
-        print(f"{r['label']:<16}{r['wall_ms']:>10.3f}{r['gpu_ms']:>10.3f}{r['cpu_gap_ms']:>12.3f}")
+        print(f"{r['label']:<16}{r['wall_ms']:>10.3f}{r['wall_ms_std']:>10.3f}{r['gpu_ms']:>10.3f}{r['cpu_gap_ms']:>12.3f}")
 
 
 if __name__ == "__main__":

@@ -532,6 +532,19 @@ def _rewrite_temporal_sum_div_to_mean(
             if _is_chunk(source) and _chunk_count(source) != len(group):
                 valid_groups = False
                 break
+            # A group of size 1 trivially satisfies the indices check above
+            # regardless of what `source` actually is (any single index
+            # equals range(1)), so at window=1 (each timestep forming its
+            # own degenerate size-1 group) this loop alone cannot reject a
+            # getitem into an unrelated multi-output node -- e.g. a fused
+            # op's (spike, v_final) tuple getitem(0)/getitem(1) being
+            # misread as a "temporal timestep getitem". _reduce_temporal_
+            # getitem_source's non-chunk branch calls source.sum(dim=0)
+            # unconditionally, which is only valid when source is a genuine
+            # torch.stack of temporal_len tensors; require that explicitly.
+            if not _is_chunk(source) and not _is_stack(source):
+                valid_groups = False
+                break
         if not valid_groups:
             continue
 

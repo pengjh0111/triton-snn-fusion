@@ -3,7 +3,7 @@ import copy
 import linecache
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 os.environ.setdefault("TRITON_ALWAYS_COMPILE", "1")
 os.environ.setdefault("TRITON_CACHE_DIR", os.path.join(os.getcwd(), "aot_result/triton_cache"))
@@ -97,6 +97,20 @@ POINTWISE_AUTOTUNE_CONFIGS = [
     {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 64, "num_warps": 4, "num_stages": 2},
     {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
     {"BLOCK_M": 32, "BLOCK_OC": 128, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
+    # Added for MobileNetV2: expand/project 1x1 convs swing between small and
+    # large channel counts on either side of K/OC (expand: K~=32-320,
+    # OC up to ~1920; project: K up to ~1920, OC~=16-320; the final conv is
+    # K~=320-640, OC up to ~2560 depending on --model-channels). The original
+    # pool topped out at BLOCK_OC=128 / BLOCK_K=64, tuned for MobileNetV1's
+    # narrower channel range -- these add larger K- and OC-tiles so autotune
+    # can actually search that region instead of always falling back to the
+    # same handful of small-channel-tuned configs via grid-level tiling.
+    {"BLOCK_M": 16, "BLOCK_OC": 256, "BLOCK_K": 32, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_M": 16, "BLOCK_OC": 256, "BLOCK_K": 64, "num_warps": 4, "num_stages": 3},
+    {"BLOCK_M": 32, "BLOCK_OC": 256, "BLOCK_K": 64, "num_warps": 8, "num_stages": 2},
+    {"BLOCK_M": 16, "BLOCK_OC": 64, "BLOCK_K": 128, "num_warps": 4, "num_stages": 2},
+    {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 128, "num_warps": 4, "num_stages": 3},
+    {"BLOCK_M": 32, "BLOCK_OC": 128, "BLOCK_K": 128, "num_warps": 4, "num_stages": 3},
 ]
 
 DWCONV_AUTOTUNE_CONFIGS = [
@@ -184,6 +198,87 @@ def _prune_temporal_configs(configs, named_args, **kwargs):
     ]
 
 
+DEFAULT_RG_K_MIN_K_TILES = 4
+
+
+def _rg_k_min_k_tiles() -> int:
+    raw = os.environ.get("CHRONOS_RG_K_MIN_K_TILES")
+    if raw is None:
+        return DEFAULT_RG_K_MIN_K_TILES
+    try:
+        return int(raw)
+    except ValueError:
+        return DEFAULT_RG_K_MIN_K_TILES
+
+
+def _apply_rg_k_coupling_rule(configs, k_total: int):
+    """REUSE_GROUPS>1 amortizes each K-tile's weight load across multiple
+    temporal groups sharing one tl.dot accumulation pass -- it only pays off
+    when there are enough K-tiles (K_TOTAL / BLOCK_K) to actually amortize
+    across. With too few K-tiles it provides zero reuse benefit while still
+    paying the full REUSE_GROUPS-fold accumulator/register cost. Confirmed
+    root cause for expand_32->192 (K=in_channels=32, autotune picked
+    BLOCK_K=64 -> ceil(32/64)=1 K-tile -- yet REUSE_GROUPS=8 was selected
+    anyway, landing exactly at the 8192-element accumulator cap and
+    suppressing warp occupancy to 8.1%). This filters the candidate set; it
+    does not change any kernel's semantics -- REUSE_GROUPS=1 remains always
+    eligible regardless of K.
+    """
+    threshold = _rg_k_min_k_tiles()
+    if threshold <= 1:
+        return configs
+    filtered = [
+        config
+        for config in configs
+        if int(config.kwargs.get("REUSE_GROUPS", 1)) <= 1
+        or -(-k_total // int(config.kwargs["BLOCK_K"])) >= threshold
+    ]
+    return filtered or configs
+
+
+_SM_COUNT_CACHE: Optional[int] = None
+
+
+def _sm_count() -> int:
+    global _SM_COUNT_CACHE
+    if _SM_COUNT_CACHE is None:
+        _SM_COUNT_CACHE = torch.cuda.get_device_properties(0).multi_processor_count
+    return _SM_COUNT_CACHE
+
+
+DEFAULT_MIN_CTA_SM_MULTIPLIER = 2.0
+
+
+def _min_cta_sm_multiplier() -> float:
+    raw = os.environ.get("CHRONOS_MIN_CTA_SM_MULTIPLIER")
+    if raw is None:
+        return DEFAULT_MIN_CTA_SM_MULTIPLIER
+    try:
+        return float(raw)
+    except ValueError:
+        return DEFAULT_MIN_CTA_SM_MULTIPLIER
+
+
+def _apply_min_cta_count_rule(configs, cta_count_fn):
+    """Reject configs whose total launch grid falls below SM_count *
+    multiplier -- too few concurrently-schedulable CTAs starves the GPU
+    regardless of any single CTA's efficiency (confirmed for
+    project_1920->320@7x7: grid=(13,3)=39 CTAs on a ~170-SM part,
+    waves/SM=0.11, i.e. most SMs get zero work for the entire kernel
+    duration). This is a preference among the existing config pool's block
+    sizes, not a structural fix -- for shapes whose total (M, OC) is small
+    enough that even the smallest available BLOCK_M/BLOCK_OC cannot clear
+    the threshold, every candidate gets filtered and this rule falls back
+    to a no-op (`filtered or configs`); such shapes need Route D's two-stage
+    lowering (P1.1) rather than a config-selection fix.
+    """
+    threshold = _sm_count() * _min_cta_sm_multiplier()
+    if threshold <= 0:
+        return configs
+    filtered = [config for config in configs if cta_count_fn(config) >= threshold]
+    return filtered or configs
+
+
 def _config_matches_spatial(config, desired: Dict[str, int], keys: Tuple[str, ...]) -> bool:
     for key in keys:
         if int(config.kwargs[key]) != int(desired[key]):
@@ -213,10 +308,32 @@ def _pointwise_acc_elems(config) -> int:
     )
 
 
+def _gemm_cta_count_fn(named_args):
+    """Total launch grid size for the GEMM-family kernels (general conv and
+    pointwise): grid = cdiv(M, BLOCK_M) * cdiv(OC, BLOCK_OC), where
+    M = num_batches*out_height*out_width. T is handled by the in-kernel
+    temporal_base loop (BTILE_T/REUSE_GROUPS), not the grid, so it does not
+    enter this formula.
+    """
+    m_total = int(named_args["num_batches"]) * int(named_args["out_height"]) * int(named_args["out_width"])
+    out_channels = int(named_args["out_channels"])
+
+    def cta_count(config) -> int:
+        block_m = int(config.kwargs["BLOCK_M"])
+        block_oc = int(config.kwargs["BLOCK_OC"])
+        return -(-m_total // block_m) * -(-out_channels // block_oc)
+
+    return cta_count
+
+
 def _prune_pointwise_configs(configs, named_args, **kwargs):
     valid = _prune_temporal_configs(configs, named_args, **kwargs)
     if not valid:
         return valid
+
+    in_channels = int(named_args["in_channels"])
+    valid = _apply_rg_k_coupling_rule(valid, in_channels)  # K_total = in_channels (kernel_size=1)
+    valid = _apply_min_cta_count_rule(valid, _gemm_cta_count_fn(named_args))
 
     acc_limit = _pointwise_acc_elems_limit()
     if acc_limit > 0:
@@ -227,7 +344,6 @@ def _prune_pointwise_configs(configs, named_args, **kwargs):
         ]
         valid = limited or valid
 
-    in_channels = int(named_args["in_channels"])
     out_channels = int(named_args["out_channels"])
     height = int(named_args["height"])
     width = int(named_args["width"])
@@ -240,10 +356,62 @@ def _prune_pointwise_configs(configs, named_args, **kwargs):
     return filtered or valid
 
 
+def _make_general_prune_fn(kernel_size: int):
+    """Prune function for the non-pointwise, non-depthwise conv family
+    (k3/k5/k7/k11), parameterized by kernel_size since K_total = in_channels
+    * kernel_size**2 for these (unlike pointwise, where kernel_size==1 makes
+    K_total == in_channels). This family had no shape-based BLOCK selection
+    before (unlike pointwise/dwconv), so it only gained the two generic
+    pruning rules here, not a _config_for_shape heuristic.
+    """
+    k_square = kernel_size * kernel_size
+
+    def _prune_general_configs(configs, named_args, **kwargs):
+        valid = _prune_temporal_configs(configs, named_args, **kwargs)
+        if not valid:
+            return valid
+        in_channels = int(named_args["in_channels"])
+        valid = _apply_rg_k_coupling_rule(valid, in_channels * k_square)
+        valid = _apply_min_cta_count_rule(valid, _gemm_cta_count_fn(named_args))
+        return valid
+
+    return _prune_general_configs
+
+
+def _dwconv_cta_count_fn(named_args):
+    """Total launch grid size for the depthwise stencil kernel: grid =
+    cdiv(out_width, BLOCK_W*PIXELS_PER_THREAD) * cdiv(num_batches*out_height,
+    BLOCK_H) * cdiv(out_channels, BLOCK_C) (matches the grid() closure in
+    run_fused_temporal_general_autotuned's depthwise branch).
+    """
+    out_width = int(named_args["out_width"])
+    m_total = int(named_args["num_batches"]) * int(named_args["out_height"])
+    out_channels = int(named_args["out_channels"])
+
+    def cta_count(config) -> int:
+        block_w = int(config.kwargs["BLOCK_W"])
+        pixels_per_thread = int(config.kwargs["PIXELS_PER_THREAD"])
+        block_h = int(config.kwargs["BLOCK_H"])
+        block_c = int(config.kwargs["BLOCK_C"])
+        return (
+            -(-out_width // (block_w * pixels_per_thread))
+            * -(-m_total // block_h)
+            * -(-out_channels // block_c)
+        )
+
+    return cta_count
+
+
 def _prune_dwconv_configs(configs, named_args, **kwargs):
     valid = _prune_temporal_configs(configs, named_args, **kwargs)
     if not valid:
         return valid
+
+    # No RG-K rule here: the depthwise stencil has no BLOCK_K/K-loop (K=9 is
+    # always fully unrolled), so REUSE_GROUPS's cost/benefit tradeoff for
+    # this kernel family is purely a temporal-unrolling question, not a
+    # K-tile-amortization one.
+    valid = _apply_min_cta_count_rule(valid, _dwconv_cta_count_fn(named_args))
 
     height = int(named_args["height"])
     width = int(named_args["width"])
@@ -522,9 +690,19 @@ def _default_config_for_key(kernel_key: str) -> Dict[str, int]:
 
 
 def _pointwise_config_for_shape(in_channels: int, out_channels: int, height: int, width: int) -> Dict[str, int]:
-    # MobileNetV1 pointwise layers are bandwidth/occupancy sensitive across
-    # spatial scales. Keep a compact selector so regular conv autotune remains
-    # untouched while k1_s1_p0 does not inherit the old two-config default.
+    # NOTE: a prior attempt added explicit large-channel buckets here for
+    # MobileNetV2's expand/project 1x1 convs (in_channels/out_channels up to
+    # ~1920). That was reverted: _prune_pointwise_configs uses this function's
+    # return value as a HARD filter (via _config_matches_spatial), not a
+    # search hint, so a wrong hand-picked guess actively blocks the autotuner
+    # from reaching better configs. Measured end-to-end on MobileNetV2
+    # (T=4/batch=2/224x224/ch=64): generic fallback below (BLOCK_OC=128,
+    # BLOCK_K=32) = 2.601ms wall/iter; the added large-channel guesses =
+    # 2.77-2.80ms wall/iter (~7% worse, reproduced across repeated runs with
+    # fresh autotune caches). Left as the untouched MobileNetV1-tuned rules;
+    # POINTWISE_AUTOTUNE_CONFIGS still carries the extra large-BLOCK_K/OC
+    # entries in case a future change makes this a genuine (non-hard-filter)
+    # search hint instead.
     if height >= 112 and in_channels <= 64:
         return {"BLOCK_M": 16, "BLOCK_OC": 128, "BLOCK_K": 16, "num_warps": 4, "num_stages": 2}
     if height >= 56 and in_channels <= 128:
@@ -653,23 +831,41 @@ def _emit_general_kernel_source(
         lines.append(f"                acc_g{g} = tl.zeros((BM_T, BLOCK_OC), dtype=tl.float32)")
         lines.append("            else:")
         lines.append(f"                acc_g{g} = tl.zeros((BM_T, BLOCK_OC), dtype=tl.float16)")
+    # For kernel_size=1/stride=1/pad=0 (pointwise conv) every output pixel maps
+    # 1:1 onto the same input pixel, so the spatial bounds check is provably
+    # always true (unlike the k3/k5/k7/k11 paths, where it depends on runtime
+    # pixel/kernel-offset values and cannot be folded by the Triton compiler).
+    # Skip computing kh/kw/ih/iw/in_bounds entirely and reuse the
+    # already-computed cat_pix_hw for the spatial offset, instead of
+    # recomputing ih*width+iw from scratch -- this removes the bounds-check
+    # compare/AND chain from the hot per-K-tile load mask for the pointwise
+    # kernel while leaving the k3/k5/k7/k11 kernels' generated source
+    # byte-for-byte unchanged.
+    always_in_bounds = kernel_size == 1 and stride == 1 and pad == 0
     lines.append("        for k_start in range(0, K_TOTAL, BLOCK_K):")
     lines.append("            k_offsets = k_start + tl.arange(0, BLOCK_K)")
     lines.append("            k_mask = k_offsets < K_TOTAL")
-    lines.append(f"            ci = k_offsets // {k_square}")
-    lines.append(f"            kk = k_offsets % {k_square}")
-    lines.append(f"            kh = kk // {kernel_size}")
-    lines.append(f"            kw = kk % {kernel_size}")
-    lines.append(f"            ih = cat_pix_h[:, None] * {stride} + kh[None, :] - {pad}")
-    lines.append(f"            iw = cat_pix_w[:, None] * {stride} + kw[None, :] - {pad}")
-    lines.append("            in_bounds = (ih >= 0) & (ih < height) & (iw >= 0) & (iw < width)")
+    if always_in_bounds:
+        lines.append("            ci = k_offsets")
+    else:
+        lines.append(f"            ci = k_offsets // {k_square}")
+        lines.append(f"            kk = k_offsets % {k_square}")
+        lines.append(f"            kh = kk // {kernel_size}")
+        lines.append(f"            kw = kk % {kernel_size}")
+        lines.append(f"            ih = cat_pix_h[:, None] * {stride} + kh[None, :] - {pad}")
+        lines.append(f"            iw = cat_pix_w[:, None] * {stride} + kw[None, :] - {pad}")
+        lines.append("            in_bounds = (ih >= 0) & (ih < height) & (iw >= 0) & (iw < width)")
     lines.append("            w_offsets = oc_offsets[None, :] * K_TOTAL + k_offsets[:, None]")
     lines.append("            w_tile = tl.load(w_ptr + w_offsets, mask=k_mask[:, None] & oc_mask[None, :], other=0.0)")
     for g in range(max_groups):
         lines.append(f"            if REUSE_GROUPS >= {g + 1}:")
         lines.append(f"                step_g{g} = temporal_base + {g} * BTILE_T + local_t")
-        lines.append(f"                x_offsets_g{g} = (step_g{g}[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw")
-        lines.append(f"                x_g{g} = tl.load(x_ptr + x_offsets_g{g}, mask=cat_m_mask[:, None] & (step_g{g}[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)")
+        if always_in_bounds:
+            lines.append(f"                x_offsets_g{g} = (step_g{g}[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]")
+            lines.append(f"                x_g{g} = tl.load(x_ptr + x_offsets_g{g}, mask=cat_m_mask[:, None] & (step_g{g}[:, None] < T_STEPS) & k_mask[None, :], other=0.0)")
+        else:
+            lines.append(f"                x_offsets_g{g} = (step_g{g}[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw")
+            lines.append(f"                x_g{g} = tl.load(x_ptr + x_offsets_g{g}, mask=cat_m_mask[:, None] & (step_g{g}[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)")
         lines.append("                if USE_TF32:")
         lines.append(f"                    acc_g{g} = tl.dot(x_g{g}, w_tile, acc_g{g}, input_precision='tf32')")
         lines.append("                else:")
@@ -914,7 +1110,7 @@ _autotuned_kernels = {
                 if KERNEL_VARIANTS[kernel_key].get("depthwise")
                 else _prune_pointwise_configs
                 if kernel_key == "k1_s1_p0"
-                else _prune_temporal_configs
+                else _make_general_prune_fn(KERNEL_VARIANTS[kernel_key]["kernel"])
             )
         },
         reset_to_zero=["v_ptr"],
@@ -948,7 +1144,7 @@ _residual_autotuned_kernels = {
                 if KERNEL_VARIANTS[kernel_key].get("depthwise")
                 else _prune_pointwise_configs
                 if kernel_key == "k1_s1_p0"
-                else _prune_temporal_configs
+                else _make_general_prune_fn(KERNEL_VARIANTS[kernel_key]["kernel"])
             )
         },
         reset_to_zero=["v_ptr"],

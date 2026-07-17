@@ -9,7 +9,7 @@ mkdir -p ${OUT_ROOT}
 
 WINDOWS=(1 4 8 16)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2" "spiketransformer" "spikebert")
-MODELS=("spiketransformer" "spikebert")
+MODELS=("mobilenetv1" "mobilenetv2")
 
 RUN_MODE=all
 while [[ $# -gt 0 ]]; do

@@ -122,139 +122,133 @@ def _fused_conv_lif_temporal_general_kernel_k1_s1_p0_impl(
         for k_start in range(0, K_TOTAL, BLOCK_K):
             k_offsets = k_start + tl.arange(0, BLOCK_K)
             k_mask = k_offsets < K_TOTAL
-            ci = k_offsets // 1
-            kk = k_offsets % 1
-            kh = kk // 1
-            kw = kk % 1
-            ih = cat_pix_h[:, None] * 1 + kh[None, :] - 0
-            iw = cat_pix_w[:, None] * 1 + kw[None, :] - 0
-            in_bounds = (ih >= 0) & (ih < height) & (iw >= 0) & (iw < width)
+            ci = k_offsets
             w_offsets = oc_offsets[None, :] * K_TOTAL + k_offsets[:, None]
             w_tile = tl.load(w_ptr + w_offsets, mask=k_mask[:, None] & oc_mask[None, :], other=0.0)
             if REUSE_GROUPS >= 1:
                 step_g0 = temporal_base + 0 * BTILE_T + local_t
-                x_offsets_g0 = (step_g0[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g0 = tl.load(x_ptr + x_offsets_g0, mask=cat_m_mask[:, None] & (step_g0[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g0 = (step_g0[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g0 = tl.load(x_ptr + x_offsets_g0, mask=cat_m_mask[:, None] & (step_g0[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g0 = tl.dot(x_g0, w_tile, acc_g0, input_precision='tf32')
                 else:
                     acc_g0 = tl.dot(x_g0, w_tile, acc_g0, out_dtype=tl.float16)
             if REUSE_GROUPS >= 2:
                 step_g1 = temporal_base + 1 * BTILE_T + local_t
-                x_offsets_g1 = (step_g1[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g1 = tl.load(x_ptr + x_offsets_g1, mask=cat_m_mask[:, None] & (step_g1[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g1 = (step_g1[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g1 = tl.load(x_ptr + x_offsets_g1, mask=cat_m_mask[:, None] & (step_g1[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g1 = tl.dot(x_g1, w_tile, acc_g1, input_precision='tf32')
                 else:
                     acc_g1 = tl.dot(x_g1, w_tile, acc_g1, out_dtype=tl.float16)
             if REUSE_GROUPS >= 3:
                 step_g2 = temporal_base + 2 * BTILE_T + local_t
-                x_offsets_g2 = (step_g2[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g2 = tl.load(x_ptr + x_offsets_g2, mask=cat_m_mask[:, None] & (step_g2[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g2 = (step_g2[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g2 = tl.load(x_ptr + x_offsets_g2, mask=cat_m_mask[:, None] & (step_g2[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g2 = tl.dot(x_g2, w_tile, acc_g2, input_precision='tf32')
                 else:
                     acc_g2 = tl.dot(x_g2, w_tile, acc_g2, out_dtype=tl.float16)
             if REUSE_GROUPS >= 4:
                 step_g3 = temporal_base + 3 * BTILE_T + local_t
-                x_offsets_g3 = (step_g3[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g3 = tl.load(x_ptr + x_offsets_g3, mask=cat_m_mask[:, None] & (step_g3[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g3 = (step_g3[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g3 = tl.load(x_ptr + x_offsets_g3, mask=cat_m_mask[:, None] & (step_g3[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g3 = tl.dot(x_g3, w_tile, acc_g3, input_precision='tf32')
                 else:
                     acc_g3 = tl.dot(x_g3, w_tile, acc_g3, out_dtype=tl.float16)
             if REUSE_GROUPS >= 5:
                 step_g4 = temporal_base + 4 * BTILE_T + local_t
-                x_offsets_g4 = (step_g4[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g4 = tl.load(x_ptr + x_offsets_g4, mask=cat_m_mask[:, None] & (step_g4[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g4 = (step_g4[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g4 = tl.load(x_ptr + x_offsets_g4, mask=cat_m_mask[:, None] & (step_g4[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g4 = tl.dot(x_g4, w_tile, acc_g4, input_precision='tf32')
                 else:
                     acc_g4 = tl.dot(x_g4, w_tile, acc_g4, out_dtype=tl.float16)
             if REUSE_GROUPS >= 6:
                 step_g5 = temporal_base + 5 * BTILE_T + local_t
-                x_offsets_g5 = (step_g5[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g5 = tl.load(x_ptr + x_offsets_g5, mask=cat_m_mask[:, None] & (step_g5[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g5 = (step_g5[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g5 = tl.load(x_ptr + x_offsets_g5, mask=cat_m_mask[:, None] & (step_g5[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g5 = tl.dot(x_g5, w_tile, acc_g5, input_precision='tf32')
                 else:
                     acc_g5 = tl.dot(x_g5, w_tile, acc_g5, out_dtype=tl.float16)
             if REUSE_GROUPS >= 7:
                 step_g6 = temporal_base + 6 * BTILE_T + local_t
-                x_offsets_g6 = (step_g6[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g6 = tl.load(x_ptr + x_offsets_g6, mask=cat_m_mask[:, None] & (step_g6[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g6 = (step_g6[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g6 = tl.load(x_ptr + x_offsets_g6, mask=cat_m_mask[:, None] & (step_g6[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g6 = tl.dot(x_g6, w_tile, acc_g6, input_precision='tf32')
                 else:
                     acc_g6 = tl.dot(x_g6, w_tile, acc_g6, out_dtype=tl.float16)
             if REUSE_GROUPS >= 8:
                 step_g7 = temporal_base + 7 * BTILE_T + local_t
-                x_offsets_g7 = (step_g7[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g7 = tl.load(x_ptr + x_offsets_g7, mask=cat_m_mask[:, None] & (step_g7[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g7 = (step_g7[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g7 = tl.load(x_ptr + x_offsets_g7, mask=cat_m_mask[:, None] & (step_g7[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g7 = tl.dot(x_g7, w_tile, acc_g7, input_precision='tf32')
                 else:
                     acc_g7 = tl.dot(x_g7, w_tile, acc_g7, out_dtype=tl.float16)
             if REUSE_GROUPS >= 9:
                 step_g8 = temporal_base + 8 * BTILE_T + local_t
-                x_offsets_g8 = (step_g8[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g8 = tl.load(x_ptr + x_offsets_g8, mask=cat_m_mask[:, None] & (step_g8[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g8 = (step_g8[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g8 = tl.load(x_ptr + x_offsets_g8, mask=cat_m_mask[:, None] & (step_g8[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g8 = tl.dot(x_g8, w_tile, acc_g8, input_precision='tf32')
                 else:
                     acc_g8 = tl.dot(x_g8, w_tile, acc_g8, out_dtype=tl.float16)
             if REUSE_GROUPS >= 10:
                 step_g9 = temporal_base + 9 * BTILE_T + local_t
-                x_offsets_g9 = (step_g9[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g9 = tl.load(x_ptr + x_offsets_g9, mask=cat_m_mask[:, None] & (step_g9[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g9 = (step_g9[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g9 = tl.load(x_ptr + x_offsets_g9, mask=cat_m_mask[:, None] & (step_g9[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g9 = tl.dot(x_g9, w_tile, acc_g9, input_precision='tf32')
                 else:
                     acc_g9 = tl.dot(x_g9, w_tile, acc_g9, out_dtype=tl.float16)
             if REUSE_GROUPS >= 11:
                 step_g10 = temporal_base + 10 * BTILE_T + local_t
-                x_offsets_g10 = (step_g10[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g10 = tl.load(x_ptr + x_offsets_g10, mask=cat_m_mask[:, None] & (step_g10[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g10 = (step_g10[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g10 = tl.load(x_ptr + x_offsets_g10, mask=cat_m_mask[:, None] & (step_g10[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g10 = tl.dot(x_g10, w_tile, acc_g10, input_precision='tf32')
                 else:
                     acc_g10 = tl.dot(x_g10, w_tile, acc_g10, out_dtype=tl.float16)
             if REUSE_GROUPS >= 12:
                 step_g11 = temporal_base + 11 * BTILE_T + local_t
-                x_offsets_g11 = (step_g11[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g11 = tl.load(x_ptr + x_offsets_g11, mask=cat_m_mask[:, None] & (step_g11[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g11 = (step_g11[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g11 = tl.load(x_ptr + x_offsets_g11, mask=cat_m_mask[:, None] & (step_g11[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g11 = tl.dot(x_g11, w_tile, acc_g11, input_precision='tf32')
                 else:
                     acc_g11 = tl.dot(x_g11, w_tile, acc_g11, out_dtype=tl.float16)
             if REUSE_GROUPS >= 13:
                 step_g12 = temporal_base + 12 * BTILE_T + local_t
-                x_offsets_g12 = (step_g12[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g12 = tl.load(x_ptr + x_offsets_g12, mask=cat_m_mask[:, None] & (step_g12[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g12 = (step_g12[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g12 = tl.load(x_ptr + x_offsets_g12, mask=cat_m_mask[:, None] & (step_g12[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g12 = tl.dot(x_g12, w_tile, acc_g12, input_precision='tf32')
                 else:
                     acc_g12 = tl.dot(x_g12, w_tile, acc_g12, out_dtype=tl.float16)
             if REUSE_GROUPS >= 14:
                 step_g13 = temporal_base + 13 * BTILE_T + local_t
-                x_offsets_g13 = (step_g13[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g13 = tl.load(x_ptr + x_offsets_g13, mask=cat_m_mask[:, None] & (step_g13[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g13 = (step_g13[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g13 = tl.load(x_ptr + x_offsets_g13, mask=cat_m_mask[:, None] & (step_g13[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g13 = tl.dot(x_g13, w_tile, acc_g13, input_precision='tf32')
                 else:
                     acc_g13 = tl.dot(x_g13, w_tile, acc_g13, out_dtype=tl.float16)
             if REUSE_GROUPS >= 15:
                 step_g14 = temporal_base + 14 * BTILE_T + local_t
-                x_offsets_g14 = (step_g14[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g14 = tl.load(x_ptr + x_offsets_g14, mask=cat_m_mask[:, None] & (step_g14[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g14 = (step_g14[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g14 = tl.load(x_ptr + x_offsets_g14, mask=cat_m_mask[:, None] & (step_g14[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g14 = tl.dot(x_g14, w_tile, acc_g14, input_precision='tf32')
                 else:
                     acc_g14 = tl.dot(x_g14, w_tile, acc_g14, out_dtype=tl.float16)
             if REUSE_GROUPS >= 16:
                 step_g15 = temporal_base + 15 * BTILE_T + local_t
-                x_offsets_g15 = (step_g15[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g15 = tl.load(x_ptr + x_offsets_g15, mask=cat_m_mask[:, None] & (step_g15[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g15 = (step_g15[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g15 = tl.load(x_ptr + x_offsets_g15, mask=cat_m_mask[:, None] & (step_g15[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g15 = tl.dot(x_g15, w_tile, acc_g15, input_precision='tf32')
                 else:
@@ -68304,139 +68298,133 @@ def _fused_conv_lif_temporal_general_kernel_k1_s1_p0_impl_resadd(
         for k_start in range(0, K_TOTAL, BLOCK_K):
             k_offsets = k_start + tl.arange(0, BLOCK_K)
             k_mask = k_offsets < K_TOTAL
-            ci = k_offsets // 1
-            kk = k_offsets % 1
-            kh = kk // 1
-            kw = kk % 1
-            ih = cat_pix_h[:, None] * 1 + kh[None, :] - 0
-            iw = cat_pix_w[:, None] * 1 + kw[None, :] - 0
-            in_bounds = (ih >= 0) & (ih < height) & (iw >= 0) & (iw < width)
+            ci = k_offsets
             w_offsets = oc_offsets[None, :] * K_TOTAL + k_offsets[:, None]
             w_tile = tl.load(w_ptr + w_offsets, mask=k_mask[:, None] & oc_mask[None, :], other=0.0)
             if REUSE_GROUPS >= 1:
                 step_g0 = temporal_base + 0 * BTILE_T + local_t
-                x_offsets_g0 = (step_g0[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g0 = tl.load(x_ptr + x_offsets_g0, mask=cat_m_mask[:, None] & (step_g0[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g0 = (step_g0[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g0 = tl.load(x_ptr + x_offsets_g0, mask=cat_m_mask[:, None] & (step_g0[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g0 = tl.dot(x_g0, w_tile, acc_g0, input_precision='tf32')
                 else:
                     acc_g0 = tl.dot(x_g0, w_tile, acc_g0, out_dtype=tl.float16)
             if REUSE_GROUPS >= 2:
                 step_g1 = temporal_base + 1 * BTILE_T + local_t
-                x_offsets_g1 = (step_g1[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g1 = tl.load(x_ptr + x_offsets_g1, mask=cat_m_mask[:, None] & (step_g1[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g1 = (step_g1[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g1 = tl.load(x_ptr + x_offsets_g1, mask=cat_m_mask[:, None] & (step_g1[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g1 = tl.dot(x_g1, w_tile, acc_g1, input_precision='tf32')
                 else:
                     acc_g1 = tl.dot(x_g1, w_tile, acc_g1, out_dtype=tl.float16)
             if REUSE_GROUPS >= 3:
                 step_g2 = temporal_base + 2 * BTILE_T + local_t
-                x_offsets_g2 = (step_g2[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g2 = tl.load(x_ptr + x_offsets_g2, mask=cat_m_mask[:, None] & (step_g2[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g2 = (step_g2[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g2 = tl.load(x_ptr + x_offsets_g2, mask=cat_m_mask[:, None] & (step_g2[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g2 = tl.dot(x_g2, w_tile, acc_g2, input_precision='tf32')
                 else:
                     acc_g2 = tl.dot(x_g2, w_tile, acc_g2, out_dtype=tl.float16)
             if REUSE_GROUPS >= 4:
                 step_g3 = temporal_base + 3 * BTILE_T + local_t
-                x_offsets_g3 = (step_g3[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g3 = tl.load(x_ptr + x_offsets_g3, mask=cat_m_mask[:, None] & (step_g3[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g3 = (step_g3[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g3 = tl.load(x_ptr + x_offsets_g3, mask=cat_m_mask[:, None] & (step_g3[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g3 = tl.dot(x_g3, w_tile, acc_g3, input_precision='tf32')
                 else:
                     acc_g3 = tl.dot(x_g3, w_tile, acc_g3, out_dtype=tl.float16)
             if REUSE_GROUPS >= 5:
                 step_g4 = temporal_base + 4 * BTILE_T + local_t
-                x_offsets_g4 = (step_g4[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g4 = tl.load(x_ptr + x_offsets_g4, mask=cat_m_mask[:, None] & (step_g4[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g4 = (step_g4[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g4 = tl.load(x_ptr + x_offsets_g4, mask=cat_m_mask[:, None] & (step_g4[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g4 = tl.dot(x_g4, w_tile, acc_g4, input_precision='tf32')
                 else:
                     acc_g4 = tl.dot(x_g4, w_tile, acc_g4, out_dtype=tl.float16)
             if REUSE_GROUPS >= 6:
                 step_g5 = temporal_base + 5 * BTILE_T + local_t
-                x_offsets_g5 = (step_g5[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g5 = tl.load(x_ptr + x_offsets_g5, mask=cat_m_mask[:, None] & (step_g5[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g5 = (step_g5[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g5 = tl.load(x_ptr + x_offsets_g5, mask=cat_m_mask[:, None] & (step_g5[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g5 = tl.dot(x_g5, w_tile, acc_g5, input_precision='tf32')
                 else:
                     acc_g5 = tl.dot(x_g5, w_tile, acc_g5, out_dtype=tl.float16)
             if REUSE_GROUPS >= 7:
                 step_g6 = temporal_base + 6 * BTILE_T + local_t
-                x_offsets_g6 = (step_g6[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g6 = tl.load(x_ptr + x_offsets_g6, mask=cat_m_mask[:, None] & (step_g6[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g6 = (step_g6[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g6 = tl.load(x_ptr + x_offsets_g6, mask=cat_m_mask[:, None] & (step_g6[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g6 = tl.dot(x_g6, w_tile, acc_g6, input_precision='tf32')
                 else:
                     acc_g6 = tl.dot(x_g6, w_tile, acc_g6, out_dtype=tl.float16)
             if REUSE_GROUPS >= 8:
                 step_g7 = temporal_base + 7 * BTILE_T + local_t
-                x_offsets_g7 = (step_g7[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g7 = tl.load(x_ptr + x_offsets_g7, mask=cat_m_mask[:, None] & (step_g7[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g7 = (step_g7[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g7 = tl.load(x_ptr + x_offsets_g7, mask=cat_m_mask[:, None] & (step_g7[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g7 = tl.dot(x_g7, w_tile, acc_g7, input_precision='tf32')
                 else:
                     acc_g7 = tl.dot(x_g7, w_tile, acc_g7, out_dtype=tl.float16)
             if REUSE_GROUPS >= 9:
                 step_g8 = temporal_base + 8 * BTILE_T + local_t
-                x_offsets_g8 = (step_g8[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g8 = tl.load(x_ptr + x_offsets_g8, mask=cat_m_mask[:, None] & (step_g8[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g8 = (step_g8[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g8 = tl.load(x_ptr + x_offsets_g8, mask=cat_m_mask[:, None] & (step_g8[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g8 = tl.dot(x_g8, w_tile, acc_g8, input_precision='tf32')
                 else:
                     acc_g8 = tl.dot(x_g8, w_tile, acc_g8, out_dtype=tl.float16)
             if REUSE_GROUPS >= 10:
                 step_g9 = temporal_base + 9 * BTILE_T + local_t
-                x_offsets_g9 = (step_g9[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g9 = tl.load(x_ptr + x_offsets_g9, mask=cat_m_mask[:, None] & (step_g9[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g9 = (step_g9[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g9 = tl.load(x_ptr + x_offsets_g9, mask=cat_m_mask[:, None] & (step_g9[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g9 = tl.dot(x_g9, w_tile, acc_g9, input_precision='tf32')
                 else:
                     acc_g9 = tl.dot(x_g9, w_tile, acc_g9, out_dtype=tl.float16)
             if REUSE_GROUPS >= 11:
                 step_g10 = temporal_base + 10 * BTILE_T + local_t
-                x_offsets_g10 = (step_g10[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g10 = tl.load(x_ptr + x_offsets_g10, mask=cat_m_mask[:, None] & (step_g10[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g10 = (step_g10[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g10 = tl.load(x_ptr + x_offsets_g10, mask=cat_m_mask[:, None] & (step_g10[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g10 = tl.dot(x_g10, w_tile, acc_g10, input_precision='tf32')
                 else:
                     acc_g10 = tl.dot(x_g10, w_tile, acc_g10, out_dtype=tl.float16)
             if REUSE_GROUPS >= 12:
                 step_g11 = temporal_base + 11 * BTILE_T + local_t
-                x_offsets_g11 = (step_g11[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g11 = tl.load(x_ptr + x_offsets_g11, mask=cat_m_mask[:, None] & (step_g11[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g11 = (step_g11[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g11 = tl.load(x_ptr + x_offsets_g11, mask=cat_m_mask[:, None] & (step_g11[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g11 = tl.dot(x_g11, w_tile, acc_g11, input_precision='tf32')
                 else:
                     acc_g11 = tl.dot(x_g11, w_tile, acc_g11, out_dtype=tl.float16)
             if REUSE_GROUPS >= 13:
                 step_g12 = temporal_base + 12 * BTILE_T + local_t
-                x_offsets_g12 = (step_g12[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g12 = tl.load(x_ptr + x_offsets_g12, mask=cat_m_mask[:, None] & (step_g12[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g12 = (step_g12[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g12 = tl.load(x_ptr + x_offsets_g12, mask=cat_m_mask[:, None] & (step_g12[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g12 = tl.dot(x_g12, w_tile, acc_g12, input_precision='tf32')
                 else:
                     acc_g12 = tl.dot(x_g12, w_tile, acc_g12, out_dtype=tl.float16)
             if REUSE_GROUPS >= 14:
                 step_g13 = temporal_base + 13 * BTILE_T + local_t
-                x_offsets_g13 = (step_g13[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g13 = tl.load(x_ptr + x_offsets_g13, mask=cat_m_mask[:, None] & (step_g13[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g13 = (step_g13[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g13 = tl.load(x_ptr + x_offsets_g13, mask=cat_m_mask[:, None] & (step_g13[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g13 = tl.dot(x_g13, w_tile, acc_g13, input_precision='tf32')
                 else:
                     acc_g13 = tl.dot(x_g13, w_tile, acc_g13, out_dtype=tl.float16)
             if REUSE_GROUPS >= 15:
                 step_g14 = temporal_base + 14 * BTILE_T + local_t
-                x_offsets_g14 = (step_g14[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g14 = tl.load(x_ptr + x_offsets_g14, mask=cat_m_mask[:, None] & (step_g14[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g14 = (step_g14[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g14 = tl.load(x_ptr + x_offsets_g14, mask=cat_m_mask[:, None] & (step_g14[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g14 = tl.dot(x_g14, w_tile, acc_g14, input_precision='tf32')
                 else:
                     acc_g14 = tl.dot(x_g14, w_tile, acc_g14, out_dtype=tl.float16)
             if REUSE_GROUPS >= 16:
                 step_g15 = temporal_base + 15 * BTILE_T + local_t
-                x_offsets_g15 = (step_g15[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + ih * width + iw
-                x_g15 = tl.load(x_ptr + x_offsets_g15, mask=cat_m_mask[:, None] & (step_g15[:, None] < T_STEPS) & k_mask[None, :] & in_bounds, other=0.0)
+                x_offsets_g15 = (step_g15[:, None] * num_batches + cat_pix_n[:, None]) * in_channels * height * width + ci[None, :] * height * width + cat_pix_hw[:, None]
+                x_g15 = tl.load(x_ptr + x_offsets_g15, mask=cat_m_mask[:, None] & (step_g15[:, None] < T_STEPS) & k_mask[None, :], other=0.0)
                 if USE_TF32:
                     acc_g15 = tl.dot(x_g15, w_tile, acc_g15, input_precision='tf32')
                 else:
