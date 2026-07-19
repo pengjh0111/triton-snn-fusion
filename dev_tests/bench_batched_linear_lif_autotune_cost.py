@@ -19,8 +19,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import torch
 
-# Representative shapes: the actual Linear layers in ChronosSpikeTransformer
-# (benchmarks/validate_chronos_baselines.py, dim=256 heads=8 mlp_ratio=4
+# Representative shapes: the actual Linear layers in KairosSpikeTransformer
+# (benchmarks/validate_kairos_baselines.py, dim=256 heads=8 mlp_ratio=4
 # input_dim=768) crossed with (rows, T) combos covering small-batch/large-T
 # (the target scenario) and the model's default batch=16, seq=256, T=16.
 LINEAR_SHAPES = [

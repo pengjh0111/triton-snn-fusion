@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-CHRONOS_MODEL_CHOICES = [
+KAIROS_MODEL_CHOICES = [
     "resnet18",
     "resnet34",
     "resnet32",
@@ -25,7 +25,7 @@ CHRONOS_MODEL_CHOICES = [
     "spiketransformer",
     "spikebert",
 ]
-LIF_IMPL_CHOICES = ["chronos", "spikingjelly"]
+LIF_IMPL_CHOICES = ["kairos", "spikingjelly"]
 
 
 def resolve_np_dtype(precision: str):
@@ -291,7 +291,7 @@ def benchmark_onnx_with_tvm(
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--models", nargs="+", default=["resnet18"], choices=CHRONOS_MODEL_CHOICES)
+    parser.add_argument("--models", nargs="+", default=["resnet18"], choices=KAIROS_MODEL_CHOICES)
     parser.add_argument(
         "--execution-modes",
         nargs="+",
@@ -313,7 +313,7 @@ def main():
     parser.add_argument("--transformer-input-dim", type=int, default=768)
     parser.add_argument("--transformer-vocab-size", type=int, default=30522)
     parser.add_argument("--transformer-num-classes", type=int, default=100)
-    parser.add_argument("--lif-impl", choices=LIF_IMPL_CHOICES, default="chronos")
+    parser.add_argument("--lif-impl", choices=LIF_IMPL_CHOICES, default="kairos")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--height", type=int, default=224)
     parser.add_argument("--width", type=int, default=224)
@@ -364,7 +364,7 @@ def main():
                         "precision": precision,
                         "model_channels": args.model_channels,
                         "lif_impl": args.lif_impl,
-                        "custom_lif": args.lif_impl == "chronos",
+                        "custom_lif": args.lif_impl == "kairos",
                         "wrapper": "SingleStepModeLoopWrapper",
                         "error": "" if onnx_path.exists() else f"ONNX path does not exist: {onnx_path}",
                     }

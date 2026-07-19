@@ -4,10 +4,10 @@ __pycache__/
 
 aot_result/
 
-chronos_benchmark_resnet18_w*/
-chronos_benchmark_resnet32_w*/
+kairos_benchmark_resnet18_w*/
+kairos_benchmark_resnet32_w*/
 
-chronos_full_fp32_window*/
+kairos_full_fp32_window*/
 
 *.json
 *.log

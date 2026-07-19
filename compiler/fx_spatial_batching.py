@@ -106,11 +106,11 @@ def _node_sort_key(gm: torch.fx.GraphModule):
     return lambda node: order[node]
 
 
-def _get_chronos_meta(node: torch.fx.Node, key: str, default=None):
-    meta_key = f"chronos_{key}"
+def _get_kairos_meta(node: torch.fx.Node, key: str, default=None):
+    meta_key = f"kairos_{key}"
     if meta_key in node.meta:
         return node.meta[meta_key]
-    return getattr(node, f"_chronos_{key}", default)
+    return getattr(node, f"_kairos_{key}", default)
 
 
 def _collect_input_nodes(obj) -> List[torch.fx.Node]:
@@ -295,7 +295,7 @@ def _node_temporal_source(node: torch.fx.Node) -> Optional[Tuple[str, torch.fx.N
     previous = _match_batched_chunk_getitem(node)
     if previous is not None:
         return ("previous_batched", previous.batched_node, previous.timestep)
-    timestep = _get_chronos_meta(node, "timestep")
+    timestep = _get_kairos_meta(node, "timestep")
     if isinstance(timestep, int):
         return ("plain", node, timestep)
     return None
@@ -706,7 +706,7 @@ def _candidate_tensor_inputs(node: torch.fx.Node, kind: str) -> Tuple[torch.fx.N
 
 
 def _is_generated_spatial_batching_node(node: torch.fx.Node) -> bool:
-    if node.meta.get("chronos_origin") == "temporal_stack_flatten":
+    if node.meta.get("kairos_origin") == "temporal_stack_flatten":
         return True
     name = str(node.name)
     return (
@@ -742,7 +742,7 @@ def _is_batching_source_legal(source_node: torch.fx.Node, candidate_timestep: in
     Bounded BFS: get_attr/placeholder (params/buffers, timestep-invariant),
     a temporal_stack_getitem match, a previous_batched_chunk_getitem match,
     or an snn_custom.*/lif op boundary all stop the walk on that branch as
-    "safe". A node whose own chronos_timestep annotation differs from
+    "safe". A node whose own kairos_timestep annotation differs from
     candidate_timestep proves a genuine cross-iteration dependency and
     fails the whole check immediately. Nodes at the same timestep (or
     unannotated, e.g. plain constants) are transparently walked through.
@@ -772,14 +772,14 @@ def _is_batching_source_legal(source_node: torch.fx.Node, candidate_timestep: in
             and isinstance(node.args[0], torch.fx.Node)
             and (
                 node.args[0].op == "placeholder"
-                or _get_chronos_meta(node.args[0], "timestep") is None
+                or _get_kairos_meta(node.args[0], "timestep") is None
             )
         ):
             # A direct getitem(external_sequence_source, constant_t) where
             # the source is either the raw placeholder or, more generally,
-            # any node with no chronos_timestep annotation at all -- i.e. a
+            # any node with no kairos_timestep annotation at all -- i.e. a
             # value computed *outside* every per-timestep block (before the
-            # first marker), such as ChronosDeepSpeech2.frontend()'s conv
+            # first marker), such as KairosDeepSpeech2.frontend()'s conv
             # output reshaped once before the T-loop indexes into it: that
             # reshape sits outside all blocks by construction (nothing
             # anchors it), so checking specifically for op=="placeholder"
@@ -796,7 +796,7 @@ def _is_batching_source_legal(source_node: torch.fx.Node, candidate_timestep: in
             # this timestep's -- a boundary-adjacency artifact, not a real
             # cross-iteration dependency).
             continue
-        node_timestep = _get_chronos_meta(node, "timestep")
+        node_timestep = _get_kairos_meta(node, "timestep")
         if isinstance(node_timestep, int):
             if node_timestep != candidate_timestep:
                 return False
@@ -881,13 +881,13 @@ def _extract_candidate(
             return None
     primary_temporal_stack = _match_temporal_stack_getitem(input_node)
     primary_previous_batched = _match_batched_chunk_getitem(input_node)
-    timestep = _get_chronos_meta(node, "timestep")
+    timestep = _get_kairos_meta(node, "timestep")
     if not isinstance(timestep, int) and primary_temporal_stack is not None:
         timestep = primary_temporal_stack.timestep
     if not isinstance(timestep, int) and primary_previous_batched is not None:
         timestep = primary_previous_batched.timestep
     if not isinstance(timestep, int):
-        stats.skip("missing_timestep", f"node={node.name} kind={kind} has no _chronos_timestep")
+        stats.skip("missing_timestep", f"node={node.name} kind={kind} has no _kairos_timestep")
         return None
     for tensor_input in tensor_inputs:
         if (
@@ -921,12 +921,12 @@ def _extract_candidate(
         signature = (node.op, "add", kind, stack_refs, previous_refs, kwargs)
     else:
         signature = _signature_without_input(node, kind)
-    occurrence = _get_chronos_meta(node, "occurrence")
+    occurrence = _get_kairos_meta(node, "occurrence")
     if not isinstance(occurrence, int):
         count_key = (timestep, signature)
         occurrence = occurrence_counts.get(count_key, 0)
         occurrence_counts[count_key] = occurrence + 1
-    window_id = _get_chronos_meta(node, "window_id")
+    window_id = _get_kairos_meta(node, "window_id")
     if not isinstance(window_id, int):
         window_id = timestep // temporal_window
     return SpatialBatchCandidate(
@@ -1180,10 +1180,10 @@ def _make_temporal_stack_flatten(
 ) -> torch.fx.Node:
     flatten_node = gm.graph.call_function(torch.flatten, args=(stack_node, 0, 1))
     flatten_node.name = f"{name_prefix}_temporal_stack_flatten"
-    flatten_node.meta["chronos_temporal_layout"] = "batched_tn"
-    flatten_node.meta["chronos_T"] = temporal_window
-    flatten_node.meta["chronos_origin"] = "temporal_stack_flatten"
-    flatten_node.meta["chronos_source_stack"] = stack_node.name
+    flatten_node.meta["kairos_temporal_layout"] = "batched_tn"
+    flatten_node.meta["kairos_T"] = temporal_window
+    flatten_node.meta["kairos_origin"] = "temporal_stack_flatten"
+    flatten_node.meta["kairos_source_stack"] = stack_node.name
     return flatten_node
 
 
@@ -1308,7 +1308,7 @@ def _sequence_source_for_items(
         with gm.graph.inserting_before(insertion_point):
             stack = gm.graph.call_function(torch.stack, args=([item.input_node for item in items], 0))
             stack.name = f"{insertion_point.name}_transformer_input_stack"
-            stack.meta["chronos_origin"] = "transformer_spatial_batch_input_stack"
+            stack.meta["kairos_origin"] = "transformer_spatial_batch_input_stack"
             return stack
     return None
 
@@ -1332,14 +1332,14 @@ def _annotate_transformer_temporal_nodes(items: Sequence[TransformerAttentionIte
             item.out_transpose_node,
             item.output_node,
         ):
-            node.meta["chronos_timestep"] = item.timestep
-            node.meta["chronos_window_id"] = window_id
-            node.meta["chronos_occurrence"] = occurrence
-            node.meta["chronos_role"] = "transformer_attention"
-            setattr(node, "_chronos_timestep", item.timestep)
-            setattr(node, "_chronos_window_id", window_id)
-            setattr(node, "_chronos_occurrence", occurrence)
-            setattr(node, "_chronos_role", "transformer_attention")
+            node.meta["kairos_timestep"] = item.timestep
+            node.meta["kairos_window_id"] = window_id
+            node.meta["kairos_occurrence"] = occurrence
+            node.meta["kairos_role"] = "transformer_attention"
+            setattr(node, "_kairos_timestep", item.timestep)
+            setattr(node, "_kairos_window_id", window_id)
+            setattr(node, "_kairos_occurrence", occurrence)
+            setattr(node, "_kairos_role", "transformer_attention")
 
 
 def _replace_attention_zero_state_users(
@@ -1482,10 +1482,10 @@ def _rewrite_layer_norm_stack(
         return False
     window_id = first.timestep // temporal_window if temporal_window > 0 else 0
     for occurrence, item in enumerate(items):
-        item.output_node.meta["chronos_timestep"] = item.timestep
-        item.output_node.meta["chronos_window_id"] = window_id
-        item.output_node.meta["chronos_occurrence"] = occurrence
-        item.output_node.meta["chronos_role"] = "transformer_layer_norm"
+        item.output_node.meta["kairos_timestep"] = item.timestep
+        item.output_node.meta["kairos_window_id"] = window_id
+        item.output_node.meta["kairos_occurrence"] = occurrence
+        item.output_node.meta["kairos_role"] = "transformer_layer_norm"
 
     with gm.graph.inserting_before(stack_node):
         ln = gm.graph.call_function(
@@ -1493,7 +1493,7 @@ def _rewrite_layer_norm_stack(
             args=(x_seq, first.normalized_shape, first.norm_weight, first.norm_bias, first.norm_eps),
         )
         ln.name = f"{stack_node.name}_spatial_batch_layer_norm"
-        ln.meta["chronos_origin"] = "transformer_spatial_batch_layer_norm"
+        ln.meta["kairos_origin"] = "transformer_spatial_batch_layer_norm"
 
     stack_node.replace_all_uses_with(ln)
     if len(stack_node.users) == 0:

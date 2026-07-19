@@ -11,7 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 import torch
 
 import runtime.snn_custom_ops as snn_custom_ops
-from compiler.chronos_compile import build_chronos_compile_config, compile_with_chronos_options
+from compiler.kairos_compile import build_kairos_compile_config, compile_with_kairos_options
 from compiler.fx_dag_analyzer import (
     build_fx_dag,
     dump_fx_dag_edges,
@@ -445,7 +445,7 @@ def main():
     print(f"device={device}")
     print(f"backend_mode={ARGS.backend_mode}")
     print(f"fused_op_backend={ARGS.fused_op_backend}, strict_triton={ARGS.strict_triton}")
-    _, compile_config = build_chronos_compile_config(
+    _, compile_config = build_kairos_compile_config(
         backend="rewrite_backend",
         enable_cudagraphs=ARGS.enable_cudagraphs,
         cudagraph_mode=ARGS.cudagraph_mode,
@@ -458,7 +458,7 @@ def main():
 
     model = build_model(ARGS.model, ARGS.T).to(device=device, dtype=dtype).eval()
     x = torch.randn(ARGS.batch_size, 3, ARGS.height, ARGS.width, device=device, dtype=dtype)
-    compiled_model = compile_with_chronos_options(
+    compiled_model = compile_with_kairos_options(
         model,
         backend=rewrite_backend,
         enable_cudagraphs=ARGS.enable_cudagraphs,

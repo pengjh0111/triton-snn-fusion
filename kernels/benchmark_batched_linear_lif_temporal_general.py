@@ -79,7 +79,7 @@ LINEAR_AUTOTUNE_SPATIAL_CONFIGS = [
 
 
 def _acc_elems_limit() -> int:
-    raw = os.environ.get("CHRONOS_BATCHED_LINEAR_ACC_ELEMS_LIMIT")
+    raw = os.environ.get("KAIROS_BATCHED_LINEAR_ACC_ELEMS_LIMIT")
     if raw is None:
         return DEFAULT_ACC_ELEMS_LIMIT
     try:
@@ -130,7 +130,7 @@ DEFAULT_SHARED_MEM_BUDGET = 96 * 1024
 
 
 def _shared_mem_budget() -> int:
-    raw = os.environ.get("CHRONOS_BATCHED_LINEAR_SHARED_MEM_BUDGET")
+    raw = os.environ.get("KAIROS_BATCHED_LINEAR_SHARED_MEM_BUDGET")
     if raw is None:
         return DEFAULT_SHARED_MEM_BUDGET
     try:

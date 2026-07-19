@@ -586,12 +586,12 @@ def _rewrite_temporal_sum_div_to_mean(
         stats.temporal_mean_removed_getitems += removed_getitems
         stats.temporal_mean_removed_adds += len(adds)
         print(
-            f"[CHRONOS_TEMPORAL_MEAN_REWRITE] matched=True T={len(terms)} "
+            f"[KAIROS_TEMPORAL_MEAN_REWRITE] matched=True T={len(terms)} "
             f"stacks={len(grouped_terms)} removed_getitems={removed_getitems} removed_adds={len(adds)}"
         )
         changed = True
     if not changed:
-        print("[CHRONOS_TEMPORAL_MEAN_REWRITE] matched=False")
+        print("[KAIROS_TEMPORAL_MEAN_REWRITE] matched=False")
     return changed
 
 
@@ -603,11 +603,11 @@ def _prune_final_return_states(
     preserve_output_contract: bool,
 ) -> bool:
     stats.state_prune_enabled = bool(enabled)
-    print(f"[CHRONOS_STATE_PRUNE] enabled={bool(enabled)}")
+    print(f"[KAIROS_STATE_PRUNE] enabled={bool(enabled)}")
     if not enabled:
         stats.state_prune_kept_states = _count_returned_states(gm)
         print(
-            f"[CHRONOS_STATE_PRUNE] removed_final_return_states=0 "
+            f"[KAIROS_STATE_PRUNE] removed_final_return_states=0 "
             f"kept_states={stats.state_prune_kept_states} reason_kept=disabled"
         )
         return False
@@ -615,14 +615,14 @@ def _prune_final_return_states(
     output = _output_node(gm)
     values = _output_values(gm)
     if output is None or len(values) <= 1:
-        print("[CHRONOS_STATE_PRUNE] removed_final_return_states=0 kept_states=0 reason_kept=no_tuple_outputs")
+        print("[KAIROS_STATE_PRUNE] removed_final_return_states=0 kept_states=0 reason_kept=no_tuple_outputs")
         return False
 
     returned_states = sum(1 for value in values[1:] if _is_state_output_node(value))
     if preserve_output_contract and returned_states:
         stats.state_prune_kept_states = returned_states
         print(
-            "[CHRONOS_STATE_PRUNE] removed_final_return_states=0 "
+            "[KAIROS_STATE_PRUNE] removed_final_return_states=0 "
             f"kept_states={returned_states} "
             "reason_kept=dynamo_state_output_contract"
         )
@@ -648,13 +648,13 @@ def _prune_final_return_states(
             if _is_state_output_node(value):
                 kept_states += 1
     if removed == 0:
-        print(f"[CHRONOS_STATE_PRUNE] removed_final_return_states=0 kept_states={kept_states} reason_kept=no_state_outputs")
+        print(f"[KAIROS_STATE_PRUNE] removed_final_return_states=0 kept_states={kept_states} reason_kept=no_state_outputs")
         return False
     output.args = (tuple(kept),)
     stats.state_prune_removed_final_return_states += removed
     stats.state_prune_kept_states = kept_states
     print(
-        f"[CHRONOS_STATE_PRUNE] removed_final_return_states={removed} "
+        f"[KAIROS_STATE_PRUNE] removed_final_return_states={removed} "
         f"kept_states={kept_states} reason_kept=final_output_or_non_state"
     )
     return True
@@ -709,7 +709,7 @@ def canonicalize_temporal_spatial_ir(
             if rewrite_temporal_mean:
                 changed |= _rewrite_temporal_sum_div_to_mean(gm, stats)
             else:
-                print("[CHRONOS_TEMPORAL_MEAN_REWRITE] enabled=False")
+                print("[KAIROS_TEMPORAL_MEAN_REWRITE] enabled=False")
             before = _count_all_nodes(gm)
             gm.graph.eliminate_dead_code()
             after = _count_all_nodes(gm)

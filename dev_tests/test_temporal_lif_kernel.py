@@ -103,7 +103,7 @@ def run_case(T: int, shape: Tuple[int, int, int, int], args) -> Dict:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Correctness test for standalone Chronos temporal LIF Triton kernel.")
+    parser = argparse.ArgumentParser(description="Correctness test for standalone Kairos temporal LIF Triton kernel.")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--dtype", choices=("fp32", "fp16"), default="fp32")
     parser.add_argument("--backend", choices=("torch", "triton"), default="triton")

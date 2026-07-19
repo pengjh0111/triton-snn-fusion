@@ -46,9 +46,9 @@ def _is_temporal_stack_output(node: torch.fx.Node) -> bool:
 
 
 def _is_batched_layout_projection(node: torch.fx.Node) -> bool:
-    if node.meta.get("chronos_temporal_layout") == "batched_tn":
+    if node.meta.get("kairos_temporal_layout") == "batched_tn":
         return True
-    return node.op == "call_method" and node.target == "flatten" and node.meta.get("chronos_temporal_layout") == "batched_tn"
+    return node.op == "call_method" and node.target == "flatten" and node.meta.get("kairos_temporal_layout") == "batched_tn"
 
 
 def _is_spatial_consumer(node: torch.fx.Node) -> bool:
@@ -88,9 +88,9 @@ def analyze_temporal_graph(gm: torch.fx.GraphModule) -> TemporalGraphValidationS
         text = _target_text(node)
         if _is_temporal_custom_node(node):
             stats.temporal_op_nodes += 1
-        if node.meta.get("chronos_temporal_layout") == "batched_tn":
+        if node.meta.get("kairos_temporal_layout") == "batched_tn":
             stats.temporal_batched_output_nodes += 1
-        if node.meta.get("chronos_temporal_layout") == "stack" or _is_temporal_stack_output(node):
+        if node.meta.get("kairos_temporal_layout") == "stack" or _is_temporal_stack_output(node):
             stats.temporal_stack_output_nodes += 1
         if _is_getitem(node):
             stats.getitem_count += 1

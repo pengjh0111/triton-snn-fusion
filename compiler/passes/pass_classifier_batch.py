@@ -15,7 +15,7 @@ Replacement:
     l_all = linear(m_all, W_cls, bias)                             # [T, ..., C]
     acc   = base + l_all.sum(dim=0)                                # base = acc_{-1} above
 
-Toggle: env var CHRONOS_PASS_CLASSIFIER_BATCH (default: on; set to
+Toggle: env var KAIROS_PASS_CLASSIFIER_BATCH (default: on; set to
 "0"/"false" to disable -- see compiler/passes/registry.py).
 
 Verification level: tolerance, not bit-exact. F.layer_norm normalizes over

@@ -1,10 +1,10 @@
 """Registration and toggling for the post-fuse optimization passes.
 
 Env var toggles (checked at call time, so tests can flip them per-case):
-    CHRONOS_PASS_SDPA=1               Pass A: attention -> SDPA
-    CHRONOS_PASS_STACK_CSE=1          Pass B: duplicate-input stack CSE
-    CHRONOS_PASS_VINIT_CLEANUP=1      Pass C: zeros_like(add) -> new_zeros(())
-    CHRONOS_PASS_CLASSIFIER_BATCH=1   Pass D: classifier head batching
+    KAIROS_PASS_SDPA=1               Pass A: attention -> SDPA
+    KAIROS_PASS_STACK_CSE=1          Pass B: duplicate-input stack CSE
+    KAIROS_PASS_VINIT_CLEANUP=1      Pass C: zeros_like(add) -> new_zeros(())
+    KAIROS_PASS_CLASSIFIER_BATCH=1   Pass D: classifier head batching
 
 All four default ON (unset env var == enabled). Set the var to "0"/"false"/
 "no"/"off" (case-insensitive) to explicitly disable one; any other value,
@@ -31,10 +31,10 @@ from compiler.passes.pass_v_init_cleanup import apply_v_init_cleanup_pass
 from compiler.passes.pass_classifier_batch import apply_classifier_batch_pass
 
 PASS_ENV_VARS = {
-    "sdpa": "CHRONOS_PASS_SDPA",
-    "stack_cse": "CHRONOS_PASS_STACK_CSE",
-    "v_init_cleanup": "CHRONOS_PASS_VINIT_CLEANUP",
-    "classifier_batch": "CHRONOS_PASS_CLASSIFIER_BATCH",
+    "sdpa": "KAIROS_PASS_SDPA",
+    "stack_cse": "KAIROS_PASS_STACK_CSE",
+    "v_init_cleanup": "KAIROS_PASS_VINIT_CLEANUP",
+    "classifier_batch": "KAIROS_PASS_CLASSIFIER_BATCH",
 }
 
 _TRUE_VALUES = {"1", "true", "yes", "on"}

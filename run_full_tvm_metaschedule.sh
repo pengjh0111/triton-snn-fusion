@@ -78,7 +78,7 @@ for MODEL in "${MODELS[@]}"; do
 
 python3 benchmarks/benchmark_tvm_metaschedule_runtime.py \
       --models ${MODEL} \
-      --lif-impl chronos \
+      --lif-impl kairos \
       --execution-modes single_step_mode \
       --precisions ${PREC} \
       --T 16 \

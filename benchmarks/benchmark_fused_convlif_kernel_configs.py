@@ -153,7 +153,7 @@ def print_table(rows: List[Dict]):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Benchmark Chronos fused ConvLIF Triton kernel configs.")
+    parser = argparse.ArgumentParser(description="Benchmark Kairos fused ConvLIF Triton kernel configs.")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--dtype", choices=("fp32", "fp16"), default="fp32")
     parser.add_argument("--warmup", type=int, default=10)

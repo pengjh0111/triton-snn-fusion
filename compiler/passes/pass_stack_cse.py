@@ -5,7 +5,7 @@ When the same (source node, list length, dim) triple shows up as more than
 one distinct stack node in the graph, only the first is kept and the rest
 are redirected to it.
 
-Toggle: env var CHRONOS_PASS_STACK_CSE (default: on; set to "0"/"false" to
+Toggle: env var KAIROS_PASS_STACK_CSE (default: on; set to "0"/"false" to
 disable -- see compiler/passes/registry.py).
 
 Verification level: bit-exact (this is a pure dedup of identical

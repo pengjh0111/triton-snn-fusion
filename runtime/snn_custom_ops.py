@@ -354,7 +354,7 @@ def _record_kernel_temporal_config(kind: str, kernel_key: str, config, compute_d
 
 
 def _strict_temporal_lif_triton_enabled() -> bool:
-    return bool(_CONFIG.strict_triton) or os.environ.get("CHRONOS_STRICT_TEMPORAL_LIF_TRITON", "0") == "1"
+    return bool(_CONFIG.strict_triton) or os.environ.get("KAIROS_STRICT_TEMPORAL_LIF_TRITON", "0") == "1"
 
 
 def _get_kernel_temporal_config(kernel_key: str, residual_add: bool = False):
@@ -1007,7 +1007,7 @@ def _batched_linear_lif_backend() -> str:
     # "tc" switches back to the older single-window TC kernel in
     # kernels/generated_temporal_transformer_lif_kernels.py for regression
     # comparison / fallback if the new kernel needs to be bypassed.
-    return os.environ.get("CHRONOS_BATCHED_LINEAR_LIF_BACKEND", "codegen")
+    return os.environ.get("KAIROS_BATCHED_LINEAR_LIF_BACKEND", "codegen")
 
 
 def _fused_temporal_batched_linear_lif_state_impl(

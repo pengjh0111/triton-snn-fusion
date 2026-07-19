@@ -202,7 +202,7 @@ DEFAULT_RG_K_MIN_K_TILES = 4
 
 
 def _rg_k_min_k_tiles() -> int:
-    raw = os.environ.get("CHRONOS_RG_K_MIN_K_TILES")
+    raw = os.environ.get("KAIROS_RG_K_MIN_K_TILES")
     if raw is None:
         return DEFAULT_RG_K_MIN_K_TILES
     try:
@@ -250,7 +250,7 @@ DEFAULT_MIN_CTA_SM_MULTIPLIER = 2.0
 
 
 def _min_cta_sm_multiplier() -> float:
-    raw = os.environ.get("CHRONOS_MIN_CTA_SM_MULTIPLIER")
+    raw = os.environ.get("KAIROS_MIN_CTA_SM_MULTIPLIER")
     if raw is None:
         return DEFAULT_MIN_CTA_SM_MULTIPLIER
     try:
@@ -290,7 +290,7 @@ def _config_matches_spatial(config, desired: Dict[str, int], keys: Tuple[str, ..
 
 
 def _pointwise_acc_elems_limit() -> int:
-    raw = os.environ.get("CHRONOS_POINTWISE_ACC_ELEMS_LIMIT")
+    raw = os.environ.get("KAIROS_POINTWISE_ACC_ELEMS_LIMIT")
     if raw is None:
         return DEFAULT_POINTWISE_ACC_ELEMS_LIMIT
     try:

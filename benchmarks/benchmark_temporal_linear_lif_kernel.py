@@ -208,7 +208,7 @@ def main():
     parser.add_argument("--disable-autotune", action="store_true")
     parser.add_argument("--fixed-config", action="store_true")
     parser.add_argument("--quick", action="store_true")
-    parser.add_argument("--out-dir", default="/tmp/chronos_temporal_linear_lif_benchmark")
+    parser.add_argument("--out-dir", default="/tmp/kairos_temporal_linear_lif_benchmark")
     args = parser.parse_args()
     dtype = resolve_dtype(args.dtype)
     cases = [(512, 512), (1024, 512), (4096, 4096), (4096, 1000), (25088, 4096)]

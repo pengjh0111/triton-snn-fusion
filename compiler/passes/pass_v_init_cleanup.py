@@ -12,7 +12,7 @@ Matched pattern:
 Replacement: zl_n -> spike_a_stack.new_zeros(()) (a scalar tensor). add_n and
 zl_n lose their only consumer and are removed by dead-code elimination.
 
-Toggle: env var CHRONOS_PASS_VINIT_CLEANUP (default: on; set to "0"/"false"
+Toggle: env var KAIROS_PASS_VINIT_CLEANUP (default: on; set to "0"/"false"
 to disable -- see compiler/passes/registry.py).
 
 Verification level: bit-exact. `fused_temporal_add_lif_state_torch` in

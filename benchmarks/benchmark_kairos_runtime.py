@@ -21,15 +21,15 @@ torch.set_float32_matmul_precision("high")
 
 import runtime.snn_custom_ops as snn_custom_ops
 from runtime.fx_standalone_executor import get_last_cudagraph_status as get_fx_standalone_cudagraph_status
-from compiler.chronos_compile import (
-    build_chronos_compile_config,
-    compile_with_chronos_options,
+from compiler.kairos_compile import (
+    build_kairos_compile_config,
+    compile_with_kairos_options,
     diff_compile_counters,
     snapshot_compile_counters,
     summarize_cudagraph_check,
 )
-from benchmarks.validate_chronos_baselines import (
-    CHRONOS_MODEL_CHOICES,
+from benchmarks.validate_kairos_baselines import (
+    KAIROS_MODEL_CHOICES,
     LIF_IMPL_CHOICES,
     MultiStepModeWrapper,
     SingleStepModeLoopWrapper,
@@ -79,7 +79,7 @@ def prepare_runnable(name, model, compile_mode, backend, device, args):
     reset_lif_modules(model)
 
     if compile_mode:
-        runnable = compile_with_chronos_options(
+        runnable = compile_with_kairos_options(
             model,
             backend=backend if backend is not None else "inductor",
             enable_cudagraphs=args.enable_cudagraphs,
@@ -206,14 +206,14 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     print(f"\n================ {model_name} ================")
 
     dtype = resolve_dtype(args.dtype)
-    _, baseline_compile_config = build_chronos_compile_config(
+    _, baseline_compile_config = build_kairos_compile_config(
         backend="inductor",
         enable_cudagraphs=args.enable_cudagraphs,
         cudagraph_mode=args.cudagraph_mode,
         fullgraph=False,
         dynamic=False,
     )
-    _, chronos_compile_config = build_chronos_compile_config(
+    _, kairos_compile_config = build_kairos_compile_config(
         backend=args.rewrite_backend_mode,
         enable_cudagraphs=args.enable_cudagraphs,
         cudagraph_mode=args.cudagraph_mode,
@@ -228,7 +228,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         f"float32_matmul_precision={torch.get_float32_matmul_precision()}"
     )
     print(f"[Compile Summary Config] baseline={baseline_compile_config}")
-    print(f"[Compile Summary Config] chronos={chronos_compile_config}")
+    print(f"[Compile Summary Config] kairos={kairos_compile_config}")
 
     torch.manual_seed(args.seed)
 
@@ -305,7 +305,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
     x = make_model_input(model_name, args, dtype)
 
-    # Dispatch by declared input convention (CHRONOS_MODEL_INPUT_MODE), not
+    # Dispatch by declared input convention (KAIROS_MODEL_INPUT_MODE), not
     # a model_name set -- every existing SNN model resolves to the original
     # replicate-same-input wrappers unchanged; convlstm/mamba/deepspeech2
     # resolve to the sequence-input wrappers.
@@ -330,7 +330,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     cases = {}
     execution_modes = {}
 
-    if args.include_s_cases and not args.chronos_only:
+    if args.include_s_cases and not args.kairos_only:
         cases["baseline_single_step_mode_eager"] = (
             single_step_wrapper_cls(copy.deepcopy(base_layer_s), args.T).to(
                 device=args.device,
@@ -351,7 +351,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         )
         execution_modes["baseline_single_step_mode_compile"] = "single_step_mode_loop"
 
-    if not args.chronos_only:
+    if not args.kairos_only:
         cases["baseline_multi_step_mode_eager"] = (
             multi_step_wrapper_cls(
                 copy.deepcopy(base_layer_m),
@@ -378,7 +378,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         )
         execution_modes["baseline_multi_step_mode_compile"] = "multi_step_mode_native"
 
-    chronos_rewrite_counters = {}
+    kairos_rewrite_counters = {}
     candidate_windows = []
 
     if not args.baseline_only:
@@ -401,13 +401,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
             rewrite_counters = RewriteCounters()
 
-            chronos_backend = make_rewrite_backend(
+            kairos_backend = make_rewrite_backend(
                 local_args,
-                out_dir / f"chronos_single_step_loop_compile_w{tw}",
+                out_dir / f"kairos_single_step_loop_compile_w{tw}",
                 rewrite_counters,
             )
 
-            case_name = f"chronos_single_step_loop_compile_w{tw}"
+            case_name = f"kairos_single_step_loop_compile_w{tw}"
 
             cases[case_name] = (
                 single_step_wrapper_cls(
@@ -418,11 +418,11 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
                     dtype=dtype,
                 ).eval(),
                 True,
-                chronos_backend,
+                kairos_backend,
             )
-            execution_modes[case_name] = "chronos_single_step_loop_temporal_fusion"
+            execution_modes[case_name] = "kairos_single_step_loop_temporal_fusion"
 
-            chronos_rewrite_counters[case_name] = rewrite_counters
+            kairos_rewrite_counters[case_name] = rewrite_counters
 
     results = {}
     summary_rows = []
@@ -434,8 +434,8 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         snn_custom_ops.reset_fused_op_call_stats()
         counter_before = snapshot_compile_counters()
         graph_count_before = None
-        if case_name in chronos_rewrite_counters:
-            graph_count_before = chronos_rewrite_counters[case_name].captured_graphs
+        if case_name in kairos_rewrite_counters:
+            graph_count_before = kairos_rewrite_counters[case_name].captured_graphs
 
         result = run_case(
             case_name,
@@ -453,13 +453,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         counter_after = snapshot_compile_counters()
         counter_diff = diff_compile_counters(counter_before, counter_after)
         graph_count = None
-        if case_name in chronos_rewrite_counters:
-            graph_count = chronos_rewrite_counters[case_name].captured_graphs - int(graph_count_before or 0)
+        if case_name in kairos_rewrite_counters:
+            graph_count = kairos_rewrite_counters[case_name].captured_graphs - int(graph_count_before or 0)
         else:
             graph_count = counter_diff.get("stats", {}).get("unique_graphs")
         status_compile_config = (
-            chronos_compile_config
-            if case_name in chronos_rewrite_counters
+            kairos_compile_config
+            if case_name in kairos_rewrite_counters
             else baseline_compile_config
         )
         cudagraph_status = summarize_cudagraph_check(
@@ -474,7 +474,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         cudagraph_status_by_case[case_name] = cudagraph_status
         fx_standalone_cudagraph_status_by_case[case_name] = (
             get_fx_standalone_cudagraph_status()
-            if args.rewrite_backend_mode == "standalone" and case_name in chronos_rewrite_counters
+            if args.rewrite_backend_mode == "standalone" and case_name in kairos_rewrite_counters
             else {}
         )
         fused_stats_by_case[case_name] = case_fused_stats
@@ -573,13 +573,13 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         "compile_mode": baseline_compile_config["compile_mode"],
         "compile_options": baseline_compile_config["compile_options"],
         "baseline_compile_config": baseline_compile_config,
-        "chronos_compile_config": chronos_compile_config,
+        "kairos_compile_config": kairos_compile_config,
         "candidate_windows": candidate_windows,
         "execution_mode": execution_modes,
         "results": results,
-        "chronos_rewrite_counters": {
+        "kairos_rewrite_counters": {
             k: asdict(v)
-            for k, v in chronos_rewrite_counters.items()
+            for k, v in kairos_rewrite_counters.items()
         },
         "best_case": best_case,
         "fused_op_call_stats_last_case": fused_stats,
@@ -602,14 +602,14 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Chronos runtime benchmark with temporal autotune."
+        description="Kairos runtime benchmark with temporal autotune."
     )
 
     parser.add_argument(
         "--models",
         nargs="+",
         default=["resnet18"],
-        choices=CHRONOS_MODEL_CHOICES,
+        choices=KAIROS_MODEL_CHOICES,
     )
 
     parser.add_argument(
@@ -647,7 +647,7 @@ def parse_args():
     parser.add_argument(
         "--lif-impl",
         choices=LIF_IMPL_CHOICES,
-        default="chronos",
+        default="kairos",
         help="LIF implementation used when constructing benchmark models.",
     )
 
@@ -774,19 +774,19 @@ def parse_args():
     parser.add_argument("--include-s-cases", action="store_true")
 
     parser.add_argument(
-        "--chronos-only",
+        "--kairos-only",
         action="store_true",
-        help="Run only Chronos temporal-fusion cases and skip all baseline cases.",
+        help="Run only Kairos temporal-fusion cases and skip all baseline cases.",
     )
     parser.add_argument(
         "--baseline-only",
         action="store_true",
-        help="Run only baseline cases and skip Chronos temporal-fusion cases.",
+        help="Run only baseline cases and skip Kairos temporal-fusion cases.",
     )
 
     parser.add_argument("--require-direct-resnet32-api", action="store_true")
 
-    parser.add_argument("--out-dir", default="chronos_benchmark")
+    parser.add_argument("--out-dir", default="kairos_benchmark")
 
     parser.add_argument("--seed", type=int, default=2026)
 
@@ -799,8 +799,8 @@ def parse_args():
 
 def main():
     args = parse_args()
-    if args.chronos_only and args.baseline_only:
-        raise ValueError("--chronos-only and --baseline-only are mutually exclusive")
+    if args.kairos_only and args.baseline_only:
+        raise ValueError("--kairos-only and --baseline-only are mutually exclusive")
     if args.rewrite_backend_mode == "standalone" and args.fx_standalone_cudagraph and args.enable_cudagraphs:
         print(
             "[FX_STANDALONE] warning: disabling outer --enable-cudagraphs because "

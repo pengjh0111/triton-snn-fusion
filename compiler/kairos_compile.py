@@ -99,12 +99,12 @@ def summarize_cudagraph_check(
         "compile_stats": stats,
     }
     if print_log:
-        print(f"[CHRONOS_CUDAGRAPH_CHECK] model={model} case={case}")
-        print(f"[CHRONOS_CUDAGRAPH_CHECK] compile_backend={status['compile_backend']}")
-        print(f"[CHRONOS_CUDAGRAPH_CHECK] cudagraph_expected={status['cudagraph_expected']}")
-        print(f"[CHRONOS_CUDAGRAPH_CHECK] cudagraph_enabled={status['cudagraph_enabled']}")
-        print(f"[CHRONOS_CUDAGRAPH_CHECK] fallback_taken={status['fallback_taken']}")
-        print(f"[CHRONOS_CUDAGRAPH_CHECK] fallback_reason={status['fallback_reason'] or 'none'}")
+        print(f"[KAIROS_CUDAGRAPH_CHECK] model={model} case={case}")
+        print(f"[KAIROS_CUDAGRAPH_CHECK] compile_backend={status['compile_backend']}")
+        print(f"[KAIROS_CUDAGRAPH_CHECK] cudagraph_expected={status['cudagraph_expected']}")
+        print(f"[KAIROS_CUDAGRAPH_CHECK] cudagraph_enabled={status['cudagraph_enabled']}")
+        print(f"[KAIROS_CUDAGRAPH_CHECK] fallback_taken={status['fallback_taken']}")
+        print(f"[KAIROS_CUDAGRAPH_CHECK] fallback_reason={status['fallback_reason'] or 'none'}")
         print(
             f"[GRAPH_STATUS] model={model} case={case} full_graph={status['full_graph']} "
             f"cudagraph={status['cudagraph_enabled']} fallback={status['fallback_taken']} "
@@ -113,7 +113,7 @@ def summarize_cudagraph_check(
     return status
 
 
-def build_chronos_compile_config(
+def build_kairos_compile_config(
     *,
     backend: Any = "inductor",
     enable_cudagraphs: bool = False,
@@ -157,7 +157,7 @@ def build_chronos_compile_config(
     return kwargs, config
 
 
-def compile_with_chronos_options(
+def compile_with_kairos_options(
     model_or_fn,
     *,
     backend: Any = "inductor",
@@ -166,7 +166,7 @@ def compile_with_chronos_options(
     fullgraph: bool = False,
     dynamic: bool = False,
 ):
-    kwargs, config = build_chronos_compile_config(
+    kwargs, config = build_kairos_compile_config(
         backend=backend,
         enable_cudagraphs=enable_cudagraphs,
         cudagraph_mode=cudagraph_mode,

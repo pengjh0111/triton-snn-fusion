@@ -1,4 +1,4 @@
-"""Experimental FX-native executor for Chronos-rewritten GraphModules.
+"""Experimental FX-native executor for Kairos-rewritten GraphModules.
 
 This module intentionally stays below the existing Inductor path: it executes
 the final FX graph directly, optionally with producer-event multi-stream
@@ -172,7 +172,7 @@ def _target_short(target: Any, limit: int = 72) -> str:
     return text[: limit - 3] + "..."
 
 
-def _is_chronos_fused_temporal_op(node: torch.fx.Node) -> bool:
+def _is_kairos_fused_temporal_op(node: torch.fx.Node) -> bool:
     if node.op != "call_function":
         return False
     text = _target_text(node.target)
@@ -182,7 +182,7 @@ def _is_chronos_fused_temporal_op(node: torch.fx.Node) -> bool:
     )
 
 
-def _is_chronos_fused_temporal_conv_state_target(target: Any) -> bool:
+def _is_kairos_fused_temporal_conv_state_target(target: Any) -> bool:
     text = _target_text(target)
     return (
         "snn_custom.fused_temporal_conv_lif_state" in text
@@ -191,8 +191,8 @@ def _is_chronos_fused_temporal_conv_state_target(target: Any) -> bool:
     ) and "packed_out" not in text and "conv_add" not in text
 
 
-def _is_chronos_fused_temporal_conv_state_node(node: torch.fx.Node) -> bool:
-    return node.op == "call_function" and _is_chronos_fused_temporal_conv_state_target(node.target)
+def _is_kairos_fused_temporal_conv_state_node(node: torch.fx.Node) -> bool:
+    return node.op == "call_function" and _is_kairos_fused_temporal_conv_state_target(node.target)
 
 
 def _is_metadata_inline_node(node: torch.fx.Node) -> bool:
@@ -231,7 +231,7 @@ def _classify_exec_node(node: torch.fx.Node) -> str:
         return _METADATA_INLINE
     if _is_allocation_like_node(node):
         return _MAIN_STREAM_COMPUTE
-    if _is_chronos_fused_temporal_op(node):
+    if _is_kairos_fused_temporal_op(node):
         return _SIDE_STREAM_COMPUTE
     if node.op in ("call_function", "call_method", "call_module"):
         return _SIDE_STREAM_COMPUTE
@@ -252,7 +252,7 @@ def _is_prunable_v_final_output_value(value: Any, output_node: torch.fx.Node) ->
     if _getitem_index(value) != 1 or not value.args or not isinstance(value.args[0], torch.fx.Node):
         return False
     producer = value.args[0]
-    if not _is_chronos_fused_temporal_op(producer):
+    if not _is_kairos_fused_temporal_op(producer):
         return False
     real_users = [user for user in value.users if user is not output_node]
     return len(real_users) == 0
@@ -337,7 +337,7 @@ class TensorBufferPool:
         self.peak_live = 0
 
 
-class ChronosFXStandaloneExecutor:
+class KairosFXStandaloneExecutor:
     def __init__(
         self,
         gm: torch.fx.GraphModule,
@@ -449,7 +449,7 @@ class ChronosFXStandaloneExecutor:
         if _getitem_index(value) != 1 or not value.args or not isinstance(value.args[0], torch.fx.Node):
             return False
         producer = value.args[0]
-        if not _is_chronos_fused_temporal_op(producer):
+        if not _is_kairos_fused_temporal_op(producer):
             return False
         real_users = [user for user in value.users if user is not self.output_node]
         return len(real_users) == 0
@@ -773,7 +773,7 @@ class ChronosFXStandaloneExecutor:
             print(f"[FX_COMPUTE_LEVEL] level={level} width={len(groups[level])} nodes={entries}")
         fused_index = 0
         for node in self.compute_nodes:
-            if not _is_chronos_fused_temporal_op(node):
+            if not _is_kairos_fused_temporal_op(node):
                 continue
             input_arg = node.args[0] if node.args else None
             if isinstance(input_arg, (tuple, list)):
@@ -795,16 +795,16 @@ class ChronosFXStandaloneExecutor:
             producer_fused_deps = ",".join(
                 dep.name
                 for dep in self.producer_compute_deps.get(node, ())
-                if _is_chronos_fused_temporal_op(dep)
+                if _is_kairos_fused_temporal_op(dep)
             )
             print(
-                f"[CHRONOS_FUSED_NODE] idx={fused_index} name={node.name} "
+                f"[KAIROS_FUSED_NODE] idx={fused_index} name={node.name} "
                 f"target={_target_short(node.target)} input_list_len={input_list_len} "
                 f"input_shapes={'|'.join(shape_texts)} output_users={output_users} "
                 f"producer_fused_deps={producer_fused_deps}"
             )
             fused_index += 1
-        self._print_chronos_window_diagnostics()
+        self._print_kairos_window_diagnostics()
 
     def _producer_fused_deps(self, node: torch.fx.Node) -> Set[torch.fx.Node]:
         fused_deps: Set[torch.fx.Node] = set()
@@ -815,7 +815,7 @@ class ChronosFXStandaloneExecutor:
             if dep in visited:
                 continue
             visited.add(dep)
-            if _is_chronos_fused_temporal_op(dep):
+            if _is_kairos_fused_temporal_op(dep):
                 fused_deps.add(dep)
                 continue
             stack.extend(self.producer_compute_deps.get(dep, ()))
@@ -837,7 +837,7 @@ class ChronosFXStandaloneExecutor:
         return levels, groups
 
     def _max_fused_ready_width(self) -> int:
-        fused_nodes = [node for node in self.compute_nodes if _is_chronos_fused_temporal_op(node)]
+        fused_nodes = [node for node in self.compute_nodes if _is_kairos_fused_temporal_op(node)]
         if not fused_nodes:
             return 1
         fused_deps = {node: self._producer_fused_deps(node) for node in fused_nodes}
@@ -846,7 +846,7 @@ class ChronosFXStandaloneExecutor:
             return 1
         return max(len(nodes) for nodes in groups.values())
 
-    def _chronos_input_list_len(self, node: torch.fx.Node) -> Any:
+    def _kairos_input_list_len(self, node: torch.fx.Node) -> Any:
         input_arg = node.args[0] if node.args else None
         if isinstance(input_arg, (tuple, list)):
             return len(input_arg)
@@ -857,19 +857,19 @@ class ChronosFXStandaloneExecutor:
             return "packed"
         return "unknown"
 
-    def _print_chronos_window_diagnostics(self) -> None:
-        fused_nodes = [node for node in self.compute_nodes if _is_chronos_fused_temporal_op(node)]
+    def _print_kairos_window_diagnostics(self) -> None:
+        fused_nodes = [node for node in self.compute_nodes if _is_kairos_fused_temporal_op(node)]
         fused_deps = {node: self._producer_fused_deps(node) for node in fused_nodes}
         fused_levels, fused_groups = self._compute_fused_levels(fused_nodes, fused_deps)
         widths = [len(fused_groups[level]) for level in sorted(fused_groups)]
         max_width = max(widths) if widths else 0
         avg_width = (sum(widths) / len(widths)) if widths else 0.0
         critical_path_len = (max(fused_levels.values()) + 1) if fused_levels else 0
-        layer_ids = {node.meta.get("chronos_layer_id", "unknown") for node in fused_nodes}
-        window_ids = {node.meta.get("chronos_window_id", "unknown") for node in fused_nodes}
+        layer_ids = {node.meta.get("kairos_layer_id", "unknown") for node in fused_nodes}
+        window_ids = {node.meta.get("kairos_window_id", "unknown") for node in fused_nodes}
         edge_count = sum(len(deps) for deps in fused_deps.values())
         print(
-            f"[CHRONOS_WINDOW_DAG_SUMMARY] fused_nodes={len(fused_nodes)} "
+            f"[KAIROS_WINDOW_DAG_SUMMARY] fused_nodes={len(fused_nodes)} "
             f"num_layers={len(layer_ids)} num_windows={len(window_ids)} "
             f"fused_edges={edge_count} max_fused_ready_width={max_width} "
             f"avg_fused_ready_width={avg_width:.2f} fused_critical_path_len={critical_path_len}"
@@ -877,25 +877,25 @@ class ChronosFXStandaloneExecutor:
         for level in sorted(fused_groups):
             entries = ", ".join(
                 "("
-                f"{node.meta.get('chronos_layer_id', 'unknown')},"
-                f"{node.meta.get('chronos_window_id', 'unknown')},"
-                f"{node.meta.get('chronos_op_kind', 'unknown')},"
+                f"{node.meta.get('kairos_layer_id', 'unknown')},"
+                f"{node.meta.get('kairos_window_id', 'unknown')},"
+                f"{node.meta.get('kairos_op_kind', 'unknown')},"
                 f"{node.name}"
                 ")"
                 for node in fused_groups[level]
             )
-            print(f"[CHRONOS_FUSED_LEVEL] level={level} width={len(fused_groups[level])} nodes={entries}")
+            print(f"[KAIROS_FUSED_LEVEL] level={level} width={len(fused_groups[level])} nodes={entries}")
         for node in fused_nodes:
             stream_idx = self.node_to_stream.get(node)
             stream_text = "main" if stream_idx is None else str(stream_idx)
             producer_fused_deps = ",".join(dep.name for dep in sorted(fused_deps[node], key=lambda n: self.nodes.index(n)))
             print(
-                f"[CHRONOS_WINDOW_NODE] name={node.name} "
-                f"kind={node.meta.get('chronos_op_kind', 'unknown')} "
-                f"layer_id={node.meta.get('chronos_layer_id', 'unknown')} "
-                f"window_id={node.meta.get('chronos_window_id', 'unknown')} "
-                f"time_range={node.meta.get('chronos_time_range', 'unknown')} "
-                f"input_list_len={self._chronos_input_list_len(node)} "
+                f"[KAIROS_WINDOW_NODE] name={node.name} "
+                f"kind={node.meta.get('kairos_op_kind', 'unknown')} "
+                f"layer_id={node.meta.get('kairos_layer_id', 'unknown')} "
+                f"window_id={node.meta.get('kairos_window_id', 'unknown')} "
+                f"time_range={node.meta.get('kairos_time_range', 'unknown')} "
+                f"input_list_len={self._kairos_input_list_len(node)} "
                 f"compute_level={fused_levels.get(node, 'unknown')} "
                 f"stream={stream_text} "
                 f"producer_fused_deps={producer_fused_deps}"
@@ -943,7 +943,7 @@ class ChronosFXStandaloneExecutor:
         args: tuple,
         kwargs: dict,
     ) -> Optional[Any]:
-        if not self._conv_out_available or kwargs or not _is_chronos_fused_temporal_conv_state_node(node):
+        if not self._conv_out_available or kwargs or not _is_kairos_fused_temporal_conv_state_node(node):
             return None
         if len(args) != 12:
             return None
@@ -1386,7 +1386,7 @@ def build_fx_standalone_backend(
     debug: bool = False,
     schedule_policy: str = "topo",
 ):
-    executor = ChronosFXStandaloneExecutor(
+    executor = KairosFXStandaloneExecutor(
         gm,
         num_streams=num_streams,
         use_cuda_graph=use_cuda_graph,

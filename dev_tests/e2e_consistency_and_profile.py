@@ -1,5 +1,5 @@
 """Task 2.2/2.3: end-to-end numerical consistency (codegen vs tc backend) and
-torch.profiler-based operator-share attribution for ChronosSpikeTransformer,
+torch.profiler-based operator-share attribution for KairosSpikeTransformer,
 run eagerly (no torch.compile) so profiler traces stay simple to interpret.
 """
 import os
@@ -14,7 +14,7 @@ import torch
 from spikingjelly.activation_based import functional
 
 import runtime.snn_custom_ops as snn_custom_ops
-from benchmarks.validate_chronos_baselines import ChronosSpikeTransformer, make_model_input
+from benchmarks.validate_kairos_baselines import KairosSpikeTransformer, make_model_input
 
 
 class Args:
@@ -26,9 +26,9 @@ class Args:
 
 def build_model(dtype):
     torch.manual_seed(2026)
-    model = ChronosSpikeTransformer(
+    model = KairosSpikeTransformer(
         input_dim=768, dim=256, depth=8, heads=8, num_classes=100,
-        lif_impl="chronos", step_mode="m",
+        lif_impl="kairos", step_mode="m",
     ).to(device="cuda", dtype=dtype).eval()
     return model
 
@@ -51,10 +51,10 @@ def main():
     print("=== Task 2.2: numerical consistency (codegen vs tc backend) ===")
     snn_custom_ops.configure_fused_op("triton", strict_triton=True, verbose=False)
 
-    os.environ["CHRONOS_BATCHED_LINEAR_LIF_BACKEND"] = "codegen"
+    os.environ["KAIROS_BATCHED_LINEAR_LIF_BACKEND"] = "codegen"
     out_codegen = run_multistep(model, x_seq)
 
-    os.environ["CHRONOS_BATCHED_LINEAR_LIF_BACKEND"] = "tc"
+    os.environ["KAIROS_BATCHED_LINEAR_LIF_BACKEND"] = "tc"
     out_tc = run_multistep(model, x_seq)
 
     max_abs_diff = (out_codegen.float() - out_tc.float()).abs().max().item()
@@ -63,7 +63,7 @@ def main():
     print(f"logits shape={tuple(out_codegen.shape)} max_abs_diff={max_abs_diff:.4e} mean_abs_diff={mean_abs_diff:.4e} allclose(atol=2e-2)={allclose}")
 
     print("\n=== Task 2.3: op-share profiling (codegen backend) ===")
-    os.environ["CHRONOS_BATCHED_LINEAR_LIF_BACKEND"] = "codegen"
+    os.environ["KAIROS_BATCHED_LINEAR_LIF_BACKEND"] = "codegen"
     functional.reset_net(model)
     # warmup (also completes autotune search so profiler doesn't capture compile time)
     for _ in range(5):

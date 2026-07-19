@@ -16,8 +16,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from benchmarks.validate_chronos_baselines import (
-    CHRONOS_MODEL_CHOICES,
+from benchmarks.validate_kairos_baselines import (
+    KAIROS_MODEL_CHOICES,
     LIF_IMPL_CHOICES,
     SingleStepModeLoopWrapper,
     SequenceInputLoopWrapper,
@@ -43,7 +43,7 @@ def resolve_dtype(dtype: str):
 
 
 class ExportableStatefulIFNode(CustomStatefulIFNode):
-    """ONNX/TensorRT export-only decomposition of Chronos stateful LIF."""
+    """ONNX/TensorRT export-only decomposition of Kairos stateful LIF."""
 
     def forward(self, x):
         self.reset_state_if_needed(x)
@@ -138,10 +138,10 @@ def export_onnx(
         "precision": precision,
         "model_channels": model_channels,
         "lif_impl": lif_impl,
-        "custom_lif": lif_impl == "chronos",
+        "custom_lif": lif_impl == "kairos",
         "wrapper": "SingleStepModeLoopWrapper",
         "graph_contains_custom_lif": False,
-        "export_rewrite_custom_lif": lif_impl == "chronos",
+        "export_rewrite_custom_lif": lif_impl == "kairos",
         "export_custom_lif_replaced": 0,
         "export_graph_contains_custom_op": None,
         "error": "",
@@ -423,7 +423,7 @@ def main():
         "--models",
         nargs="+",
         default=["resnet18"],
-        choices=CHRONOS_MODEL_CHOICES,
+        choices=KAIROS_MODEL_CHOICES,
     )
 
     parser.add_argument(
@@ -471,7 +471,7 @@ def main():
     parser.add_argument(
         "--lif-impl",
         choices=LIF_IMPL_CHOICES,
-        default="chronos",
+        default="kairos",
         help="LIF implementation used when constructing benchmark models.",
     )
 

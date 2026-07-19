@@ -69,7 +69,7 @@ def run_case(
 
     ref_spike, ref_v = reference(x_seq, weight, bias, v_init, tau, detach_reset, residual_seq=residual_seq)
 
-    os.environ["CHRONOS_BATCHED_LINEAR_LIF_BACKEND"] = backend
+    os.environ["KAIROS_BATCHED_LINEAR_LIF_BACKEND"] = backend
     snn_custom_ops.reset_fused_op_call_stats()
     snn_custom_ops.configure_fused_op("triton", strict_triton=True, verbose=False)
     try:
@@ -82,7 +82,7 @@ def run_case(
                 x_seq, weight, bias, v_init, 1.0, 0.0, tau, detach_reset,
             )
     finally:
-        os.environ.pop("CHRONOS_BATCHED_LINEAR_LIF_BACKEND", None)
+        os.environ.pop("KAIROS_BATCHED_LINEAR_LIF_BACKEND", None)
 
     atol = 2e-2 if dtype == torch.float16 else 2e-3
     rtol = 2e-2 if dtype == torch.float16 else 2e-3

@@ -22,7 +22,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import runtime.snn_custom_ops as snn_custom_ops
-from benchmarks.validate_chronos_baselines import ChronosMamba, SequenceInputLoopWrapper
+from benchmarks.validate_kairos_baselines import KairosMamba, SequenceInputLoopWrapper
 from compiler.fx_lif_temporal_rewrite import (
     _match_mamba_scan_step,
     _param_like_name,
@@ -44,7 +44,7 @@ def _layer_index(layer_key: str) -> int:
 
 def _build_model(n_layer: int = 2):
     torch.manual_seed(0)
-    model = ChronosMamba(
+    model = KairosMamba(
         d_model=16, n_layer=n_layer, d_inner=32, d_state=8, d_conv=4, dt_rank=4, num_classes=5,
     ).to(DEVICE).eval()
     return model
@@ -78,7 +78,7 @@ def run_case(T: int, window: int, batch_size: int = 3) -> Dict:
             if match is None:
                 continue
             layer_key = _param_like_name(match["A"])
-            timestep = node.meta.get("chronos_timestep")
+            timestep = node.meta.get("kairos_timestep")
             if layer_key is not None and isinstance(timestep, int):
                 pre_rewrite_matches.append((layer_key, timestep, order[node]))
         captured["pre_rewrite_matches"] = pre_rewrite_matches

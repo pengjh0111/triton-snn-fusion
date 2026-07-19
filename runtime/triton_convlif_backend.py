@@ -304,7 +304,7 @@ def _debug_dispatch(verbose: bool, op_name: str, backend: str, xs_or_seq, weight
         x_shape = None
     w_shape = tuple(weight.shape) if isinstance(weight, torch.Tensor) else None
     print(
-        f"[CHRONOS_DISPATCH] op={op_name} backend={backend} "
+        f"[KAIROS_DISPATCH] op={op_name} backend={backend} "
         f"x_shape={x_shape} w_shape={w_shape} stride={tuple(_as_pair(stride))} "
         f"padding={tuple(_as_pair(padding))} groups={int(groups)}"
     )

@@ -29,9 +29,9 @@ from runtime.fx_standalone_executor import (
     get_last_cudagraph_status as get_fx_standalone_cudagraph_status,
     prune_graph_output_v_final_states,
 )
-from compiler.chronos_compile import (
-    build_chronos_compile_config,
-    compile_with_chronos_options,
+from compiler.kairos_compile import (
+    build_kairos_compile_config,
+    compile_with_kairos_options,
     diff_compile_counters,
     snapshot_compile_counters,
     summarize_cudagraph_check,
@@ -94,7 +94,7 @@ from compiler.fx_temporal_spatial_canonicalize import canonicalize_temporal_spat
 from benchmarks.helpers.models_for_fx import CustomStatefulIFNode, reset_custom_stateful_lif_modules
 
 
-LIF_IMPL_CHOICES = ("chronos", "spikingjelly")
+LIF_IMPL_CHOICES = ("kairos", "spikingjelly")
 
 
 @dataclass
@@ -330,7 +330,7 @@ class SequenceInputMultiStepWrapper(SequenceInputLoopWrapper):
     """
 
 
-CHRONOS_MODEL_CHOICES = [
+KAIROS_MODEL_CHOICES = [
     "resnet18",
     "resnet34",
     "resnet32",
@@ -357,7 +357,7 @@ CHRONOS_MODEL_CHOICES = [
 # different data per timestep (SequenceInputLoopWrapper /
 # SequenceInputMultiStepWrapper). Every existing model defaults to
 # static_replicate; only the three new workloads use sequence.
-CHRONOS_MODEL_INPUT_MODE: Dict[str, str] = {
+KAIROS_MODEL_INPUT_MODE: Dict[str, str] = {
     "convlstm": "sequence",
     "mamba": "sequence",
     "deepspeech2": "sequence",
@@ -365,19 +365,19 @@ CHRONOS_MODEL_INPUT_MODE: Dict[str, str] = {
 
 
 def model_input_mode(model_name: str) -> str:
-    return CHRONOS_MODEL_INPUT_MODE.get(model_name, "static_replicate")
+    return KAIROS_MODEL_INPUT_MODE.get(model_name, "static_replicate")
 
 
 def _lif_node_class(lif_impl: str):
-    if lif_impl == "chronos":
+    if lif_impl == "kairos":
         return CustomStatefulIFNode
     if lif_impl == "spikingjelly":
         return neuron.LIFNode
     raise ValueError(f"unsupported lif_impl={lif_impl}, expected one of {LIF_IMPL_CHOICES}")
 
 
-def _make_lif_node(lif_impl: str = "chronos") -> nn.Module:
-    if lif_impl == "chronos":
+def _make_lif_node(lif_impl: str = "kairos") -> nn.Module:
+    if lif_impl == "kairos":
         return CustomStatefulIFNode(
             v_threshold=1.0,
             v_reset=0.0,
@@ -402,7 +402,7 @@ def reset_lif_modules(model: nn.Module):
         pass
 
 
-class ChronosAlexZFNet(nn.Module):
+class KairosAlexZFNet(nn.Module):
     def __init__(
         self,
         *,
@@ -411,7 +411,7 @@ class ChronosAlexZFNet(nn.Module):
         num_classes: int = 10,
         input_channels: int = 3,
         step_mode: str = "s",
-        lif_impl: str = "chronos",
+        lif_impl: str = "kairos",
     ):
         super().__init__()
         self.kind = kind
@@ -487,15 +487,15 @@ class ChronosAlexZFNet(nn.Module):
         return self._forward_single(x)
 
 
-def _chronos_if_node() -> CustomStatefulIFNode:
-    return _make_lif_node("chronos")
+def _kairos_if_node() -> CustomStatefulIFNode:
+    return _make_lif_node("kairos")
 
 
 def _scaled_channels(base_channels: int, channels: int) -> int:
     return max(1, int(base_channels * channels / 32))
 
 
-class ChronosMobileNetV1(nn.Module):
+class KairosMobileNetV1(nn.Module):
     def __init__(
         self,
         *,
@@ -503,7 +503,7 @@ class ChronosMobileNetV1(nn.Module):
         num_classes: int = 10,
         input_channels: int = 3,
         step_mode: str = "s",
-        lif_impl: str = "chronos",
+        lif_impl: str = "kairos",
     ):
         super().__init__()
         self.step_mode = step_mode
@@ -568,8 +568,8 @@ class ChronosMobileNetV1(nn.Module):
         return self.layer(x)
 
 
-class ChronosSpikingInvertedResidual(nn.Module):
-    def __init__(self, in_ch: int, out_ch: int, stride: int, expand_ratio: int, step_mode: str = "s", lif_impl: str = "chronos"):
+class KairosSpikingInvertedResidual(nn.Module):
+    def __init__(self, in_ch: int, out_ch: int, stride: int, expand_ratio: int, step_mode: str = "s", lif_impl: str = "kairos"):
         super().__init__()
         if stride not in (1, 2):
             raise ValueError(f"unsupported MobileNetV2 stride: {stride}")
@@ -612,7 +612,7 @@ class ChronosSpikingInvertedResidual(nn.Module):
         return out
 
 
-class ChronosMobileNetV2(nn.Module):
+class KairosMobileNetV2(nn.Module):
     def __init__(
         self,
         *,
@@ -620,7 +620,7 @@ class ChronosMobileNetV2(nn.Module):
         num_classes: int = 10,
         input_channels: int = 3,
         step_mode: str = "s",
-        lif_impl: str = "chronos",
+        lif_impl: str = "kairos",
     ):
         super().__init__()
         self.step_mode = step_mode
@@ -655,7 +655,7 @@ class ChronosMobileNetV2(nn.Module):
             for idx in range(repeats):
                 stride = first_stride if idx == 0 else 1
                 modules.append(
-                    ChronosSpikingInvertedResidual(
+                    KairosSpikingInvertedResidual(
                         in_ch,
                         out_ch,
                         stride,
@@ -685,7 +685,7 @@ class ChronosMobileNetV2(nn.Module):
         return self.layer(x)
 
 
-class ChronosConvLSTMCellEager(nn.Module):
+class KairosConvLSTMCellEager(nn.Module):
     """Single-step ConvLSTM cell body (Shi et al. 2015, no peephole)."""
 
     def __init__(self, in_ch: int, hidden_ch: int):
@@ -703,7 +703,7 @@ class ChronosConvLSTMCellEager(nn.Module):
         return h_t, c_t
 
 
-class ChronosConvLSTM(nn.Module):
+class KairosConvLSTM(nn.Module):
     """Step-form model (sequence-input analogue of the SNN step_mode="s"
     convention above): step() processes one timestep given explicit state
     and returns (output, *new_state); the T-loop lives in
@@ -731,7 +731,7 @@ class ChronosConvLSTM(nn.Module):
         self.height = height
         self.width = width
         self.cells = nn.ModuleList(
-            ChronosConvLSTMCellEager(in_channels if i == 0 else hidden_channels, hidden_channels)
+            KairosConvLSTMCellEager(in_channels if i == 0 else hidden_channels, hidden_channels)
             for i in range(num_layers)
         )
         self.head = nn.Conv2d(hidden_channels, num_classes, kernel_size=1, bias=True)
@@ -756,14 +756,14 @@ class ChronosConvLSTM(nn.Module):
         return (y_t, *new_state)
 
 
-class ChronosSpikeTransformerBlock(nn.Module):
+class KairosSpikeTransformerBlock(nn.Module):
     def __init__(
         self,
         *,
         dim: int,
         heads: int,
         mlp_ratio: int = 4,
-        lif_impl: str = "chronos",
+        lif_impl: str = "kairos",
     ):
         super().__init__()
         if dim % heads != 0:
@@ -812,11 +812,11 @@ class ChronosSpikeTransformerBlock(nn.Module):
         return x
 
 
-class ChronosMambaBlockEager(nn.Module):
+class KairosMambaBlockEager(nn.Module):
     """Single-step minimal Mamba block (selective SSM), random init, no
     pretrained weights -- pure performance test. State (conv_state,
-    ssm_state) is threaded explicitly by the outer T-loop in ChronosMamba,
-    matching ChronosConvLSTMCellEager's convention above.
+    ssm_state) is threaded explicitly by the outer T-loop in KairosMamba,
+    matching KairosConvLSTMCellEager's convention above.
 
     conv_state is carried as the full d_conv-wide FIFO window (matching the
     "# FIFO [B,1536,4]" comment in the canonical spec literally): each step
@@ -864,7 +864,7 @@ class ChronosMambaBlockEager(nn.Module):
         return out, conv_state, ssm_state
 
 
-class ChronosMamba(nn.Module):
+class KairosMamba(nn.Module):
     def __init__(
         self,
         *,
@@ -883,7 +883,7 @@ class ChronosMamba(nn.Module):
         self.d_conv = d_conv
         self.n_layer = n_layer
         self.blocks = nn.ModuleList(
-            ChronosMambaBlockEager(d_model, d_inner, d_state, d_conv, dt_rank) for _ in range(n_layer)
+            KairosMambaBlockEager(d_model, d_inner, d_state, d_conv, dt_rank) for _ in range(n_layer)
         )
         self.norms = nn.ModuleList(nn.LayerNorm(d_model) for _ in range(n_layer))
         self.final_norm = nn.LayerNorm(d_model)
@@ -913,7 +913,7 @@ class ChronosMamba(nn.Module):
         return (y_t, *new_state)
 
 
-class ChronosSpikeTransformer(nn.Module):
+class KairosSpikeTransformer(nn.Module):
     def __init__(
         self,
         *,
@@ -922,7 +922,7 @@ class ChronosSpikeTransformer(nn.Module):
         depth: int = 8,
         heads: int = 8,
         num_classes: int = 100,
-        lif_impl: str = "chronos",
+        lif_impl: str = "kairos",
         step_mode: str = "s",
     ):
         super().__init__()
@@ -931,7 +931,7 @@ class ChronosSpikeTransformer(nn.Module):
         self.input_if = _make_lif_node(lif_impl)
         self.blocks = nn.ModuleList(
             [
-                ChronosSpikeTransformerBlock(dim=int(dim), heads=int(heads), lif_impl=lif_impl)
+                KairosSpikeTransformerBlock(dim=int(dim), heads=int(heads), lif_impl=lif_impl)
                 for _ in range(int(depth))
             ]
         )
@@ -952,10 +952,10 @@ class ChronosSpikeTransformer(nn.Module):
         return self._forward_impl(x)
 
 
-class ChronosGRUCellEager(nn.Module):
+class KairosGRUCellEager(nn.Module):
     """Single-step GRUCell body, PyTorch GRUCell gate order [r|z|n]. State
-    (h) threaded explicitly by the outer T-loop in ChronosDeepSpeech2,
-    matching ChronosConvLSTMCellEager / ChronosMambaBlockEager above.
+    (h) threaded explicitly by the outer T-loop in KairosDeepSpeech2,
+    matching KairosConvLSTMCellEager / KairosMambaBlockEager above.
     """
 
     def __init__(self, input_size: int, hidden_size: int):
@@ -976,7 +976,7 @@ class ChronosGRUCellEager(nn.Module):
         return h_t
 
 
-class ChronosDeepSpeech2(nn.Module):
+class KairosDeepSpeech2(nn.Module):
     """conv frontend (2 layers, executed as a single full-batch call outside
     the temporal region -- not inside the timestep loop) -> 3-layer
     unidirectional GRU (hidden=800) -> FC(29). T_in (spectrogram time bins)
@@ -1010,7 +1010,7 @@ class ChronosDeepSpeech2(nn.Module):
         gru_input_size = conv_channels * freq_out
 
         self.gru_cells = nn.ModuleList(
-            ChronosGRUCellEager(gru_input_size if i == 0 else gru_hidden, gru_hidden) for i in range(gru_layers)
+            KairosGRUCellEager(gru_input_size if i == 0 else gru_hidden, gru_hidden) for i in range(gru_layers)
         )
         self.fc = nn.Linear(gru_hidden, num_classes, bias=True)
 
@@ -1041,7 +1041,7 @@ class ChronosDeepSpeech2(nn.Module):
         return (y_t, *new_state)
 
 
-class ChronosSpikeBERT(nn.Module):
+class KairosSpikeBERT(nn.Module):
     def __init__(
         self,
         *,
@@ -1050,7 +1050,7 @@ class ChronosSpikeBERT(nn.Module):
         depth: int = 8,
         heads: int = 8,
         num_classes: int = 100,
-        lif_impl: str = "chronos",
+        lif_impl: str = "kairos",
         step_mode: str = "s",
     ):
         super().__init__()
@@ -1059,7 +1059,7 @@ class ChronosSpikeBERT(nn.Module):
         self.embedding_if = _make_lif_node(lif_impl)
         self.blocks = nn.ModuleList(
             [
-                ChronosSpikeTransformerBlock(dim=int(dim), heads=int(heads), lif_impl=lif_impl)
+                KairosSpikeTransformerBlock(dim=int(dim), heads=int(heads), lif_impl=lif_impl)
                 for _ in range(int(depth))
             ]
         )
@@ -1121,7 +1121,7 @@ def make_model_input(model_name: str, args, dtype: torch.dtype) -> torch.Tensor:
         )
     if model_name == "deepspeech2":
         # [B, 1, freq_bins, T_in]; T_in = 2*T is exact for the conv
-        # frontend's stride math (see ChronosDeepSpeech2.frontend).
+        # frontend's stride math (see KairosDeepSpeech2.frontend).
         t_in = 2 * args.T
         return torch.randn(
             args.batch_size,
@@ -1134,7 +1134,7 @@ def make_model_input(model_name: str, args, dtype: torch.dtype) -> torch.Tensor:
     return torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=dtype)
 
 
-def _make_vgg_layer(model_name: str, step_mode: str, lif_impl: str = "chronos") -> nn.Module:
+def _make_vgg_layer(model_name: str, step_mode: str, lif_impl: str = "kairos") -> nn.Module:
     spiking_neuron = _lif_node_class(lif_impl)
     if model_name == "vgg11":
         layer = spiking_vgg.spiking_vgg11_bn(
@@ -1161,7 +1161,7 @@ def make_resnet_layer(
     allow_resnet32_fallback: bool,
     step_mode: str = "s",
     model_channels: int = 64,
-    lif_impl: str = "chronos",
+    lif_impl: str = "kairos",
     sequence_length: int = 256,
     transformer_depth: int = 8,
     transformer_dim: int = 256,
@@ -1191,7 +1191,7 @@ def make_resnet_layer(
     # SequenceInputMultiStepWrapper), not step_mode, decides how they're
     # driven, so the same construction serves both "s" and "m" call sites.
     if model_name == "convlstm":
-        return ChronosConvLSTM(
+        return KairosConvLSTM(
             in_channels=convlstm_in_channels,
             hidden_channels=convlstm_hidden_channels,
             num_layers=convlstm_num_layers,
@@ -1200,7 +1200,7 @@ def make_resnet_layer(
             width=convlstm_width,
         )
     if model_name == "mamba":
-        return ChronosMamba(
+        return KairosMamba(
             d_model=mamba_d_model,
             n_layer=mamba_n_layer,
             d_inner=mamba_d_inner,
@@ -1210,7 +1210,7 @@ def make_resnet_layer(
             num_classes=10,
         )
     if model_name == "deepspeech2":
-        return ChronosDeepSpeech2(
+        return KairosDeepSpeech2(
             freq_bins=deepspeech2_freq_bins,
             conv_channels=deepspeech2_conv_channels,
             gru_hidden=deepspeech2_gru_hidden,
@@ -1234,7 +1234,7 @@ def make_resnet_layer(
             surrogate_function=surrogate.ATan(),
         )
     elif model_name in ("alexnet", "zfnet"):
-        return ChronosAlexZFNet(
+        return KairosAlexZFNet(
             kind=model_name,
             channels=model_channels,
             num_classes=10,
@@ -1242,21 +1242,21 @@ def make_resnet_layer(
             lif_impl=lif_impl,
         )
     elif model_name == "mobilenetv1":
-        return ChronosMobileNetV1(
+        return KairosMobileNetV1(
             channels=model_channels,
             num_classes=10,
             step_mode=step_mode,
             lif_impl=lif_impl,
         )
     elif model_name == "mobilenetv2":
-        return ChronosMobileNetV2(
+        return KairosMobileNetV2(
             channels=model_channels,
             num_classes=10,
             step_mode=step_mode,
             lif_impl=lif_impl,
         )
     elif model_name == "spiketransformer":
-        return ChronosSpikeTransformer(
+        return KairosSpikeTransformer(
             input_dim=transformer_input_dim,
             dim=transformer_dim,
             depth=transformer_depth,
@@ -1266,7 +1266,7 @@ def make_resnet_layer(
             lif_impl=lif_impl,
         )
     elif model_name == "spikebert":
-        return ChronosSpikeBERT(
+        return KairosSpikeBERT(
             vocab_size=transformer_vocab_size,
             dim=transformer_dim,
             depth=transformer_depth,
@@ -1777,7 +1777,7 @@ def run_model(name: str, model: nn.Module, x: torch.Tensor, device: str, compile
         reset_lif_modules(model)
         runnable = model
         if compile_mode:
-            runnable = compile_with_chronos_options(
+            runnable = compile_with_kairos_options(
                 model,
                 backend=backend if backend is not None else "inductor",
                 enable_cudagraphs=args.enable_cudagraphs,
@@ -1886,14 +1886,14 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
     outputs: Dict[str, Optional[torch.Tensor]] = {}
     cudagraph_status_by_case: Dict[str, Dict[str, Any]] = {}
     fx_standalone_cudagraph_status_by_case: Dict[str, Dict[str, Any]] = {}
-    _, baseline_compile_config = build_chronos_compile_config(
+    _, baseline_compile_config = build_kairos_compile_config(
         backend="inductor",
         enable_cudagraphs=args.enable_cudagraphs,
         cudagraph_mode=args.cudagraph_mode,
         fullgraph=False,
         dynamic=False,
     )
-    _, rewrite_compile_config = build_chronos_compile_config(
+    _, rewrite_compile_config = build_kairos_compile_config(
         backend=args.rewrite_backend_mode,
         enable_cudagraphs=args.enable_cudagraphs,
         cudagraph_mode=args.cudagraph_mode,
@@ -2020,8 +2020,8 @@ def validate_one_model(model_name: str, args) -> Dict[str, Any]:
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Validate Chronos FX Conv+BN+LIF rewrite against baseline s/m eager/compile.")
-    parser.add_argument("--models", nargs="+", default=["resnet18", "resnet34"], choices=CHRONOS_MODEL_CHOICES)
+    parser = argparse.ArgumentParser(description="Validate Kairos FX Conv+BN+LIF rewrite against baseline s/m eager/compile.")
+    parser.add_argument("--models", nargs="+", default=["resnet18", "resnet34"], choices=KAIROS_MODEL_CHOICES)
     parser.add_argument("--model-channels", type=int, default=64, help="Base channel width for handcrafted alexnet/zfnet models.")
     parser.add_argument("--sequence-length", type=int, default=256)
     parser.add_argument("--transformer-depth", type=int, default=8)
@@ -2030,7 +2030,7 @@ def parse_args():
     parser.add_argument("--transformer-input-dim", type=int, default=768)
     parser.add_argument("--transformer-vocab-size", type=int, default=30522)
     parser.add_argument("--transformer-num-classes", type=int, default=100)
-    parser.add_argument("--lif-impl", choices=LIF_IMPL_CHOICES, default="chronos", help="LIF implementation used when constructing benchmark models.")
+    parser.add_argument("--lif-impl", choices=LIF_IMPL_CHOICES, default="kairos", help="LIF implementation used when constructing benchmark models.")
     parser.add_argument("--T", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--height", type=int, default=64)
@@ -2081,7 +2081,7 @@ def parse_args():
     parser.add_argument("--max-patterns", type=int, default=1)
     parser.add_argument("--print-fused-op-calls", action="store_true")
     parser.add_argument("--require-direct-resnet32-api", action="store_true")
-    parser.add_argument("--out-dir", default="chronos_baseline_validation")
+    parser.add_argument("--out-dir", default="kairos_baseline_validation")
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--rtol", type=float, default=1e-4)
     parser.add_argument("--atol", type=float, default=1e-4)

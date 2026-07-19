@@ -1,6 +1,6 @@
 """Phase B (Kairos DeepSpeech2 workload): fused_gru_cell kernel unit test
 + microbench against the eager gate-chain it replaces (matching
-ChronosGRUCellEager.forward: 2x chunk, 2x sigmoid, tanh, mul, add).
+KairosGRUCellEager.forward: 2x chunk, 2x sigmoid, tanh, mul, add).
 """
 import sys
 from pathlib import Path
@@ -57,7 +57,7 @@ def test_custom_op_dispatch():
 
 def microbench():
     torch.manual_seed(2)
-    B, H = 16, 800  # matches ChronosDeepSpeech2 spec defaults
+    B, H = 16, 800  # matches KairosDeepSpeech2 spec defaults
     xproj = torch.randn(B, 3 * H, device="cuda")
     hproj = torch.randn(B, 3 * H, device="cuda")
     h_prev = torch.randn(B, H, device="cuda")

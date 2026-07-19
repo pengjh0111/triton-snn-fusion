@@ -112,14 +112,14 @@ def _write_meta(
     role: str,
 ):
     window_id = timestep // temporal_window if temporal_window > 0 else 0
-    node.meta["chronos_timestep"] = timestep
-    node.meta["chronos_window_id"] = window_id
-    node.meta["chronos_occurrence"] = occurrence
-    node.meta["chronos_role"] = role
-    setattr(node, "_chronos_timestep", timestep)
-    setattr(node, "_chronos_window_id", window_id)
-    setattr(node, "_chronos_occurrence", occurrence)
-    setattr(node, "_chronos_role", role)
+    node.meta["kairos_timestep"] = timestep
+    node.meta["kairos_window_id"] = window_id
+    node.meta["kairos_occurrence"] = occurrence
+    node.meta["kairos_role"] = role
+    setattr(node, "_kairos_timestep", timestep)
+    setattr(node, "_kairos_window_id", window_id)
+    setattr(node, "_kairos_occurrence", occurrence)
+    setattr(node, "_kairos_role", role)
     return window_id
 
 
@@ -183,12 +183,12 @@ def annotate_temporal_metadata(
     # previous scheduling passes, and make them visible through node.meta.
     occurrence_counts: Dict[Tuple[int, Tuple[Any, ...]], int] = {}
     for node in gm.graph.nodes:
-        timestep = getattr(node, "_chronos_timestep", None)
+        timestep = getattr(node, "_kairos_timestep", None)
         if not isinstance(timestep, int):
             stats.missing("no_timestep_block_or_legacy_attr")
             continue
-        role = getattr(node, "_chronos_role", _role_for_node(gm, node, fused_candidate_nodes))
-        occurrence = getattr(node, "_chronos_occurrence", None)
+        role = getattr(node, "_kairos_role", _role_for_node(gm, node, fused_candidate_nodes))
+        occurrence = getattr(node, "_kairos_occurrence", None)
         if not isinstance(occurrence, int):
             signature = _node_signature(node, role)
             key = (timestep, signature)

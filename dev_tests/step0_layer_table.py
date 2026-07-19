@@ -18,8 +18,8 @@ this script:
   4. Reports waves = CTA_count / SM_count.
 
 Channel/resolution progression below is derived directly from
-ChronosMobileNetV2 / ChronosSpikingInvertedResidual in
-benchmarks/validate_chronos_baselines.py (channels=64 default, matching
+KairosMobileNetV2 / KairosSpikingInvertedResidual in
+benchmarks/validate_kairos_baselines.py (channels=64 default, matching
 every benchmark run in this investigation).
 """
 import sys

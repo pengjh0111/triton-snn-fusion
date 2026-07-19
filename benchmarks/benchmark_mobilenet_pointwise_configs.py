@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from benchmarks.validate_chronos_baselines import ChronosMobileNetV1, ChronosMobileNetV2
+from benchmarks.validate_kairos_baselines import KairosMobileNetV1, KairosMobileNetV2
 from kernels.benchmark_conv_lif_temporal_general import (
     _pointwise_config_for_shape,
     get_autotune_best_config,
@@ -45,9 +45,9 @@ def _conv_out(size: int, kernel: int, stride: int, padding: int, dilation: int =
 
 def _make_mobilenet_model(model_name: str, *, channels: int):
     if model_name == "mobilenetv1":
-        return ChronosMobileNetV1(channels=channels, lif_impl="chronos").eval()
+        return KairosMobileNetV1(channels=channels, lif_impl="kairos").eval()
     if model_name == "mobilenetv2":
-        return ChronosMobileNetV2(channels=channels, lif_impl="chronos").eval()
+        return KairosMobileNetV2(channels=channels, lif_impl="kairos").eval()
     raise ValueError(f"unsupported MobileNet model: {model_name}")
 
 
@@ -343,7 +343,7 @@ def main():
             dtype = _dtype(args.dtype)
             x_seq, weight, bias = _make_inputs(shape, args.T, args.batch_size, dtype, args.seed)
             for limit in args.acc_limits:
-                os.environ["CHRONOS_POINTWISE_ACC_ELEMS_LIMIT"] = str(limit)
+                os.environ["KAIROS_POINTWISE_ACC_ELEMS_LIMIT"] = str(limit)
                 run_fused_temporal_general_autotuned(x_seq, weight, bias, kernel_key="k1_s1_p0")
                 torch.cuda.synchronize()
                 print(f"  autotune_limit={limit} best_config={get_autotune_best_config('k1_s1_p0')}")

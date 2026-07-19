@@ -39,10 +39,10 @@
 #     return None
 
 
-# def find_chronos_case(results, graph_window):
+# def find_kairos_case(results, graph_window):
 #     candidates = [
-#         f"chronos_single_step_loop_compile_w{graph_window}",
-#         f"chronos_m_compile_w{graph_window}",
+#         f"kairos_single_step_loop_compile_w{graph_window}",
+#         f"kairos_m_compile_w{graph_window}",
 #     ]
 
 #     for name in candidates:
@@ -50,11 +50,11 @@
 #             return name, results[name]
 
 #     for name, result in results.items():
-#         if name.startswith("chronos") and f"w{graph_window}" in name:
+#         if name.startswith("kairos") and f"w{graph_window}" in name:
 #             return name, result
 
 #     for name, result in results.items():
-#         if name.startswith("chronos"):
+#         if name.startswith("kairos"):
 #             return name, result
 
 #     return None, None
@@ -115,12 +115,12 @@
 #             "baseline_m_compile",
 #         )
 
-#         chronos_case, chronos_result = find_chronos_case(
+#         kairos_case, kairos_result = find_kairos_case(
 #             results,
 #             graph_window,
 #         )
 
-#         chronos_stats = get_case_stats(payload, chronos_case)
+#         kairos_stats = get_case_stats(payload, kairos_case)
 
 #         best_case = best.get("case")
 #         best_mean = best.get("mean_ms")
@@ -140,46 +140,46 @@
 #             "multi_step_eager_ms": mean_ms(multi_eager),
 #             "multi_step_compile_ms": mean_ms(multi_compile),
 
-#             "chronos_case": chronos_case,
-#             "chronos_ms": mean_ms(chronos_result),
-#             "chronos_p50_ms": p50_ms(chronos_result),
-#             "chronos_p90_ms": p90_ms(chronos_result),
+#             "kairos_case": kairos_case,
+#             "kairos_ms": mean_ms(kairos_result),
+#             "kairos_p50_ms": p50_ms(kairos_result),
+#             "kairos_p90_ms": p90_ms(kairos_result),
 
-#             "speedup_chronos_vs_single_compile": speedup(
+#             "speedup_kairos_vs_single_compile": speedup(
 #                 mean_ms(single_compile),
-#                 mean_ms(chronos_result),
+#                 mean_ms(kairos_result),
 #             ),
-#             "speedup_chronos_vs_single_eager": speedup(
+#             "speedup_kairos_vs_single_eager": speedup(
 #                 mean_ms(single_eager),
-#                 mean_ms(chronos_result),
+#                 mean_ms(kairos_result),
 #             ),
-#             "speedup_chronos_vs_multi_compile": speedup(
+#             "speedup_kairos_vs_multi_compile": speedup(
 #                 mean_ms(multi_compile),
-#                 mean_ms(chronos_result),
+#                 mean_ms(kairos_result),
 #             ),
-#             "speedup_chronos_vs_multi_eager": speedup(
+#             "speedup_kairos_vs_multi_eager": speedup(
 #                 mean_ms(multi_eager),
-#                 mean_ms(chronos_result),
+#                 mean_ms(kairos_result),
 #             ),
 
-#             "triton": chronos_stats.get("triton", 0),
-#             "fallback": chronos_stats.get("fallback", 0),
-#             "temporal_triton": chronos_stats.get("temporal_triton", 0),
-#             "temporal_fallback": chronos_stats.get("temporal_fallback", 0),
+#             "triton": kairos_stats.get("triton", 0),
+#             "fallback": kairos_stats.get("fallback", 0),
+#             "temporal_triton": kairos_stats.get("temporal_triton", 0),
+#             "temporal_fallback": kairos_stats.get("temporal_fallback", 0),
 
-#             "temporal_k3_s1_p1": chronos_stats.get("temporal_k3_s1_p1", 0),
-#             "temporal_k3_s2_p1": chronos_stats.get("temporal_k3_s2_p1", 0),
-#             "temporal_k7_s2_p3": chronos_stats.get("temporal_k7_s2_p3", 0),
+#             "temporal_k3_s1_p1": kairos_stats.get("temporal_k3_s1_p1", 0),
+#             "temporal_k3_s2_p1": kairos_stats.get("temporal_k3_s2_p1", 0),
+#             "temporal_k7_s2_p3": kairos_stats.get("temporal_k7_s2_p3", 0),
 
-#             "single_k3_s1_p1": chronos_stats.get("single_k3_s1_p1", 0),
-#             "single_k3_s2_p1": chronos_stats.get("single_k3_s2_p1", 0),
-#             "single_k7_s2_p3": chronos_stats.get("single_k7_s2_p3", 0),
+#             "single_k3_s1_p1": kairos_stats.get("single_k3_s1_p1", 0),
+#             "single_k3_s2_p1": kairos_stats.get("single_k3_s2_p1", 0),
+#             "single_k7_s2_p3": kairos_stats.get("single_k7_s2_p3", 0),
 
-#             "kernel_temporal_configs": chronos_stats.get(
+#             "kernel_temporal_configs": kairos_stats.get(
 #                 "kernel_temporal_configs",
 #                 {},
 #             ),
-#             "fallback_reasons": chronos_stats.get(
+#             "fallback_reasons": kairos_stats.get(
 #                 "fallback_reasons",
 #                 {},
 #             ),
@@ -215,8 +215,8 @@
 #     "best_case",
 #     "single_compile",
 #     "multi_compile",
-#     "chronos_case",
-#     "chronos",
+#     "kairos_case",
+#     "kairos",
 #     "vs_single_compile",
 #     "vs_multi_compile",
 #     "fallback",
@@ -238,10 +238,10 @@
 #                 str(r["best_case"]),
 #                 f"{r['single_step_compile_ms']:.3f}" if r["single_step_compile_ms"] is not None else "",
 #                 f"{r['multi_step_compile_ms']:.3f}" if r["multi_step_compile_ms"] is not None else "",
-#                 str(r["chronos_case"] or ""),
-#                 f"{r['chronos_ms']:.3f}" if r["chronos_ms"] is not None else "",
-#                 f"{r['speedup_chronos_vs_single_compile']:.3f}x" if r["speedup_chronos_vs_single_compile"] is not None else "",
-#                 f"{r['speedup_chronos_vs_multi_compile']:.3f}x" if r["speedup_chronos_vs_multi_compile"] is not None else "",
+#                 str(r["kairos_case"] or ""),
+#                 f"{r['kairos_ms']:.3f}" if r["kairos_ms"] is not None else "",
+#                 f"{r['speedup_kairos_vs_single_compile']:.3f}x" if r["speedup_kairos_vs_single_compile"] is not None else "",
+#                 f"{r['speedup_kairos_vs_multi_compile']:.3f}x" if r["speedup_kairos_vs_multi_compile"] is not None else "",
 #                 str(r["fallback"]),
 #                 str(r["temporal_triton"]),
 #                 str(r["kernel_temporal_configs"]),
@@ -258,17 +258,17 @@
 #     dtype = r.get("dtype") or "unknown"
 #     model = r.get("model") or "unknown"
 #     graph_window = r.get("graph_window")
-#     chronos = r.get("chronos_ms")
+#     kairos = r.get("kairos_ms")
 #     single_compile = r.get("single_step_compile_ms")
 #     multi_compile = r.get("multi_step_compile_ms")
-#     sp_single = r.get("speedup_chronos_vs_single_compile")
-#     sp_multi = r.get("speedup_chronos_vs_multi_compile")
+#     sp_single = r.get("speedup_kairos_vs_single_compile")
+#     sp_multi = r.get("speedup_kairos_vs_multi_compile")
 
 #     print(
 #         f"{dtype:>5s} {model:>8s} "
 #         f"w={str(graph_window):>2s} "
-#         f"chronos={chronos:.3f} ms " if chronos is not None else
-#         f"{dtype:>5s} {model:>8s} w={str(graph_window):>2s} chronos=N/A "
+#         f"kairos={kairos:.3f} ms " if kairos is not None else
+#         f"{dtype:>5s} {model:>8s} w={str(graph_window):>2s} kairos=N/A "
 #     )
 
 #     print(
@@ -328,10 +328,10 @@ def p90_ms(result):
     return None
 
 
-def find_chronos_case(results, graph_window):
+def find_kairos_case(results, graph_window):
     candidates = [
-        f"chronos_single_step_loop_compile_w{graph_window}",
-        f"chronos_m_compile_w{graph_window}",
+        f"kairos_single_step_loop_compile_w{graph_window}",
+        f"kairos_m_compile_w{graph_window}",
     ]
 
     for name in candidates:
@@ -339,11 +339,11 @@ def find_chronos_case(results, graph_window):
             return name, results[name]
 
     for name, result in results.items():
-        if name.startswith("chronos") and f"w{graph_window}" in name:
+        if name.startswith("kairos") and f"w{graph_window}" in name:
             return name, result
 
     for name, result in results.items():
-        if name.startswith("chronos"):
+        if name.startswith("kairos"):
             return name, result
 
     return None, None
@@ -421,12 +421,12 @@ for summary_path in sorted(ROOT.rglob("benchmark_summary_all.json")):
             "baseline_m_compile",
         )
 
-        chronos_case, chronos_result = find_chronos_case(
+        kairos_case, kairos_result = find_kairos_case(
             results,
             graph_window,
         )
 
-        chronos_stats = get_case_stats(payload, chronos_case)
+        kairos_stats = get_case_stats(payload, kairos_case)
 
         best_case = best.get("case")
         best_mean = best.get("mean_ms")
@@ -447,46 +447,46 @@ for summary_path in sorted(ROOT.rglob("benchmark_summary_all.json")):
             "multi_step_eager_ms": mean_ms(multi_eager),
             "multi_step_compile_ms": mean_ms(multi_compile),
 
-            "chronos_case": chronos_case,
-            "chronos_ms": mean_ms(chronos_result),
-            "chronos_p50_ms": p50_ms(chronos_result),
-            "chronos_p90_ms": p90_ms(chronos_result),
+            "kairos_case": kairos_case,
+            "kairos_ms": mean_ms(kairos_result),
+            "kairos_p50_ms": p50_ms(kairos_result),
+            "kairos_p90_ms": p90_ms(kairos_result),
 
-            "speedup_chronos_vs_single_compile": speedup(
+            "speedup_kairos_vs_single_compile": speedup(
                 mean_ms(single_compile),
-                mean_ms(chronos_result),
+                mean_ms(kairos_result),
             ),
-            "speedup_chronos_vs_single_eager": speedup(
+            "speedup_kairos_vs_single_eager": speedup(
                 mean_ms(single_eager),
-                mean_ms(chronos_result),
+                mean_ms(kairos_result),
             ),
-            "speedup_chronos_vs_multi_compile": speedup(
+            "speedup_kairos_vs_multi_compile": speedup(
                 mean_ms(multi_compile),
-                mean_ms(chronos_result),
+                mean_ms(kairos_result),
             ),
-            "speedup_chronos_vs_multi_eager": speedup(
+            "speedup_kairos_vs_multi_eager": speedup(
                 mean_ms(multi_eager),
-                mean_ms(chronos_result),
+                mean_ms(kairos_result),
             ),
 
-            "triton": chronos_stats.get("triton", 0),
-            "fallback": chronos_stats.get("fallback", 0),
-            "temporal_triton": chronos_stats.get("temporal_triton", 0),
-            "temporal_fallback": chronos_stats.get("temporal_fallback", 0),
+            "triton": kairos_stats.get("triton", 0),
+            "fallback": kairos_stats.get("fallback", 0),
+            "temporal_triton": kairos_stats.get("temporal_triton", 0),
+            "temporal_fallback": kairos_stats.get("temporal_fallback", 0),
 
-            "temporal_k3_s1_p1": chronos_stats.get("temporal_k3_s1_p1", 0),
-            "temporal_k3_s2_p1": chronos_stats.get("temporal_k3_s2_p1", 0),
-            "temporal_k7_s2_p3": chronos_stats.get("temporal_k7_s2_p3", 0),
+            "temporal_k3_s1_p1": kairos_stats.get("temporal_k3_s1_p1", 0),
+            "temporal_k3_s2_p1": kairos_stats.get("temporal_k3_s2_p1", 0),
+            "temporal_k7_s2_p3": kairos_stats.get("temporal_k7_s2_p3", 0),
 
-            "single_k3_s1_p1": chronos_stats.get("single_k3_s1_p1", 0),
-            "single_k3_s2_p1": chronos_stats.get("single_k3_s2_p1", 0),
-            "single_k7_s2_p3": chronos_stats.get("single_k7_s2_p3", 0),
+            "single_k3_s1_p1": kairos_stats.get("single_k3_s1_p1", 0),
+            "single_k3_s2_p1": kairos_stats.get("single_k3_s2_p1", 0),
+            "single_k7_s2_p3": kairos_stats.get("single_k7_s2_p3", 0),
 
-            "kernel_temporal_configs": chronos_stats.get(
+            "kernel_temporal_configs": kairos_stats.get(
                 "kernel_temporal_configs",
                 {},
             ),
-            "fallback_reasons": chronos_stats.get(
+            "fallback_reasons": kairos_stats.get(
                 "fallback_reasons",
                 {},
             ),
@@ -522,8 +522,8 @@ headers = [
     "best_case",
     "single_compile",
     "multi_compile",
-    "chronos_case",
-    "chronos",
+    "kairos_case",
+    "kairos",
     "vs_single_compile",
     "vs_multi_compile",
     "fallback",
@@ -545,10 +545,10 @@ with md_path.open("w", encoding="utf-8") as f:
                 str(r["best_case"]),
                 f"{r['single_step_compile_ms']:.3f}" if r["single_step_compile_ms"] is not None else "",
                 f"{r['multi_step_compile_ms']:.3f}" if r["multi_step_compile_ms"] is not None else "",
-                str(r["chronos_case"] or ""),
-                f"{r['chronos_ms']:.3f}" if r["chronos_ms"] is not None else "",
-                f"{r['speedup_chronos_vs_single_compile']:.3f}x" if r["speedup_chronos_vs_single_compile"] is not None else "",
-                f"{r['speedup_chronos_vs_multi_compile']:.3f}x" if r["speedup_chronos_vs_multi_compile"] is not None else "",
+                str(r["kairos_case"] or ""),
+                f"{r['kairos_ms']:.3f}" if r["kairos_ms"] is not None else "",
+                f"{r['speedup_kairos_vs_single_compile']:.3f}x" if r["speedup_kairos_vs_single_compile"] is not None else "",
+                f"{r['speedup_kairos_vs_multi_compile']:.3f}x" if r["speedup_kairos_vs_multi_compile"] is not None else "",
                 str(r["fallback"]),
                 str(r["temporal_triton"]),
                 str(r["kernel_temporal_configs"]),
@@ -565,17 +565,17 @@ for r in rows:
     dtype = r.get("dtype") or "unknown"
     model = r.get("model") or "unknown"
     graph_window = r.get("graph_window")
-    chronos = r.get("chronos_ms")
+    kairos = r.get("kairos_ms")
     single_compile = r.get("single_step_compile_ms")
     multi_compile = r.get("multi_step_compile_ms")
-    sp_single = r.get("speedup_chronos_vs_single_compile")
-    sp_multi = r.get("speedup_chronos_vs_multi_compile")
+    sp_single = r.get("speedup_kairos_vs_single_compile")
+    sp_multi = r.get("speedup_kairos_vs_multi_compile")
 
     print(
         f"{dtype:>5s} {model:>8s} "
         f"w={str(graph_window):>2s} "
-        f"chronos={chronos:.3f} ms " if chronos is not None else
-        f"{dtype:>5s} {model:>8s} w={str(graph_window):>2s} chronos=N/A "
+        f"kairos={kairos:.3f} ms " if kairos is not None else
+        f"{dtype:>5s} {model:>8s} w={str(graph_window):>2s} kairos=N/A "
     )
 
     print(

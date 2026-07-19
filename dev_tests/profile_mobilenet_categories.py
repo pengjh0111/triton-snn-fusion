@@ -33,8 +33,8 @@ import runtime.snn_custom_ops as snn_custom_ops
 
 
 def build_compiled(model_name, T, batch_size, height, width, model_channels, dtype, tmp_dir, rewrite_backend_mode="standalone", enable_spatial_batching=True):
-    from benchmarks.benchmark_chronos_runtime import parse_args
-    from benchmarks.validate_chronos_baselines import (
+    from benchmarks.benchmark_kairos_runtime import parse_args
+    from benchmarks.validate_kairos_baselines import (
         RewriteCounters, make_resnet_layer, make_rewrite_backend, make_model_input, SingleStepModeLoopWrapper,
     )
 
@@ -192,7 +192,7 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA required")
 
-    tmp_root = Path("/tmp/chronos_mobilenet_profile")
+    tmp_root = Path("/tmp/kairos_mobilenet_profile")
     tmp_root.mkdir(parents=True, exist_ok=True)
 
     results = []

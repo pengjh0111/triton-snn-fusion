@@ -354,11 +354,11 @@ def _lif_state_is_usable(lif_node: torch.fx.Node) -> Tuple[bool, str]:
     return True, ""
 
 
-def _get_chronos_meta(node: torch.fx.Node, key: str, default=None):
-    meta_key = f"chronos_{key}"
+def _get_kairos_meta(node: torch.fx.Node, key: str, default=None):
+    meta_key = f"kairos_{key}"
     if meta_key in node.meta:
         return node.meta[meta_key]
-    return getattr(node, f"_chronos_{key}", default)
+    return getattr(node, f"_kairos_{key}", default)
 
 
 def _param_like_name(node: Any) -> Optional[str]:
@@ -415,7 +415,7 @@ def _make_synthetic_temporal_pattern(
 
 def collect_convlstm_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
     """Per-timestep anchor for ConvLSTM: xproj = conv_x(x_t) -- the first op
-    of each timestep's cell (ChronosConvLSTMCellEager.forward: xproj is
+    of each timestep's cell (KairosConvLSTMCellEager.forward: xproj is
     computed before hproj/chunk/everything else), matching the convention
     conv_node uses for LIF patterns (the conv node is likewise each
     timestep's first op) -- split_fx_graph_into_timesteps positions block
@@ -458,7 +458,7 @@ def collect_convlstm_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPat
 
 def collect_mamba_scan_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
     """Per-timestep anchor for Mamba: y = self.norms[layer_idx](h) -- the
-    true first op of each timestep's block (ChronosMamba.step: "residual =
+    true first op of each timestep's block (KairosMamba.step: "residual =
     h; y = self.norms[layer_idx](h)"), *not* xz = in_proj(y) as an earlier
     version of this collector anchored on. For layer 0 specifically, h is
     directly x_t (an external per-t value), so the LayerNorm call sits
@@ -545,7 +545,7 @@ def collect_mamba_scan_patterns(gm: torch.fx.GraphModule) -> List[TemporalPatter
 
 def collect_gru_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
     """Per-timestep anchor for the DeepSpeech2 GRU stack: xproj = w_x(x_t) --
-    the first op of each timestep's cell (ChronosGRUCellEager.forward:
+    the first op of each timestep's cell (KairosGRUCellEager.forward:
     xproj computed before hproj/chunk/everything else). Verified by
     confirming this linear's output reaches a torch.chunk(_,3,dim=-1), the
     xproj -> r,z,n split signature.
@@ -749,10 +749,10 @@ def collect_conv_bn_add_lif_state_patterns(gm: torch.fx.GraphModule) -> List[Tem
     return patterns
 
 
-def _chronos_meta(node: torch.fx.Node, key: str, default=None):
+def _kairos_meta(node: torch.fx.Node, key: str, default=None):
     if key in node.meta:
         return node.meta[key]
-    return getattr(node, f"_chronos_{key}", default)
+    return getattr(node, f"_kairos_{key}", default)
 
 
 def _shape_key_from_node(node: torch.fx.Node) -> str:
@@ -778,7 +778,7 @@ def _temporal_value_source_key(node: torch.fx.Node) -> str:
     seen = set()
     while isinstance(current, torch.fx.Node) and current not in seen:
         seen.add(current)
-        replacement = current.meta.get("chronos_replacement_node")
+        replacement = current.meta.get("kairos_replacement_node")
         if isinstance(replacement, torch.fx.Node):
             current = replacement
             continue
@@ -836,9 +836,9 @@ def collect_standalone_lif_state_patterns(
             )
             continue
 
-        timestep = _chronos_meta(node, "timestep", None)
-        window_id = _chronos_meta(node, "window_id", None)
-        occurrence = _chronos_meta(node, "occurrence", None)
+        timestep = _kairos_meta(node, "timestep", None)
+        window_id = _kairos_meta(node, "window_id", None)
+        occurrence = _kairos_meta(node, "occurrence", None)
         if not isinstance(timestep, int):
             fallback_key = "standalone_lif_fallback"
             timestep = fallback_counts.get(fallback_key, 0)
@@ -923,7 +923,7 @@ def _getitem_index(node: torch.fx.Node):
 def _is_temporal_stack_tensor(node: torch.fx.Node) -> bool:
     if not isinstance(node, torch.fx.Node):
         return False
-    if node.meta.get("chronos_temporal_layout") == "stack":
+    if node.meta.get("kairos_temporal_layout") == "stack":
         return True
     if node.op != "call_function" or node.target is not operator.getitem:
         return False
@@ -1017,9 +1017,9 @@ def collect_temporal_linear_lif_state_patterns(
             )
             continue
 
-        timestep = _chronos_meta(node, "timestep", None)
-        window_id = _chronos_meta(node, "window_id", None)
-        occurrence = _chronos_meta(node, "occurrence", None)
+        timestep = _kairos_meta(node, "timestep", None)
+        window_id = _kairos_meta(node, "window_id", None)
+        occurrence = _kairos_meta(node, "occurrence", None)
         if not isinstance(timestep, int):
             fallback_key = f"linear_lif|{_node_key(_extract_linear_weight_bias(linear_node)[0])}"
             timestep = fallback_counts.get(fallback_key, 0)
@@ -1111,9 +1111,9 @@ def collect_temporal_lif_avgpool_linear_patterns(
         if acc_node is None:
             continue
 
-        timestep = _chronos_meta(node, "timestep", None)
-        window_id = _chronos_meta(node, "window_id", None)
-        occurrence = _chronos_meta(node, "occurrence", None)
+        timestep = _kairos_meta(node, "timestep", None)
+        window_id = _kairos_meta(node, "window_id", None)
+        occurrence = _kairos_meta(node, "occurrence", None)
         if not isinstance(timestep, int):
             fallback_key = "temporal_lif_avgpool_linear_fallback"
             timestep = fallback_counts.get(fallback_key, 0)
@@ -1543,11 +1543,11 @@ def _unique_nodes(nodes: List[torch.fx.Node]) -> List[torch.fx.Node]:
 
 def _resolved_replacement_node(node):
     seen = set()
-    while isinstance(node, torch.fx.Node) and "chronos_replacement_node" in node.meta:
+    while isinstance(node, torch.fx.Node) and "kairos_replacement_node" in node.meta:
         if node in seen:
             break
         seen.add(node)
-        replacement = node.meta.get("chronos_replacement_node")
+        replacement = node.meta.get("kairos_replacement_node")
         if not isinstance(replacement, torch.fx.Node):
             break
         node = replacement
@@ -1984,16 +1984,16 @@ def _temporal_conv_add_lif_op_for_kind(kind: str):
 
 
 def _debug_conv_classify(name: str, kind: str, folded_weight, stride, padding, groups) -> None:
-    if os.environ.get("CHRONOS_FX_CONV_CLASSIFY", "0") != "1":
+    if os.environ.get("KAIROS_FX_CONV_CLASSIFY", "0") != "1":
         return
     weight_shape = tuple(folded_weight.shape) if isinstance(folded_weight, torch.Tensor) else None
     print(
-        f"[CHRONOS_FX_CONV_CLASSIFY] name={name} kind={kind} "
+        f"[KAIROS_FX_CONV_CLASSIFY] name={name} kind={kind} "
         f"weight_shape={weight_shape} stride={_as_pair(stride)} padding={_as_pair(padding)} groups={int(groups)}"
     )
 
 
-def _annotate_chronos_fused_temporal_node(
+def _annotate_kairos_fused_temporal_node(
     node: torch.fx.Node,
     *,
     op_kind: str,
@@ -2006,11 +2006,11 @@ def _annotate_chronos_fused_temporal_node(
         time_range = (min(timesteps), max(timesteps) + 1)
     else:
         time_range = (0, 0)
-    node.meta["chronos_op_kind"] = op_kind
-    node.meta["chronos_layer_id"] = layer_id
-    node.meta["chronos_window_id"] = int(window_id)
-    node.meta["chronos_time_range"] = time_range
-    node.meta["chronos_window_size"] = len(patterns)
+    node.meta["kairos_op_kind"] = op_kind
+    node.meta["kairos_layer_id"] = layer_id
+    node.meta["kairos_window_id"] = int(window_id)
+    node.meta["kairos_time_range"] = time_range
+    node.meta["kairos_window_size"] = len(patterns)
 
 
 def _insert_binary_after(
@@ -2141,7 +2141,7 @@ def _clone_temporal_state_after(
     with gm.graph.inserting_after(after_node):
         cloned = gm.graph.call_function(torch.clone, args=(state_node,))
         cloned.name = name
-        cloned.meta["chronos_origin"] = "temporal_fused_state_cudagraph_pool_clone"
+        cloned.meta["kairos_origin"] = "temporal_fused_state_cudagraph_pool_clone"
     return cloned
 
 
@@ -2170,7 +2170,7 @@ def _materialize_zero_scalar_like_after(
     with gm.graph.inserting_after(after_node):
         zero = gm.graph.call_method("new_zeros", args=(like_node, ()))
         zero.name = name
-        zero.meta["chronos_origin"] = "temporal_linear_lif_device_scalar_v_init"
+        zero.meta["kairos_origin"] = "temporal_linear_lif_device_scalar_v_init"
     return zero
 
 
@@ -2198,30 +2198,30 @@ def _make_temporal_avgpool_flatten_x_seq(
     with insert_ctx:
         stack_batched = gm.graph.call_function(torch.flatten, args=(stack_node, 0, 1))
         stack_batched.name = f"{stack_node.name}_temporal_avgpool_input_batched"
-        stack_batched.meta["chronos_temporal_layout"] = "batched_tn"
-        stack_batched.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
-        stack_batched.meta["chronos_T"] = len(patterns)
+        stack_batched.meta["kairos_temporal_layout"] = "batched_tn"
+        stack_batched.meta["kairos_origin"] = "temporal_avgpool_flatten_propagation"
+        stack_batched.meta["kairos_T"] = len(patterns)
 
     with gm.graph.inserting_after(stack_batched):
         pooled_batched = gm.graph.call_function(F.adaptive_avg_pool2d, args=(stack_batched, (1, 1)))
         pooled_batched.name = f"{stack_node.name}_temporal_avgpool_batched"
-        pooled_batched.meta["chronos_temporal_layout"] = "batched_tn"
-        pooled_batched.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
-        pooled_batched.meta["chronos_T"] = len(patterns)
+        pooled_batched.meta["kairos_temporal_layout"] = "batched_tn"
+        pooled_batched.meta["kairos_origin"] = "temporal_avgpool_flatten_propagation"
+        pooled_batched.meta["kairos_T"] = len(patterns)
 
     with gm.graph.inserting_after(pooled_batched):
         flat_batched = gm.graph.call_function(torch.flatten, args=(pooled_batched, 1, -1))
         flat_batched.name = f"{stack_node.name}_temporal_flatten_batched"
-        flat_batched.meta["chronos_temporal_layout"] = "batched_tn"
-        flat_batched.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
-        flat_batched.meta["chronos_T"] = len(patterns)
+        flat_batched.meta["kairos_temporal_layout"] = "batched_tn"
+        flat_batched.meta["kairos_origin"] = "temporal_avgpool_flatten_propagation"
+        flat_batched.meta["kairos_T"] = len(patterns)
 
     with gm.graph.inserting_after(flat_batched):
         x_seq = gm.graph.call_function(torch.unflatten, args=(flat_batched, 0, (len(patterns), -1)))
         x_seq.name = f"{patterns[0].linear_node.name}_temporal_avgpool_flatten_x_seq"
-        x_seq.meta["chronos_temporal_layout"] = "stack"
-        x_seq.meta["chronos_origin"] = "temporal_avgpool_flatten_propagation"
-        x_seq.meta["chronos_T"] = len(patterns)
+        x_seq.meta["kairos_temporal_layout"] = "stack"
+        x_seq.meta["kairos_origin"] = "temporal_avgpool_flatten_propagation"
+        x_seq.meta["kairos_T"] = len(patterns)
 
     cleanup_nodes = []
     for _stack, spike_t, pool_node, _timestep in matches:
@@ -2419,7 +2419,7 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
                     args=(xs, weight_node, bias_node, v_init, stride, padding, dilation, groups, v_threshold, v_reset, tau, detach_reset),
                 )
                 temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_{conv_kind}_conv_lif_state"
-                _annotate_chronos_fused_temporal_node(
+                _annotate_kairos_fused_temporal_node(
                     temporal_tuple,
                     op_kind=conv_kind,
                     layer_id=window.layer_id,
@@ -2445,10 +2445,10 @@ def rewrite_temporal_conv_bn_lif_state_to_fused(
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
                     spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
                 prev_insert = spike_k
-                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
+                pattern.spike_getitem.meta["kairos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
-            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
+            patterns[-1].v_getitem.meta["kairos_replacement_node"] = v_final
             patterns[-1].v_getitem.replace_all_uses_with(v_final)
             _cleanup_window_nodes(gm, window)
 
@@ -2639,7 +2639,7 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
                     ),
                 )
                 temporal_tuple.name = f"{first.conv_node.name}_temporal_fused_conv_bn_add_lif_state"
-                _annotate_chronos_fused_temporal_node(
+                _annotate_kairos_fused_temporal_node(
                     temporal_tuple,
                     op_kind="residual",
                     layer_id=window.layer_id,
@@ -2676,10 +2676,10 @@ def rewrite_temporal_conv_bn_add_lif_state_to_fused(
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
                     spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
                 prev_insert = spike_k
-                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
+                pattern.spike_getitem.meta["kairos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
-            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
+            patterns[-1].v_getitem.meta["kairos_replacement_node"] = v_final
             patterns[-1].v_getitem.replace_all_uses_with(v_final)
             if remappable_spike_users:
                 _move_early_remapped_users_after(gm, remappable_spike_users, prev_insert)
@@ -2796,7 +2796,7 @@ def rewrite_temporal_lif_state_to_fused(
                 )
                 temporal_tuple = gm.graph.call_function(op, args=op_args)
                 temporal_tuple.name = f"{first.lif_node.name}_temporal_fused_lif_state"
-                _annotate_chronos_fused_temporal_node(
+                _annotate_kairos_fused_temporal_node(
                     temporal_tuple,
                     op_kind="lif",
                     layer_id=window.layer_id,
@@ -2839,10 +2839,10 @@ def rewrite_temporal_lif_state_to_fused(
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
                     spike_k.name = f"{temporal_tuple.name}_spike_t{index}"
                 prev_insert = spike_k
-                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
+                pattern.spike_getitem.meta["kairos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
-            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final
+            patterns[-1].v_getitem.meta["kairos_replacement_node"] = v_final
             patterns[-1].v_getitem.replace_all_uses_with(v_final)
             if remappable_spike_users:
                 _move_early_remapped_users_after(gm, remappable_spike_users, prev_insert)
@@ -2965,9 +2965,9 @@ def rewrite_temporal_linear_lif_state_to_fused(
                 with insert_ctx:
                     x_seq = gm.graph.call_function(torch.stack, args=(xs, 0))
                     x_seq.name = f"{first.linear_node.name}_temporal_linear_lif_x_seq"
-                    x_seq.meta["chronos_temporal_layout"] = "stack"
-                    x_seq.meta["chronos_origin"] = "temporal_linear_lif_packed_input"
-                    x_seq.meta["chronos_T"] = len(xs)
+                    x_seq.meta["kairos_temporal_layout"] = "stack"
+                    x_seq.meta["kairos_origin"] = "temporal_linear_lif_packed_input"
+                    x_seq.meta["kairos_T"] = len(xs)
 
             materialize_scalar_v_init = _is_get_attr_scalar_zero(gm, v_init)
             if use_batched_linear:
@@ -3001,7 +3001,7 @@ def rewrite_temporal_linear_lif_state_to_fused(
                 with gm.graph.inserting_after(spike_stack):
                     v_final = gm.graph.call_function(operator.getitem, args=(temporal_op, 1))
                     v_final.name = f"{temporal_op.name}_v_final"
-                _annotate_chronos_fused_temporal_node(
+                _annotate_kairos_fused_temporal_node(
                     temporal_op, op_kind="linear", layer_id=window.layer_id,
                     window_id=window.window_id, patterns=patterns,
                 )
@@ -3023,7 +3023,7 @@ def rewrite_temporal_linear_lif_state_to_fused(
                         args=(x_seq, weight, bias, v_init, v_threshold, v_reset, tau, detach_reset, spike_stack, v_final),
                     )
                     temporal_op.name = f"{first.linear_node.name}_temporal_fused_linear_lif_state_out"
-                    _annotate_chronos_fused_temporal_node(
+                    _annotate_kairos_fused_temporal_node(
                         temporal_op, op_kind="linear", layer_id=window.layer_id,
                         window_id=window.window_id, patterns=patterns,
                     )
@@ -3058,10 +3058,10 @@ def rewrite_temporal_linear_lif_state_to_fused(
                     spike_k = gm.graph.call_function(operator.getitem, args=(spike_stack, index))
                     spike_k.name = f"{temporal_op.name}_spike_t{index}"
                 prev_insert = spike_k
-                pattern.spike_getitem.meta["chronos_replacement_node"] = spike_k
+                pattern.spike_getitem.meta["kairos_replacement_node"] = spike_k
                 pattern.spike_getitem.replace_all_uses_with(spike_k)
 
-            patterns[-1].v_getitem.meta["chronos_replacement_node"] = v_final_for_users
+            patterns[-1].v_getitem.meta["kairos_replacement_node"] = v_final_for_users
             patterns[-1].v_getitem.replace_all_uses_with(v_final_for_users)
             if remappable_spike_users:
                 _move_early_remapped_users_after(gm, remappable_spike_users, prev_insert)
@@ -3160,7 +3160,7 @@ def rewrite_temporal_lif_avgpool_linear_to_fused(
                     args=(x_seq, v_init, first.fc_weight, fc_bias, v_threshold, v_reset, tau, detach_reset),
                 )
                 temporal_tuple.name = f"{first.lif_node.name}_temporal_fused_lif_avgpool_linear"
-                _annotate_chronos_fused_temporal_node(
+                _annotate_kairos_fused_temporal_node(
                     temporal_tuple,
                     op_kind="linear",
                     layer_id=window.layer_id,
@@ -3435,7 +3435,7 @@ count_fused_temporal_lif_tail_nodes = count_fused_temporal_lif_avgpool_linear_no
 
 
 def rewrite_convlstm_cell_to_fused(gm: torch.fx.GraphModule) -> int:
-    """Match ChronosConvLSTMCellEager.forward's gate chain (chunk(4,dim=1) of
+    """Match KairosConvLSTMCellEager.forward's gate chain (chunk(4,dim=1) of
     xproj+hproj through to h_t/c_t; see collect_convlstm_cell_patterns for
     the anchor-half of this pattern) and replace it with a single
     fused_convlstm_cell(gates_sum, c_prev) call. Idempotent: once rewritten,
@@ -3542,7 +3542,7 @@ def rewrite_convlstm_cell_to_fused(gm: torch.fx.GraphModule) -> int:
 
 
 def rewrite_gru_cell_to_fused(gm: torch.fx.GraphModule) -> int:
-    """Match ChronosGRUCellEager.forward's gate chain (two chunk(3,dim=-1)
+    """Match KairosGRUCellEager.forward's gate chain (two chunk(3,dim=-1)
     splits of xproj/hproj through to h_t; see collect_gru_cell_patterns for
     the anchor-half of this pattern) and replace it with a single
     fused_gru_cell(xproj, hproj, h_prev) call.
@@ -3692,7 +3692,7 @@ def rewrite_gru_cell_to_fused(gm: torch.fx.GraphModule) -> int:
 def _match_mamba_scan_step(hA_node: torch.fx.Node) -> Optional[Dict[str, torch.fx.Node]]:
     """hA_node must be torch.exp(dt.unsqueeze(-1) * A); verifies and extracts
     the full canonical selective-scan step exactly as
-    ChronosMambaBlockEager.forward computes it:
+    KairosMambaBlockEager.forward computes it:
         hA = exp(dt.unsqueeze(-1) * A)
         ssm_state_new = hA*ssm_state_prev + (dt.unsqueeze(-1)*B_ssm.unsqueeze(1))*x.unsqueeze(-1)
         y = (ssm_state_new*C_ssm.unsqueeze(1)).sum(-1) + D*x
@@ -3845,7 +3845,7 @@ def _mamba_window_stack_inputs_legal(
             return False
         if node.op in ("placeholder", "get_attr"):
             continue
-        node_timestep = _get_chronos_meta(node, "timestep")
+        node_timestep = _get_kairos_meta(node, "timestep")
         if isinstance(node_timestep, int) and node_timestep < window_start_timestep:
             continue
         frontier.extend(node.all_input_nodes)
@@ -3862,7 +3862,7 @@ def rewrite_mamba_scan_to_fused(gm: torch.fx.GraphModule, window_size: int) -> i
     its ~48x microbenchmarked win (a single launch for the window instead of
     one tiny elementwise op sequence per timestep), unlike a one-shot
     per-instance swap. Requires annotate_temporal_metadata to have already
-    run (uses chronos_timestep to order instances within a window; falls
+    run (uses kairos_timestep to order instances within a window; falls
     back to graph position order if unannotated).
     """
     order = {node: index for index, node in enumerate(gm.graph.nodes)}
@@ -3876,7 +3876,7 @@ def rewrite_mamba_scan_to_fused(gm: torch.fx.GraphModule, window_size: int) -> i
         layer_key = _param_like_name(match["A"])
         if layer_key is None:
             continue
-        timestep = _get_chronos_meta(node, "timestep")
+        timestep = _get_kairos_meta(node, "timestep")
         if not isinstance(timestep, int):
             timestep = order[node]
         window_id = timestep // window_size

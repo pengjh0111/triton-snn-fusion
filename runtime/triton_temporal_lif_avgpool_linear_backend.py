@@ -16,7 +16,7 @@ class TritonTemporalLIFAvgPoolLinearResult:
 
 
 def strict_temporal_lif_avgpool_linear_enabled(strict: bool = False) -> bool:
-    return bool(strict) or os.environ.get("CHRONOS_STRICT_TEMPORAL_LIF_AVGPOOL_LINEAR_TRITON", "0") == "1"
+    return bool(strict) or os.environ.get("KAIROS_STRICT_TEMPORAL_LIF_AVGPOOL_LINEAR_TRITON", "0") == "1"
 
 
 def check_temporal_lif_avgpool_linear_support(x_seq, v_init, fc_weight, fc_bias, tau) -> List[str]:

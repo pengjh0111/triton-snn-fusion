@@ -121,7 +121,7 @@ def _tag_timesteps_for_test(gm: torch.fx.GraphModule, op_names, T: int):
     if candidates and len(candidates) % T == 0:
         per_timestep = len(candidates) // T
         for index, node in enumerate(candidates):
-            setattr(node, "_chronos_timestep", index // per_timestep)
+            setattr(node, "_kairos_timestep", index // per_timestep)
         return len(candidates)
 
     count_by_kind = {}
@@ -130,7 +130,7 @@ def _tag_timesteps_for_test(gm: torch.fx.GraphModule, op_names, T: int):
         if kind is None:
             continue
         count = count_by_kind.get(kind, 0)
-        setattr(node, "_chronos_timestep", count % T)
+        setattr(node, "_kairos_timestep", count % T)
         count_by_kind[kind] = count + 1
     return sum(count_by_kind.values())
 
@@ -218,11 +218,11 @@ def run_case(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Minimal correctness tests for Chronos FX spatial batching.")
+    parser = argparse.ArgumentParser(description="Minimal correctness tests for Kairos FX spatial batching.")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--T", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=2)
-    parser.add_argument("--out-dir", default="/tmp/chronos_spatial_batching_unit")
+    parser.add_argument("--out-dir", default="/tmp/kairos_spatial_batching_unit")
     parser.add_argument("--rtol", type=float, default=1e-4)
     parser.add_argument("--atol", type=float, default=1e-4)
     args = parser.parse_args()

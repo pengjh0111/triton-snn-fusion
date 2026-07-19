@@ -231,7 +231,7 @@ def print_table(rows: List[Dict]):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Correctness matrix for Chronos fused ConvLIF Triton kernels.")
+    parser = argparse.ArgumentParser(description="Correctness matrix for Kairos fused ConvLIF Triton kernels.")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--dtype", choices=("fp32", "fp16"), default="fp32")
     parser.add_argument("--rtol", type=float, default=None)

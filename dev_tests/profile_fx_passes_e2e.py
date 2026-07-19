@@ -1,5 +1,5 @@
 """Profiler attribution: drive the actual compiled 'standalone' FX-rewritten
-execution path (not eager) for the full ChronosSpikeTransformer, with and
+execution path (not eager) for the full KairosSpikeTransformer, with and
 without the post-fuse passes, and report attention-kernel time share.
 """
 import argparse
@@ -19,12 +19,12 @@ import runtime.snn_custom_ops as snn_custom_ops
 
 
 def build_and_compile(pass_env, tmp_dir):
-    from benchmarks.benchmark_chronos_runtime import parse_args
-    from benchmarks.validate_chronos_baselines import (
+    from benchmarks.benchmark_kairos_runtime import parse_args
+    from benchmarks.validate_kairos_baselines import (
         RewriteCounters, make_resnet_layer, make_rewrite_backend, make_model_input, SingleStepModeLoopWrapper,
     )
 
-    all_vars = ("CHRONOS_PASS_SDPA", "CHRONOS_PASS_STACK_CSE", "CHRONOS_PASS_VINIT_CLEANUP", "CHRONOS_PASS_CLASSIFIER_BATCH")
+    all_vars = ("KAIROS_PASS_SDPA", "KAIROS_PASS_STACK_CSE", "KAIROS_PASS_VINIT_CLEANUP", "KAIROS_PASS_CLASSIFIER_BATCH")
     for v in all_vars:
         os.environ.pop(v, None)
     for v, enabled in pass_env.items():
@@ -94,10 +94,10 @@ def profile_case(label, pass_env, tmp_root, reps=10):
 
 
 def main():
-    tmp_root = Path("/tmp/chronos_fx_pass_profile")
+    tmp_root = Path("/tmp/kairos_fx_pass_profile")
     tmp_root.mkdir(parents=True, exist_ok=True)
     profile_case("baseline_off", {}, tmp_root)
-    profile_case("all_on", {"CHRONOS_PASS_SDPA": True, "CHRONOS_PASS_STACK_CSE": True, "CHRONOS_PASS_VINIT_CLEANUP": True, "CHRONOS_PASS_CLASSIFIER_BATCH": True}, tmp_root)
+    profile_case("all_on", {"KAIROS_PASS_SDPA": True, "KAIROS_PASS_STACK_CSE": True, "KAIROS_PASS_VINIT_CLEANUP": True, "KAIROS_PASS_CLASSIFIER_BATCH": True}, tmp_root)
 
 
 if __name__ == "__main__":

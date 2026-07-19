@@ -17,7 +17,7 @@ class TritonTemporalLIFResult:
 
 
 def strict_temporal_lif_enabled(strict: bool = False) -> bool:
-    return bool(strict) or os.environ.get("CHRONOS_STRICT_TEMPORAL_LIF_TRITON", "0") == "1"
+    return bool(strict) or os.environ.get("KAIROS_STRICT_TEMPORAL_LIF_TRITON", "0") == "1"
 
 
 def check_temporal_lif_support(

@@ -1,7 +1,7 @@
 """Pass A: replace matmul -> scale -> softmax(dim=-1) -> matmul attention
 patterns with torch.nn.functional.scaled_dot_product_attention (SDPA).
 
-Toggle: env var CHRONOS_PASS_SDPA (default: on; set to "0"/"false" to
+Toggle: env var KAIROS_PASS_SDPA (default: on; set to "0"/"false" to
 disable -- see compiler/passes/registry.py).
 
 Verification level: tolerance (SDPA's internal reduction order over the

@@ -15,7 +15,7 @@ import torch
 
 import runtime.snn_custom_ops as snn_custom_ops
 
-from benchmarks.validate_chronos_baselines import (
+from benchmarks.validate_kairos_baselines import (
     SingleStepModeLoopWrapper,
     build_placeholder_values,
     make_resnet_layer,
@@ -229,9 +229,9 @@ def residual_lif_nodes(gm: torch.fx.GraphModule) -> List[Dict[str, Any]]:
                 "name": node.name,
                 "target": target_text(node),
                 "users": [user.name for user in node.users],
-                "chronos_timestep": node.meta.get("chronos_timestep"),
-                "chronos_window_id": node.meta.get("chronos_window_id"),
-                "chronos_role": node.meta.get("chronos_role"),
+                "kairos_timestep": node.meta.get("kairos_timestep"),
+                "kairos_window_id": node.meta.get("kairos_window_id"),
+                "kairos_role": node.meta.get("kairos_role"),
             }
         )
     return out
@@ -809,7 +809,7 @@ def make_backend(args, out_dir: Path):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Dump processed Chronos FX IR.")
+    parser = argparse.ArgumentParser(description="Dump processed Kairos FX IR.")
 
     parser.add_argument("--model", default="resnet18", choices=["resnet18", "resnet34", "mobilenetv1", "mobilenetv2"])
     parser.add_argument("--T", type=int, default=16)

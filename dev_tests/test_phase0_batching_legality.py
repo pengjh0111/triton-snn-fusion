@@ -12,7 +12,7 @@ across t would silently reuse the wrong per-t value and produce a
 mathematically incorrect graph.
 
 This test builds a minimal 2-timestep feedback graph by hand (no Dynamo/
-torch.compile involved -- just enough FX structure + chronos_timestep
+torch.compile involved -- just enough FX structure + kairos_timestep
 metadata to exercise collect_spatial_batch_candidates directly) and checks:
   1. The W_x-side conv (input = fresh per-t slice of an external tensor,
      tracing back to a placeholder) IS accepted as a batching candidate.
@@ -68,22 +68,22 @@ def build_minimal_feedback_graph(T: int = 2, C: int = 4, HW: int = 8):
     nodes_by_role = {"xproj": [], "hproj": []}
     for t in range(T):
         x_t = graph.call_function(torch.ops.aten.select, args=(x_seq, 0, t))
-        x_t.meta["chronos_timestep"] = t
+        x_t.meta["kairos_timestep"] = t
 
         xproj = graph.call_function(F.conv2d, args=(x_t, w_x, None, (1, 1), (1, 1)))
-        xproj.meta["chronos_timestep"] = t
+        xproj.meta["kairos_timestep"] = t
         nodes_by_role["xproj"].append(xproj)
 
         hproj = graph.call_function(F.conv2d, args=(h_prev, w_h, None, (1, 1), (1, 1)))
-        hproj.meta["chronos_timestep"] = t
+        hproj.meta["kairos_timestep"] = t
         nodes_by_role["hproj"].append(hproj)
 
         gate_sum = graph.call_function(torch.add, args=(xproj, hproj))
-        gate_sum.meta["chronos_timestep"] = t
+        gate_sum.meta["kairos_timestep"] = t
         gate = graph.call_function(torch.sigmoid, args=(gate_sum,))
-        gate.meta["chronos_timestep"] = t
+        gate.meta["kairos_timestep"] = t
         h_t = graph.call_function(torch.mul, args=(gate, h_prev))
-        h_t.meta["chronos_timestep"] = t
+        h_t.meta["kairos_timestep"] = t
 
         h_prev = h_t
 
@@ -164,9 +164,9 @@ def test_existing_snn_graph_batching_decisions_unchanged():
     conv_nodes = []
     for t in range(T):
         x_t = graph.call_function(torch.ops.aten.select, args=(x_seq, 0, t))
-        x_t.meta["chronos_timestep"] = t
+        x_t.meta["kairos_timestep"] = t
         conv = graph.call_function(F.conv2d, args=(x_t, w, None, (1, 1), (1, 1)))
-        conv.meta["chronos_timestep"] = t
+        conv.meta["kairos_timestep"] = t
         conv_nodes.append(conv)
         # membrane state recurrence hidden behind an opaque snn_custom.* boundary,
         # exactly like the real fused_conv_lif_state / fused_temporal_lif_state ops.
@@ -174,11 +174,11 @@ def test_existing_snn_graph_batching_decisions_unchanged():
             torch.ops.snn_custom.fused_temporal_lif_state.default,
             args=(conv, v_prev, 1.0, 0.0, 2.0, True),
         )
-        fused.meta["chronos_timestep"] = t
+        fused.meta["kairos_timestep"] = t
         spike = graph.call_function(operator.getitem, args=(fused, 0))
-        spike.meta["chronos_timestep"] = t
+        spike.meta["kairos_timestep"] = t
         v_next = graph.call_function(operator.getitem, args=(fused, 1))
-        v_next.meta["chronos_timestep"] = t
+        v_next.meta["kairos_timestep"] = t
         v_prev = v_next
 
     graph.output(v_prev)

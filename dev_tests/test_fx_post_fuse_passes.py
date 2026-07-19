@@ -6,7 +6,7 @@ Each pass gets:
   - a graph-structure assertion (node-count/pattern checks), and
   - a numerical validation test at the level specified in the task spec
     (bit-exact for B/C, tolerance for A/D), comparing the real
-    ChronosSpikeTransformer's output with the pass off vs on.
+    KairosSpikeTransformer's output with the pass off vs on.
 
 Pass B additionally gets a synthetic-graph unit test, because the real model
 at the small size used here only ever produces ONE occurrence of its
@@ -44,10 +44,10 @@ FAILURES = []
 # defaults unset vars to enabled) now means "all on", not "all off" -- so
 # every "_off" baseline in this file must set all four explicitly to False.
 ALL_PASSES_OFF = {
-    "CHRONOS_PASS_SDPA": False,
-    "CHRONOS_PASS_STACK_CSE": False,
-    "CHRONOS_PASS_VINIT_CLEANUP": False,
-    "CHRONOS_PASS_CLASSIFIER_BATCH": False,
+    "KAIROS_PASS_SDPA": False,
+    "KAIROS_PASS_STACK_CSE": False,
+    "KAIROS_PASS_VINIT_CLEANUP": False,
+    "KAIROS_PASS_CLASSIFIER_BATCH": False,
 }
 
 
@@ -63,10 +63,10 @@ def check(name: str, condition: bool, detail: str = ""):
 # --------------------------------------------------------------------------
 
 def _build_args(**overrides) -> argparse.Namespace:
-    from benchmarks.benchmark_chronos_runtime import parse_args
+    from benchmarks.benchmark_kairos_runtime import parse_args
 
     argv = [
-        "benchmark_chronos_runtime.py",
+        "benchmark_kairos_runtime.py",
         "--models", "spiketransformer",
         "--T", "4",
         "--batch-size", "2",
@@ -100,14 +100,14 @@ def _build_args(**overrides) -> argparse.Namespace:
 
 
 def _capture_gm_only(pass_env: dict, tmp_dir: Path, seed: int = 2026):
-    """Build ChronosSpikeTransformer, run it once through torch.compile with
+    """Build KairosSpikeTransformer, run it once through torch.compile with
     make_rewrite_backend (eager mode), applying only the passes named True in
     pass_env. Returns (output_tensor, captured_gm) -- the GraphModule is
     recovered from the eager-mode backend's returned callable (gm.forward),
     via its __self__."""
     import os
 
-    from benchmarks.validate_chronos_baselines import (
+    from benchmarks.validate_kairos_baselines import (
         RewriteCounters,
         make_resnet_layer,
         make_rewrite_backend,
@@ -116,7 +116,7 @@ def _capture_gm_only(pass_env: dict, tmp_dir: Path, seed: int = 2026):
     )
 
     old_env = {}
-    all_pass_vars = ("CHRONOS_PASS_SDPA", "CHRONOS_PASS_STACK_CSE", "CHRONOS_PASS_VINIT_CLEANUP", "CHRONOS_PASS_CLASSIFIER_BATCH")
+    all_pass_vars = ("KAIROS_PASS_SDPA", "KAIROS_PASS_STACK_CSE", "KAIROS_PASS_VINIT_CLEANUP", "KAIROS_PASS_CLASSIFIER_BATCH")
     for var in all_pass_vars:
         old_env[var] = os.environ.get(var)
         os.environ.pop(var, None)
@@ -216,7 +216,7 @@ def _count_targets(gm, predicate):
 def test_pass_a_real_model(tmp_root: Path):
     print("\n=== Pass A (SDPA): real-model graph assertion + tolerance numerical test ===")
     out_off, gm_off = _capture_gm_only(ALL_PASSES_OFF, tmp_root / "a_off")
-    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "CHRONOS_PASS_SDPA": True}, tmp_root / "a_on")
+    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "KAIROS_PASS_SDPA": True}, tmp_root / "a_on")
 
     if gm_on is None:
         check("pass_a: captured graph module", False, "gm capture failed")
@@ -244,7 +244,7 @@ def test_pass_a_real_model(tmp_root: Path):
 def test_pass_c_real_model(tmp_root: Path):
     print("\n=== Pass C (v_init cleanup): real-model graph assertion + bit-exact numerical test ===")
     out_off, gm_off = _capture_gm_only(ALL_PASSES_OFF, tmp_root / "c_off")
-    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "CHRONOS_PASS_VINIT_CLEANUP": True}, tmp_root / "c_on")
+    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "KAIROS_PASS_VINIT_CLEANUP": True}, tmp_root / "c_on")
 
     if gm_on is None:
         check("pass_c: captured graph module", False, "gm capture failed")
@@ -275,7 +275,7 @@ def test_pass_c_real_model(tmp_root: Path):
 def test_pass_d_real_model(tmp_root: Path):
     print("\n=== Pass D (classifier batching): real-model graph assertion + tolerance numerical test ===")
     out_off, gm_off = _capture_gm_only(ALL_PASSES_OFF, tmp_root / "d_off")
-    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "CHRONOS_PASS_CLASSIFIER_BATCH": True}, tmp_root / "d_on")
+    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "KAIROS_PASS_CLASSIFIER_BATCH": True}, tmp_root / "d_on")
 
     if gm_on is None:
         check("pass_d: captured graph module", False, "gm capture failed")
@@ -303,7 +303,7 @@ def test_pass_d_real_model(tmp_root: Path):
 def test_pass_b_real_model_smoke(tmp_root: Path):
     print("\n=== Pass B (stack CSE): real-model smoke test (idempotent, no crash, bit-exact if it does match) ===")
     out_off, gm_off = _capture_gm_only(ALL_PASSES_OFF, tmp_root / "b_off")
-    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "CHRONOS_PASS_STACK_CSE": True}, tmp_root / "b_on")
+    out_on, gm_on = _capture_gm_only({**ALL_PASSES_OFF, "KAIROS_PASS_STACK_CSE": True}, tmp_root / "b_on")
     if gm_on is None:
         check("pass_b_real: captured graph module", False, "gm capture failed")
         return
@@ -318,10 +318,10 @@ def test_combined_all_passes(tmp_root: Path):
     out_off, _ = _capture_gm_only(ALL_PASSES_OFF, tmp_root / "combo_off")
     out_on, gm_on = _capture_gm_only(
         {
-            "CHRONOS_PASS_SDPA": True,
-            "CHRONOS_PASS_STACK_CSE": True,
-            "CHRONOS_PASS_VINIT_CLEANUP": True,
-            "CHRONOS_PASS_CLASSIFIER_BATCH": True,
+            "KAIROS_PASS_SDPA": True,
+            "KAIROS_PASS_STACK_CSE": True,
+            "KAIROS_PASS_VINIT_CLEANUP": True,
+            "KAIROS_PASS_CLASSIFIER_BATCH": True,
         },
         tmp_root / "combo_on",
     )
@@ -355,7 +355,7 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is required")
 
-    tmp_root = Path(args.tmp_dir) if args.tmp_dir else Path("/tmp/chronos_fx_pass_tests")
+    tmp_root = Path(args.tmp_dir) if args.tmp_dir else Path("/tmp/kairos_fx_pass_tests")
     tmp_root.mkdir(parents=True, exist_ok=True)
 
     test_pass_b_synthetic()

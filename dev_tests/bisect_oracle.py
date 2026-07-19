@@ -35,8 +35,8 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA required")
 
-    from benchmarks.benchmark_chronos_runtime import parse_args
-    from benchmarks.validate_chronos_baselines import (
+    from benchmarks.benchmark_kairos_runtime import parse_args
+    from benchmarks.validate_kairos_baselines import (
         RewriteCounters, make_resnet_layer, make_rewrite_backend, make_model_input, SingleStepModeLoopWrapper,
     )
 
@@ -75,7 +75,7 @@ def main():
     x = make_model_input("mobilenetv2", parsed, torch_dtype)
 
     counters = RewriteCounters()
-    tmp_dir = Path(f"/tmp/chronos_bisect_oracle/T{args.T}_b{args.batch_size}_w{window}")
+    tmp_dir = Path(f"/tmp/kairos_bisect_oracle/T{args.T}_b{args.batch_size}_w{window}")
     backend = make_rewrite_backend(parsed, tmp_dir, counters)
     torch._dynamo.reset()
     compiled = torch.compile(model, backend=backend, fullgraph=False, dynamic=False)

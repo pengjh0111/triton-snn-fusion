@@ -63,7 +63,7 @@ cd triton-snn-fusion
 pip install -r requirements.txt   # PyTorch ≥ 2.x, Triton ≥ 3.x
 
 # Validate fused kernels + rewritten graph against eager baselines
-python benchmarks/validate_chronos_baselines.py \
+python benchmarks/validate_kairos_baselines.py \
     --enable-temporal-rewrite \
     --rewrite-backend-mode standalone
 ```
@@ -72,11 +72,11 @@ python benchmarks/validate_chronos_baselines.py \
 
 | Flag | Effect |
 |---|---|
-| `CHRONOS_BATCHED_LINEAR_LIF_BACKEND` | select linear+LIF kernel backend (`codegen` / `tc` fallback) |
-| `CHRONOS_PASS_SDPA` | SDPA rewrite pass |
-| `CHRONOS_PASS_STACK_CSE` | input-stack CSE pass |
-| `CHRONOS_PASS_VINIT_CLEANUP` | state-init cleanup pass |
-| `CHRONOS_PASS_CLASSIFIER_BATCH` | classifier-head batching pass |
+| `KAIROS_BATCHED_LINEAR_LIF_BACKEND` | select linear+LIF kernel backend (`codegen` / `tc` fallback) |
+| `KAIROS_PASS_SDPA` | SDPA rewrite pass |
+| `KAIROS_PASS_STACK_CSE` | input-stack CSE pass |
+| `KAIROS_PASS_VINIT_CLEANUP` | state-init cleanup pass |
+| `KAIROS_PASS_CLASSIFIER_BATCH` | classifier-head batching pass |
 
 <!-- TODO: keep this table in sync with compiler/passes/registry.py -->
 

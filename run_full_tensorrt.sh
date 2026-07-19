@@ -77,7 +77,7 @@ for MODEL in "${MODELS[@]}"; do
 
 python3 benchmarks/benchmark_tensorrt_runtime.py \
       --models ${MODEL} \
-      --lif-impl chronos \
+      --lif-impl kairos \
       --execution-modes single_step_mode \
       --precisions ${PREC} \
       --T 16 \

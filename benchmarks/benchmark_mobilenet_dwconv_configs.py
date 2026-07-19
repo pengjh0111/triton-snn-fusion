@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from benchmarks.validate_chronos_baselines import ChronosMobileNetV1, ChronosMobileNetV2
+from benchmarks.validate_kairos_baselines import KairosMobileNetV1, KairosMobileNetV2
 from kernels.benchmark_conv_lif_temporal_general import run_fused_temporal_general
 
 
@@ -40,9 +40,9 @@ def _conv_out(size: int, kernel: int, stride: int, padding: int, dilation: int =
 
 def _make_mobilenet_model(model_name: str, *, model_channels: int, lif_impl: str):
     if model_name == "mobilenetv1":
-        return ChronosMobileNetV1(channels=model_channels, step_mode="s", lif_impl=lif_impl)
+        return KairosMobileNetV1(channels=model_channels, step_mode="s", lif_impl=lif_impl)
     if model_name == "mobilenetv2":
-        return ChronosMobileNetV2(channels=model_channels, step_mode="s", lif_impl=lif_impl)
+        return KairosMobileNetV2(channels=model_channels, step_mode="s", lif_impl=lif_impl)
     raise ValueError(f"unsupported MobileNet model: {model_name}")
 
 
@@ -261,7 +261,7 @@ def main():
     parser = argparse.ArgumentParser(description="Sweep MobileNet depthwise temporal ConvLIF Triton configs.")
     parser.add_argument("--model", choices=("mobilenetv1", "mobilenetv2"), default="mobilenetv1")
     parser.add_argument("--model-channels", type=int, default=64)
-    parser.add_argument("--lif-impl", default="chronos")
+    parser.add_argument("--lif-impl", default="kairos")
     parser.add_argument("--T", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--height", type=int, default=32)

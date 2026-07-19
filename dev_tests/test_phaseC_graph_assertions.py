@@ -16,10 +16,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 import runtime.snn_custom_ops as snn_custom_ops
-from benchmarks.validate_chronos_baselines import (
-    ChronosConvLSTM,
-    ChronosDeepSpeech2,
-    ChronosMamba,
+from benchmarks.validate_kairos_baselines import (
+    KairosConvLSTM,
+    KairosDeepSpeech2,
+    KairosMamba,
     SequenceInputLoopWrapper,
 )
 from compiler.fx_lif_temporal_rewrite import (
@@ -53,7 +53,7 @@ def test_convlstm_graph_assertions():
     torch.manual_seed(0)
     T = 4
     n_layer = 2
-    model = ChronosConvLSTM(
+    model = KairosConvLSTM(
         in_channels=2, hidden_channels=4, num_layers=n_layer, num_classes=3, height=8, width=8,
     ).to(DEVICE).eval()
     wrapper = SequenceInputLoopWrapper(model, T).to(DEVICE).eval()
@@ -90,7 +90,7 @@ def test_gru_graph_assertions():
     torch.manual_seed(0)
     T = 4
     n_layer = 2
-    model = ChronosDeepSpeech2(
+    model = KairosDeepSpeech2(
         freq_bins=33, conv_channels=4, gru_hidden=16, gru_layers=n_layer, num_classes=7,
     ).to(DEVICE).eval()
     wrapper = SequenceInputLoopWrapper(model, T).to(DEVICE).eval()
@@ -127,7 +127,7 @@ def test_mamba_graph_assertions():
     torch.manual_seed(0)
     T = window = 4
     n_layer = 2
-    model = ChronosMamba(
+    model = KairosMamba(
         d_model=16, n_layer=n_layer, d_inner=32, d_state=8, d_conv=4, dt_rank=4, num_classes=5,
     ).to(DEVICE).eval()
     wrapper = SequenceInputLoopWrapper(model, T).to(DEVICE).eval()

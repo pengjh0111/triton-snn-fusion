@@ -71,9 +71,9 @@ def run_case(kind: str, args):
             tensor_rank = len(shape) if shape is not None else None
             is_kind = node.name.startswith("y")
             if is_kind:
-                node.meta["chronos_timestep"] = timestep
-                node.meta["chronos_window_id"] = 0
-                node.meta["chronos_occurrence"] = 0
+                node.meta["kairos_timestep"] = timestep
+                node.meta["kairos_window_id"] = 0
+                node.meta["kairos_occurrence"] = 0
                 timestep += 1
         stats = apply_spatial_batching(
             gm,

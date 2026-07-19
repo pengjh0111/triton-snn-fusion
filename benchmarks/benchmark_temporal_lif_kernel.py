@@ -171,7 +171,7 @@ def _print_table(rows: List[Dict]):
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Benchmark standalone Chronos temporal LIF kernel.")
+    parser = argparse.ArgumentParser(description="Benchmark standalone Kairos temporal LIF kernel.")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--dtype", choices=("fp32", "fp16"), default="fp32")
     parser.add_argument("--T", type=int, nargs="+", default=[1, 2, 4, 8, 16])

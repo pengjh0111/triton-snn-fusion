@@ -28,8 +28,8 @@ import runtime.snn_custom_ops as snn_custom_ops
 
 
 def build_and_compare(model_name, batch_size, window, T, height, width, model_channels, dtype, tmp_dir):
-    from benchmarks.benchmark_chronos_runtime import parse_args
-    from benchmarks.validate_chronos_baselines import (
+    from benchmarks.benchmark_kairos_runtime import parse_args
+    from benchmarks.validate_kairos_baselines import (
         RewriteCounters, make_resnet_layer, make_rewrite_backend, make_model_input, SingleStepModeLoopWrapper,
     )
 
@@ -101,7 +101,7 @@ def main():
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA required")
 
-    tmp_root = Path("/tmp/chronos_batch_window_matrix")
+    tmp_root = Path("/tmp/kairos_batch_window_matrix")
     tmp_root.mkdir(parents=True, exist_ok=True)
 
     results = []

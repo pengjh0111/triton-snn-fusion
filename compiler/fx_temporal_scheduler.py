@@ -318,7 +318,7 @@ def _dump_schedule_windows(path: Path, windows: List[Tuple[int, int, List[torch.
     for window_id, start_t, nodes in windows:
         end_t = start_t + 1
         if nodes:
-            timesteps = sorted({getattr(node, "_chronos_timestep", start_t) for node in nodes})
+            timesteps = sorted({getattr(node, "_kairos_timestep", start_t) for node in nodes})
             if timesteps:
                 end_t = timesteps[-1]
         lines.append(f"window_{window_id}: timesteps={start_t}..{end_t} nodes={len(nodes)}")
@@ -370,7 +370,7 @@ def reorder_fx_graph_by_temporal_windows(
             window_nodes = [node for block in blocks for node in block]
             for timestep_offset, block in enumerate(blocks):
                 for node in block:
-                    setattr(node, "_chronos_timestep", start + timestep_offset)
+                    setattr(node, "_kairos_timestep", start + timestep_offset)
             scheduled = build_scheduled_order_for_window(window_nodes, info)
             scheduled_windows.append((window_id, start, scheduled))
             covered.update(scheduled)

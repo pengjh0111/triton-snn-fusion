@@ -1,6 +1,6 @@
 """Phase B (Kairos Mamba workload): fused_temporal_selective_scan kernel
 unit test + microbench against the canonical eager step-by-step scan it
-replaces (exp/mul/add/sum chain, matching ChronosMambaBlockEager.forward's
+replaces (exp/mul/add/sum chain, matching KairosMambaBlockEager.forward's
 scan portion, from hA=exp(...) through y=... ).
 """
 import sys
@@ -68,7 +68,7 @@ def test_custom_op_dispatch():
 
 
 def microbench():
-    T, B, d_inner, d_state = 16, 16, 1536, 16  # matches ChronosMamba spec defaults
+    T, B, d_inner, d_state = 16, 16, 1536, 16  # matches KairosMamba spec defaults
     inputs = _make_inputs(T, B, d_inner, d_state, seed=7)
 
     def time_fn(fn, n=30, warmup=10):

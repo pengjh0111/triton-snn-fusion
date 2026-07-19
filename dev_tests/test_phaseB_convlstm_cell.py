@@ -1,7 +1,7 @@
 """Phase B (Kairos ConvLSTM workload): fused_convlstm_cell kernel unit test
 + microbench against the eager gate-chain it replaces (torch.chunk + 2x
 sigmoid + tanh + mul + add + sigmoid + tanh + mul, matching
-ChronosConvLSTMCellEager.forward's second half, everything after
+KairosConvLSTMCellEager.forward's second half, everything after
 xproj+hproj is summed).
 """
 import sys
@@ -57,7 +57,7 @@ def test_custom_op_dispatch():
 
 def microbench():
     torch.manual_seed(2)
-    B, C, H, W = 16, 64, 64, 64  # matches ChronosConvLSTM spec defaults
+    B, C, H, W = 16, 64, 64, 64  # matches KairosConvLSTM spec defaults
     gates_sum = torch.randn(B, 4 * C, H, W, device="cuda")
     c_prev = torch.randn(B, C, H, W, device="cuda")
 

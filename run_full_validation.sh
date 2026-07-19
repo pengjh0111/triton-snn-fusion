@@ -11,11 +11,26 @@ WINDOWS=(1 4 8 16)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2" "spiketransformer" "spikebert")
 MODELS=("mobilenetv1" "mobilenetv2")
 
+# Full per-case diagnostic output (annotation/spatial-batching/rewrite/pass
+# stats, one line per fused window, etc.) is verbose and is always kept
+# intact in each case's runtime.log via `tee` below. The console only needs
+# progress banners, per-case timing, and the final autotune summary table --
+# this awk filter narrows *console* output to that, without touching what
+# gets written to the log file or requiring changes to the benchmark script.
+concise_console() {
+  awk '
+    /Traceback|Error|error:/ { print; next }
+    /^\[AUTOTUNE SUMMARY\]/ { show=1 }
+    show { print; next }
+    /^\[BENCH\]/ || /^  [A-Za-z0-9_]+ mean=/ { print }
+  '
+}
+
 RUN_MODE=all
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --chronos-only)
-      RUN_MODE=chronos
+    --kairos-only)
+      RUN_MODE=kairos
       shift
       ;;
     --baseline-only)
@@ -23,21 +38,21 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     -h|--help)
-      echo "Usage: $0 [--chronos-only | --baseline-only]"
-      echo "  --chronos-only   run only Chronos standalone cases"
+      echo "Usage: $0 [--kairos-only | --baseline-only]"
+      echo "  --kairos-only   run only Kairos standalone cases"
       echo "  --baseline-only  run only the four configured baseline cases"
       exit 0
       ;;
     *)
       echo "Unknown argument: $1" >&2
-      echo "Usage: $0 [--chronos-only | --baseline-only]" >&2
+      echo "Usage: $0 [--kairos-only | --baseline-only]" >&2
       exit 2
       ;;
   esac
 done
 
-if [[ "${RUN_MODE}" == "chronos" ]]; then
-  CASE_ARGS=(--chronos-only)
+if [[ "${RUN_MODE}" == "kairos" ]]; then
+  CASE_ARGS=(--kairos-only)
 elif [[ "${RUN_MODE}" == "baseline" ]]; then
   CASE_ARGS=(--baseline-only --include-s-cases)
 else
@@ -73,9 +88,9 @@ echo "[RUN_MODE] ${RUN_MODE}"
 #     OUT_DIR=${OUT_ROOT}/${MODEL}/fp32_w${W}
 #     mkdir -p ${OUT_DIR}
 
-#     python3 benchmarks/benchmark_chronos_runtime.py \
+#     python3 benchmarks/benchmark_kairos_runtime.py \
 #       --models ${MODEL} \
-#       --lif-impl chronos \
+#       --lif-impl kairos \
 #       --T 16 \
 #       --batch-size ${BATCH_SIZE} \
 #       --height 224 \
@@ -140,9 +155,9 @@ for MODEL in "${MODELS[@]}"; do
 
       mkdir -p ${OUT_DIR}
 
-      python3 benchmarks/benchmark_chronos_runtime.py \
+      python3 benchmarks/benchmark_kairos_runtime.py \
         --models ${MODEL} \
-        --lif-impl chronos \
+        --lif-impl kairos \
         --T 16 \
         --batch-size ${BATCH_SIZE} \
         --height 224 \
@@ -166,7 +181,7 @@ for MODEL in "${MODELS[@]}"; do
         --repeat 100 \
         "${CASE_ARGS[@]}" \
         --out-dir ${OUT_DIR} \
-        2>&1 | tee ${OUT_DIR}/runtime.log
+        2>&1 | tee ${OUT_DIR}/runtime.log | concise_console
 
     done
   done
@@ -209,7 +224,7 @@ done
 #     OUT_DIR=${OUT_ROOT}/${MODEL}/fp16_w${W}
 #     mkdir -p ${OUT_DIR}
 
-#     python3 benchmarks/benchmark_chronos_runtime.py \
+#     python3 benchmarks/benchmark_kairos_runtime.py \
 #       --models ${MODEL} \
 #       --T 16 \
 #       --batch-size ${BATCH_SIZE} \
