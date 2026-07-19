@@ -20,7 +20,10 @@ from benchmarks.validate_chronos_baselines import (
     CHRONOS_MODEL_CHOICES,
     LIF_IMPL_CHOICES,
     SingleStepModeLoopWrapper,
+    SequenceInputLoopWrapper,
+    make_model_input,
     make_resnet_layer,
+    model_input_mode,
     reset_lif_modules,
 )
 from benchmarks.helpers.models_for_fx import CustomStatefulIFNode
@@ -160,10 +163,17 @@ def export_onnx(
             transformer_vocab_size=transformer_vocab_size,
             transformer_num_classes=transformer_num_classes,
         )
-        model = SingleStepModeLoopWrapper(
-            layer=layer,
-            T=T,
+        # Sequence-input models (convlstm/mamba/deepspeech2) use
+        # SequenceInputLoopWrapper -- same T-unrolled-into-one-onnx-graph
+        # convention as SingleStepModeLoopWrapper below, just fed a genuine
+        # per-t sequence instead of a replicated x. Dispatched by declared
+        # registration metadata (model_input_mode), not a name check.
+        wrapper_cls = SequenceInputLoopWrapper if model_input_mode(model_name) == "sequence" else SingleStepModeLoopWrapper
+        model = wrapper_cls(
+            layer,
+            T,
         )
+        result["wrapper"] = wrapper_cls.__name__
 
     else:
         raise ValueError(execution_mode)
@@ -187,7 +197,24 @@ def export_onnx(
         "wrapper=SingleStepModeLoopWrapper"
     )
 
-    if model_name == "spiketransformer":
+    if model_name == "convlstm":
+        # matches make_resnet_layer's convlstm_* defaults (not threaded
+        # through this function's params yet -- Phase A scope only).
+        x = torch.randn(
+            T, batch_size, 1, 64, 64,
+            device="cuda", dtype=dtype,
+        )
+    elif model_name == "mamba":
+        x = torch.randn(
+            T, batch_size, 768,
+            device="cuda", dtype=dtype,
+        )
+    elif model_name == "deepspeech2":
+        x = torch.randn(
+            batch_size, 1, 161, 2 * T,
+            device="cuda", dtype=dtype,
+        )
+    elif model_name == "spiketransformer":
         x = torch.randn(
             batch_size, sequence_length, transformer_input_dim,
             device="cuda", dtype=dtype,

@@ -3,7 +3,7 @@ import os
 import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -39,6 +39,21 @@ class TemporalPattern:
     v_prev_node: torch.fx.Node
     v_next_node: torch.fx.Node
     lif_params: Tuple[Any, Any, Any, Any]
+    # Anchor + closure representation (Phase C scheduling fix): patterns for
+    # workloads whose instance subgraph is a DAG, not the LIF triple's short
+    # linear chain (Mamba's x/z fork-join, unsqueeze branches, etc.), set
+    # these instead of relying on the 5 fixed role slots above, which have
+    # no way to express arbitrary topology or length. When non-empty,
+    # annotate_nodes_with_layer_and_timestep computes this instance's full
+    # member set as the graph closure between the two boundaries (forward-
+    # reachable from input_boundary, backward-reachable from
+    # output_boundary, bounded so the walk never crosses into another
+    # instance's own boundary nodes) and gives every member uniform,
+    # layer-grouped scheduling priority -- instead of only the explicitly
+    # named nodes. Empty (the default) preserves the original 5-role path
+    # unchanged for LIF patterns.
+    input_boundary: Tuple[torch.fx.Node, ...] = ()
+    output_boundary: Tuple[torch.fx.Node, ...] = ()
 
 
 @dataclass
@@ -337,6 +352,228 @@ def _lif_state_is_usable(lif_node: torch.fx.Node) -> Tuple[bool, str]:
     if non_getitem_users:
         return False, f"lif_state has non-getitem users {non_getitem_users}"
     return True, ""
+
+
+def _get_chronos_meta(node: torch.fx.Node, key: str, default=None):
+    meta_key = f"chronos_{key}"
+    if meta_key in node.meta:
+        return node.meta[meta_key]
+    return getattr(node, f"_chronos_{key}", default)
+
+
+def _param_like_name(node: Any) -> Optional[str]:
+    """Identify a placeholder/get_attr node carrying a module parameter --
+    torch.compile lifts parameters to placeholder nodes (confirmed via real
+    FX dumps: original_fx.txt shows every nn.Parameter as
+    `placeholder[target=L_self_...parameters_weight_]`, not get_attr), so
+    both ops must be checked to find a layer-identifying node."""
+    if not isinstance(node, torch.fx.Node) or node.op not in ("get_attr", "placeholder"):
+        return None
+    return str(node.target)
+
+
+def _make_synthetic_temporal_pattern(
+    anchor: torch.fx.Node,
+    layer_id: str,
+    conv_input: torch.fx.Node,
+    input_boundary: Tuple[torch.fx.Node, ...] = (),
+    output_boundary: Tuple[torch.fx.Node, ...] = (),
+) -> "TemporalPattern":
+    """Builds a TemporalPattern for split_fx_graph_into_timesteps /
+    annotate_temporal_metadata to consume for a non-LIF recurrent workload
+    (ConvLSTM/Mamba/DeepSpeech2). Those two callers only ever read
+    pattern.conv_node (the per-timestep anchor used to find block
+    boundaries) and pattern.layer_id (to group an anchor's T recurring
+    instances together, mirroring how conv_weight_key/bn_key identify a
+    conv+bn+lif layer's instances) -- the other TemporalPattern fields exist
+    only for the LIF-specific fusion rewrite passes, which never consume
+    patterns from this function, so they're filled with the anchor node
+    itself / harmless placeholders rather than real conv/bn/lif nodes.
+    input_boundary/output_boundary opt into the closure-based scheduling
+    path in annotate_nodes_with_layer_and_timestep (see TemporalPattern's
+    docstring) for patterns whose per-instance subgraph is too long/DAG-
+    shaped for the 5 fixed role slots to usefully cover.
+    """
+    return TemporalPattern(
+        layer_id=layer_id,
+        timestep_index=0,
+        input_boundary=input_boundary,
+        output_boundary=output_boundary,
+        conv_node=anchor,
+        bn_node=anchor,
+        lif_node=anchor,
+        spike_getitem=anchor,
+        v_getitem=anchor,
+        conv_input=conv_input,
+        conv_weight_key=layer_id,
+        bn_key=layer_id,
+        v_prev_node=anchor,
+        v_next_node=anchor,
+        lif_params=(None, None, None, None),
+    )
+
+
+def collect_convlstm_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
+    """Per-timestep anchor for ConvLSTM: xproj = conv_x(x_t) -- the first op
+    of each timestep's cell (ChronosConvLSTMCellEager.forward: xproj is
+    computed before hproj/chunk/everything else), matching the convention
+    conv_node uses for LIF patterns (the conv node is likewise each
+    timestep's first op) -- split_fx_graph_into_timesteps positions block
+    boundaries starting *at* the marker node, so anchoring on anything but
+    the first op of a timestep leaves that timestep's preceding nodes
+    orphaned into the previous block (confirmed via a real trace: anchoring
+    on the chunk node instead put xproj/hproj/add in the wrong block and
+    the very first timestep's ones outside any block at all). Verified by
+    confirming this conv2d's *output* reaches a torch.chunk(_, 4, dim=1) --
+    i.e. it really is a ConvLSTM gate-projection conv, not an unrelated one
+    -- via a bounded forward walk, without anchoring on the chunk itself.
+    """
+    patterns: List[TemporalPattern] = []
+    for node in gm.graph.nodes:
+        if node.op != "call_function" or node.target not in (torch.conv2d, F.conv2d):
+            continue
+        weight_x = node.args[1] if len(node.args) > 1 else None
+        layer_key = _param_like_name(weight_x)
+        if layer_key is None or "conv_x" not in layer_key:
+            continue
+        # forward-walk a few hops to confirm this conv's output reaches an
+        # add -> chunk(_,4,dim=1), the ConvLSTM gate-split signature.
+        found_chunk = False
+        frontier = list(node.users)
+        for _ in range(4):
+            next_frontier = []
+            for user in frontier:
+                if user.target is torch.chunk and len(user.args) > 1 and user.args[1] == 4 and user.kwargs.get("dim") == 1:
+                    found_chunk = True
+                    break
+                next_frontier.extend(user.users)
+            if found_chunk:
+                break
+            frontier = next_frontier
+        if not found_chunk:
+            continue
+        patterns.append(_make_synthetic_temporal_pattern(node, f"convlstm_cell:{layer_key}", node.args[0]))
+    return patterns
+
+
+def collect_mamba_scan_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
+    """Per-timestep anchor for Mamba: y = self.norms[layer_idx](h) -- the
+    true first op of each timestep's block (ChronosMamba.step: "residual =
+    h; y = self.norms[layer_idx](h)"), *not* xz = in_proj(y) as an earlier
+    version of this collector anchored on. For layer 0 specifically, h is
+    directly x_t (an external per-t value), so the LayerNorm call sits
+    between x_t's getitem and in_proj -- anchoring on in_proj left this one
+    real op orphaned in the previous timestep's block (confirmed via a real
+    trace: layer 0's in_proj at t>=1 was incorrectly flagged
+    feedback_dependency because its *own* input, the LayerNorm, inherited
+    the off-by-one; layer 1's in_proj was unaffected since its LayerNorm
+    input is layer 0's same-timestep output, not an external getitem).
+    Verified by confirming this layer_norm's output reaches, within a few
+    hops, a linear whose weight contains "in_proj" feeding a
+    torch.chunk(_,2,dim=-1) (the xz -> x,z split) -- i.e. it really is one
+    of the per-block pre-norms, not final_norm (which precedes the head
+    linear instead, and only exists once per timestep, not once per layer).
+    """
+    patterns: List[TemporalPattern] = []
+    layer_norm_targets = (torch.nn.functional.layer_norm, F.layer_norm)
+    for node in gm.graph.nodes:
+        if node.op != "call_function" or node.target not in layer_norm_targets:
+            continue
+        weight = node.args[2] if len(node.args) > 2 else node.kwargs.get("weight")
+        layer_key = _param_like_name(weight)
+        if layer_key is None:
+            continue
+        found_in_proj_chunk = False
+        frontier = list(node.users)
+        for _ in range(4):
+            next_frontier = []
+            for user in frontier:
+                if user.target in (torch._C._nn.linear, F.linear):
+                    user_weight = user.args[1] if len(user.args) > 1 else None
+                    user_weight_key = _param_like_name(user_weight)
+                    if user_weight_key is not None and "in_proj" in user_weight_key:
+                        for grandchild in user.users:
+                            if (
+                                grandchild.target is torch.chunk
+                                and len(grandchild.args) > 1
+                                and grandchild.args[1] == 2
+                                and grandchild.kwargs.get("dim") == -1
+                            ):
+                                found_in_proj_chunk = True
+                                break
+                if found_in_proj_chunk:
+                    break
+                next_frontier.extend(user.users)
+            if found_in_proj_chunk:
+                break
+            frontier = next_frontier
+        if not found_in_proj_chunk:
+            continue
+        patterns.append((node, layer_key))
+
+    # Correlate each LayerNorm anchor with its own instance's scan chain
+    # (the reorder_fx_graph_by_temporal_windows scheduler needs role nodes
+    # spanning the *scan chain itself*, not just the LayerNorm anchor, to
+    # give those nodes scheduling priority -- otherwise the window-spanning
+    # rewrite's stack/fused-call insertion point can violate topological
+    # order, since same-timestep, cross-layer consumers of a scan's y
+    # output (e.g. layer N+1's norm(h) at the same t) are not guaranteed to
+    # sort after the whole window's scan chain by default. Both lists occur
+    # in the same relative graph order (each layer-timestep's LayerNorm is
+    # immediately followed, a bounded number of hops later, by that same
+    # instance's scan) since Dynamo's unrolled trace is deterministic and
+    # uniform, so pairing by position index is exact here (verified against
+    # a real trace) without an expensive full reachability search.
+    hA_nodes = [n for n in gm.graph.nodes if n.target is torch.exp and _match_mamba_scan_step(n) is not None]
+    result: List[TemporalPattern] = []
+    for (anchor, layer_key), hA_node in zip(patterns, hA_nodes):
+        match = _match_mamba_scan_step(hA_node)
+        input_boundary = (anchor.args[0],) if isinstance(anchor.args[0], torch.fx.Node) else ()
+        output_boundary = (match["y"], match["ssm_state_new"]) if match is not None else ()
+        pattern = _make_synthetic_temporal_pattern(
+            anchor, f"mamba_scan:{layer_key}", anchor.args[0],
+            input_boundary=input_boundary, output_boundary=output_boundary,
+        )
+        if match is not None:
+            pattern.bn_node = match["hA"]
+            pattern.lif_node = match["ssm_state_new"]
+            pattern.spike_getitem = match["y"]
+            pattern.v_getitem = match["y"]
+        result.append(pattern)
+    return result
+
+
+def collect_gru_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
+    """Per-timestep anchor for the DeepSpeech2 GRU stack: xproj = w_x(x_t) --
+    the first op of each timestep's cell (ChronosGRUCellEager.forward:
+    xproj computed before hproj/chunk/everything else). Verified by
+    confirming this linear's output reaches a torch.chunk(_,3,dim=-1), the
+    xproj -> r,z,n split signature.
+    """
+    patterns: List[TemporalPattern] = []
+    for node in gm.graph.nodes:
+        if node.op != "call_function" or node.target not in (torch._C._nn.linear, F.linear):
+            continue
+        weight_x = node.args[1] if len(node.args) > 1 else None
+        layer_key = _param_like_name(weight_x)
+        if layer_key is None or "w_x" not in layer_key:
+            continue
+        found_chunk = False
+        frontier = list(node.users)
+        for _ in range(3):
+            next_frontier = []
+            for user in frontier:
+                if user.target is torch.chunk and len(user.args) > 1 and user.args[1] == 3 and user.kwargs.get("dim") == -1:
+                    found_chunk = True
+                    break
+                next_frontier.extend(user.users)
+            if found_chunk:
+                break
+            frontier = next_frontier
+        if not found_chunk:
+            continue
+        patterns.append(_make_synthetic_temporal_pattern(node, f"gru_cell:{layer_key}", node.args[0]))
+    return patterns
 
 
 def collect_conv_bn_lif_state_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
@@ -3179,3 +3416,531 @@ rewrite_temporal_lif_tail_to_fused = rewrite_temporal_lif_avgpool_linear_to_fuse
 dump_temporal_lif_tail_patterns = dump_temporal_lif_avgpool_linear_patterns
 dump_temporal_lif_tail_windows = dump_temporal_lif_avgpool_linear_windows
 count_fused_temporal_lif_tail_nodes = count_fused_temporal_lif_avgpool_linear_nodes
+
+
+################################################################################
+# Kairos sequence-input workload rewriters (Phase C step 2): swap each
+# matched cell's raw gate-chain subgraph for the corresponding Phase B
+# custom op call. Independent of the LIF fusion machinery above --
+# self-contained pattern match + graph.eliminate_dead_code() cleanup rather
+# than the TemporalWindow/_cleanup_window_nodes bookkeeping those passes use,
+# since these ops don't share that machinery's per-field shape
+# (spike_getitem/v_getitem etc. don't apply to a plain elementwise cell).
+# Every match step requires len(users)==1 on the intermediate node being
+# consumed next: conservative-by-construction, matching the "middle value
+# has a consumer outside the chain => skip" rule these passes must follow --
+# any extra consumer breaks the single-user check and the whole node is
+# left untouched.
+################################################################################
+
+
+def rewrite_convlstm_cell_to_fused(gm: torch.fx.GraphModule) -> int:
+    """Match ChronosConvLSTMCellEager.forward's gate chain (chunk(4,dim=1) of
+    xproj+hproj through to h_t/c_t; see collect_convlstm_cell_patterns for
+    the anchor-half of this pattern) and replace it with a single
+    fused_convlstm_cell(gates_sum, c_prev) call. Idempotent: once rewritten,
+    the chunk/sigmoid/tanh nodes this looks for no longer exist, so a second
+    pass over the same graph finds nothing.
+    """
+    replaced = 0
+    for node in list(gm.graph.nodes):
+        if node.op != "call_function" or node.target is not torch.chunk:
+            continue
+        if len(node.args) < 2 or node.args[1] != 4 or node.kwargs.get("dim") != 1:
+            continue
+        if len(node.users) != 4:
+            continue
+        add_node = node.args[0]
+        if not isinstance(add_node, torch.fx.Node) or add_node.target not in (operator.add, torch.add):
+            continue
+        if len(add_node.users) != 1:
+            continue
+
+        getitems: Dict[int, torch.fx.Node] = {}
+        ok = True
+        for user in node.users:
+            idx = _getitem_index(user)
+            if idx is None or idx in getitems:
+                ok = False
+                break
+            getitems[idx] = user
+        if not ok or set(getitems.keys()) != {0, 1, 2, 3}:
+            continue
+        i_node, f_node, g_node, o_node = getitems[0], getitems[1], getitems[2], getitems[3]
+        if any(len(gn.users) != 1 for gn in (i_node, f_node, g_node, o_node)):
+            continue
+
+        sig_f = next(iter(f_node.users))
+        if sig_f.target is not torch.sigmoid or len(sig_f.users) != 1:
+            continue
+        mul_fc = next(iter(sig_f.users))
+        if mul_fc.target not in (operator.mul, torch.mul) or len(mul_fc.users) != 1 or len(mul_fc.args) < 2:
+            continue
+        if mul_fc.args[0] is sig_f:
+            c_prev_node = mul_fc.args[1]
+        elif mul_fc.args[1] is sig_f:
+            c_prev_node = mul_fc.args[0]
+        else:
+            continue
+        if not isinstance(c_prev_node, torch.fx.Node):
+            continue
+
+        sig_i = next(iter(i_node.users))
+        if sig_i.target is not torch.sigmoid or len(sig_i.users) != 1:
+            continue
+        tanh_g = next(iter(g_node.users))
+        if tanh_g.target is not torch.tanh or len(tanh_g.users) != 1:
+            continue
+        mul_ig_candidates = set(sig_i.users) & set(tanh_g.users)
+        if len(mul_ig_candidates) != 1:
+            continue
+        mul_ig = next(iter(mul_ig_candidates))
+        if mul_ig.target not in (operator.mul, torch.mul) or len(mul_ig.users) != 1:
+            continue
+
+        c_t_candidates = set(mul_fc.users) & set(mul_ig.users)
+        if len(c_t_candidates) != 1:
+            continue
+        c_t_node = next(iter(c_t_candidates))
+        if c_t_node.target not in (operator.add, torch.add):
+            continue
+
+        sig_o = next(iter(o_node.users))
+        if sig_o.target is not torch.sigmoid or len(sig_o.users) != 1:
+            continue
+        tanh_c_t_candidates = [u for u in c_t_node.users if u.target is torch.tanh]
+        if len(tanh_c_t_candidates) != 1 or len(tanh_c_t_candidates[0].users) != 1:
+            continue
+        tanh_c_t = tanh_c_t_candidates[0]
+        h_t_candidates = set(sig_o.users) & set(tanh_c_t.users)
+        if len(h_t_candidates) != 1:
+            continue
+        h_t_node = next(iter(h_t_candidates))
+        if h_t_node.target not in (operator.mul, torch.mul):
+            continue
+
+        with gm.graph.inserting_before(node):
+            fused = gm.graph.call_function(
+                torch.ops.snn_custom.fused_convlstm_cell,
+                args=(add_node, c_prev_node),
+            )
+            fused.name = f"{node.name}_fused_convlstm_cell"
+            new_h = gm.graph.call_function(operator.getitem, args=(fused, 0))
+            new_h.name = f"{node.name}_fused_h_t"
+            new_c = gm.graph.call_function(operator.getitem, args=(fused, 1))
+            new_c.name = f"{node.name}_fused_c_t"
+
+        h_t_node.replace_all_uses_with(new_h)
+        c_t_node.replace_all_uses_with(new_c)
+        replaced += 1
+
+    if replaced:
+        gm.graph.eliminate_dead_code()
+        gm.graph.lint()
+        gm.recompile()
+    return replaced
+
+
+def rewrite_gru_cell_to_fused(gm: torch.fx.GraphModule) -> int:
+    """Match ChronosGRUCellEager.forward's gate chain (two chunk(3,dim=-1)
+    splits of xproj/hproj through to h_t; see collect_gru_cell_patterns for
+    the anchor-half of this pattern) and replace it with a single
+    fused_gru_cell(xproj, hproj, h_prev) call.
+    """
+    replaced = 0
+    for node in list(gm.graph.nodes):
+        if node.op != "call_function" or node.target is not torch.chunk:
+            continue
+        if len(node.args) < 2 or node.args[1] != 3 or node.kwargs.get("dim") != -1:
+            continue
+        if len(node.users) != 3:
+            continue
+        hproj_node = node.args[0]
+        if not isinstance(hproj_node, torch.fx.Node) or hproj_node.target not in (torch._C._nn.linear, F.linear):
+            continue
+
+        getitems: Dict[int, torch.fx.Node] = {}
+        ok = True
+        for user in node.users:
+            idx = _getitem_index(user)
+            if idx is None or idx in getitems:
+                ok = False
+                break
+            getitems[idx] = user
+        if not ok or set(getitems.keys()) != {0, 1, 2}:
+            continue
+        hproj_r, hproj_z, hproj_n = getitems[0], getitems[1], getitems[2]
+
+        # hproj_r/hproj_z feed an add with the sibling xproj chunk's r/z;
+        # hproj_n feeds a mul with r first. Use hproj_r's add partner to
+        # locate the xproj chunk (and confirm it is genuinely a chunk(3,-1)
+        # of a linear call, i.e. xproj, not some unrelated node).
+        if len(hproj_r.users) != 1 or len(hproj_z.users) != 1 or len(hproj_n.users) != 1:
+            continue
+        add_r = next(iter(hproj_r.users))
+        if add_r.target not in (operator.add, torch.add) or len(add_r.users) != 1 or len(add_r.args) < 2:
+            continue
+        xproj_r = add_r.args[0] if add_r.args[1] is hproj_r else (add_r.args[1] if add_r.args[0] is hproj_r else None)
+        if not isinstance(xproj_r, torch.fx.Node):
+            continue
+        xproj_chunk = xproj_r.args[0] if _getitem_index(xproj_r) == 0 and isinstance(xproj_r.args[0], torch.fx.Node) else None
+        if xproj_chunk is None or xproj_chunk.target is not torch.chunk:
+            continue
+        if len(xproj_chunk.args) < 2 or xproj_chunk.args[1] != 3 or xproj_chunk.kwargs.get("dim") != -1:
+            continue
+        xproj_node = xproj_chunk.args[0]
+        if not isinstance(xproj_node, torch.fx.Node) or xproj_node.target not in (torch._C._nn.linear, F.linear):
+            continue
+        xproj_getitems: Dict[int, torch.fx.Node] = {}
+        ok = True
+        for user in xproj_chunk.users:
+            idx = _getitem_index(user)
+            if idx is None or idx in xproj_getitems:
+                ok = False
+                break
+            xproj_getitems[idx] = user
+        if not ok or set(xproj_getitems.keys()) != {0, 1, 2}:
+            continue
+        xproj_r2, xproj_z, xproj_n = xproj_getitems[0], xproj_getitems[1], xproj_getitems[2]
+        if xproj_r2 is not xproj_r:
+            continue
+        if any(len(gn.users) != 1 for gn in (xproj_r, xproj_z, xproj_n)):
+            continue
+
+        sig_r = add_r
+        if len(sig_r.users) != 1:
+            continue
+        r_node = next(iter(sig_r.users))
+        if r_node.target is not torch.sigmoid or len(r_node.users) != 1:
+            continue
+
+        add_z_candidates = set(xproj_z.users) & set(hproj_z.users)
+        if len(add_z_candidates) != 1:
+            continue
+        add_z = next(iter(add_z_candidates))
+        if add_z.target not in (operator.add, torch.add) or len(add_z.users) != 1:
+            continue
+        z_node = next(iter(add_z.users))
+        # z legitimately feeds both (1-z) and z*h_prev -- exactly 2 users,
+        # unlike every other intermediate in this chain which feeds exactly
+        # one downstream op.
+        if z_node.target is not torch.sigmoid or len(z_node.users) != 2:
+            continue
+
+        mul_r_hn_candidates = set(r_node.users) & set(hproj_n.users)
+        if len(mul_r_hn_candidates) != 1:
+            continue
+        mul_r_hn = next(iter(mul_r_hn_candidates))
+        if mul_r_hn.target not in (operator.mul, torch.mul) or len(mul_r_hn.users) != 1:
+            continue
+        add_n_candidates = set(xproj_n.users) & set(mul_r_hn.users)
+        if len(add_n_candidates) != 1:
+            continue
+        add_n = next(iter(add_n_candidates))
+        if add_n.target not in (operator.add, torch.add) or len(add_n.users) != 1:
+            continue
+        n_node = next(iter(add_n.users))
+        if n_node.target is not torch.tanh or len(n_node.users) != 1:
+            continue
+
+        # h_t = (1-z)*n + z*h_prev
+        one_minus_z_candidates = [u for u in z_node.users if u.target in (operator.sub, torch.sub)]
+        if len(one_minus_z_candidates) != 1:
+            continue
+        one_minus_z = one_minus_z_candidates[0]
+        if len(one_minus_z.users) != 1:
+            continue
+        mul_1mz_n_candidates = set(one_minus_z.users) & set(n_node.users)
+        if len(mul_1mz_n_candidates) != 1:
+            continue
+        mul_1mz_n = next(iter(mul_1mz_n_candidates))
+        if mul_1mz_n.target not in (operator.mul, torch.mul) or len(mul_1mz_n.users) != 1:
+            continue
+        mul_z_h_candidates = [u for u in z_node.users if u.target in (operator.mul, torch.mul)]
+        if len(mul_z_h_candidates) != 1:
+            continue
+        mul_z_h = mul_z_h_candidates[0]
+        if len(mul_z_h.args) < 2 or len(mul_z_h.users) != 1:
+            continue
+        h_prev_node = mul_z_h.args[0] if mul_z_h.args[1] is z_node else (mul_z_h.args[1] if mul_z_h.args[0] is z_node else None)
+        if not isinstance(h_prev_node, torch.fx.Node):
+            continue
+        h_t_candidates = set(mul_1mz_n.users) & set(mul_z_h.users)
+        if len(h_t_candidates) != 1:
+            continue
+        h_t_node = next(iter(h_t_candidates))
+        if h_t_node.target not in (operator.add, torch.add):
+            continue
+
+        with gm.graph.inserting_before(xproj_chunk):
+            fused = gm.graph.call_function(
+                torch.ops.snn_custom.fused_gru_cell,
+                args=(xproj_node, hproj_node, h_prev_node),
+            )
+            fused.name = f"{node.name}_fused_gru_cell"
+
+        h_t_node.replace_all_uses_with(fused)
+        replaced += 1
+
+    if replaced:
+        gm.graph.eliminate_dead_code()
+        gm.graph.lint()
+        gm.recompile()
+    return replaced
+
+
+def _match_mamba_scan_step(hA_node: torch.fx.Node) -> Optional[Dict[str, torch.fx.Node]]:
+    """hA_node must be torch.exp(dt.unsqueeze(-1) * A); verifies and extracts
+    the full canonical selective-scan step exactly as
+    ChronosMambaBlockEager.forward computes it:
+        hA = exp(dt.unsqueeze(-1) * A)
+        ssm_state_new = hA*ssm_state_prev + (dt.unsqueeze(-1)*B_ssm.unsqueeze(1))*x.unsqueeze(-1)
+        y = (ssm_state_new*C_ssm.unsqueeze(1)).sum(-1) + D*x
+    Every intermediate is checked for single-user except dt (legitimately
+    unsqueezed twice) and x (legitimately consumed by both the scan and,
+    outside this pattern, x_proj/D-skip -- not itself checked here since
+    those extra uses are outside what this function inspects). Returns None
+    on any mismatch (conservative, matching the other two rewriters' style).
+    """
+    if hA_node.target is not torch.exp or len(hA_node.args) < 1 or len(hA_node.users) != 1:
+        return None
+    mul_1 = hA_node.args[0]
+    if not isinstance(mul_1, torch.fx.Node) or mul_1.target not in (operator.mul, torch.mul) or len(mul_1.args) < 2:
+        return None
+
+    def _is_unsqueeze(n):
+        return isinstance(n, torch.fx.Node) and n.op == "call_method" and n.target == "unsqueeze"
+
+    a0, a1 = mul_1.args[0], mul_1.args[1]
+    if _is_unsqueeze(a0) and _param_like_name(a1) is not None:
+        unsqueeze_dt_1, a_node = a0, a1
+    elif _is_unsqueeze(a1) and _param_like_name(a0) is not None:
+        unsqueeze_dt_1, a_node = a1, a0
+    else:
+        return None
+    if len(unsqueeze_dt_1.args) < 1 or len(unsqueeze_dt_1.users) != 1:
+        return None
+    dt_node = unsqueeze_dt_1.args[0]
+    if not isinstance(dt_node, torch.fx.Node):
+        return None
+
+    mul_2 = next(iter(hA_node.users))
+    if mul_2.target not in (operator.mul, torch.mul) or len(mul_2.args) < 2 or len(mul_2.users) != 1:
+        return None
+    ssm_state_prev = mul_2.args[0] if mul_2.args[1] is hA_node else (mul_2.args[1] if mul_2.args[0] is hA_node else None)
+    if not isinstance(ssm_state_prev, torch.fx.Node):
+        return None
+
+    dt_other_users = [u for u in dt_node.users if u is not unsqueeze_dt_1]
+    if len(dt_other_users) != 1:
+        return None
+    unsqueeze_dt_2 = dt_other_users[0]
+    if not _is_unsqueeze(unsqueeze_dt_2) or len(unsqueeze_dt_2.users) != 1:
+        return None
+    mul_3 = next(iter(unsqueeze_dt_2.users))
+    if mul_3.target not in (operator.mul, torch.mul) or len(mul_3.args) < 2 or len(mul_3.users) != 1:
+        return None
+    unsqueeze_b = mul_3.args[0] if mul_3.args[1] is unsqueeze_dt_2 else (mul_3.args[1] if mul_3.args[0] is unsqueeze_dt_2 else None)
+    if not _is_unsqueeze(unsqueeze_b) or len(unsqueeze_b.args) < 1 or len(unsqueeze_b.users) != 1:
+        return None
+    b_ssm_node = unsqueeze_b.args[0]
+
+    mul_4 = next(iter(mul_3.users))
+    if mul_4.target not in (operator.mul, torch.mul) or len(mul_4.args) < 2 or len(mul_4.users) != 1:
+        return None
+    unsqueeze_x = mul_4.args[0] if mul_4.args[1] is mul_3 else (mul_4.args[1] if mul_4.args[0] is mul_3 else None)
+    if not _is_unsqueeze(unsqueeze_x) or len(unsqueeze_x.args) < 1:
+        return None
+    x_node = unsqueeze_x.args[0]
+
+    ssm_state_new_candidates = set(mul_2.users) & set(mul_4.users)
+    if len(ssm_state_new_candidates) != 1:
+        return None
+    ssm_state_new = next(iter(ssm_state_new_candidates))
+    if ssm_state_new.target not in (operator.add, torch.add):
+        return None
+
+    # ssm_state_new legitimately has two mul-consumers: this timestep's
+    # y-computation (ssm_state_new * C_ssm.unsqueeze(1)) *and*, when this
+    # instance isn't the last in its window, the next timestep's
+    # hA_next * ssm_state_new (structurally identical to this step's own
+    # mul_2). Disambiguate by requiring the other operand to be an
+    # unsqueeze -- the next-timestep one's other operand is an exp() output.
+    mul_5_candidates = []
+    for u in ssm_state_new.users:
+        if u.target not in (operator.mul, torch.mul) or len(u.args) < 2:
+            continue
+        other = u.args[0] if u.args[1] is ssm_state_new else (u.args[1] if u.args[0] is ssm_state_new else None)
+        if _is_unsqueeze(other):
+            mul_5_candidates.append((u, other))
+    if len(mul_5_candidates) != 1:
+        return None
+    mul_5, unsqueeze_c = mul_5_candidates[0]
+    if len(mul_5.users) != 1 or len(unsqueeze_c.args) < 1 or len(unsqueeze_c.users) != 1:
+        return None
+    c_ssm_node = unsqueeze_c.args[0]
+
+    sum_2 = next(iter(mul_5.users))
+    if sum_2.op != "call_method" or sum_2.target != "sum" or len(sum_2.users) != 1:
+        return None
+    y_add = next(iter(sum_2.users))
+    if y_add.target not in (operator.add, torch.add) or len(y_add.args) < 2:
+        return None
+    mul_6 = y_add.args[0] if y_add.args[1] is sum_2 else (y_add.args[1] if y_add.args[0] is sum_2 else None)
+    if not isinstance(mul_6, torch.fx.Node) or mul_6.target not in (operator.mul, torch.mul) or len(mul_6.args) < 2:
+        return None
+    d0, d1 = mul_6.args[0], mul_6.args[1]
+    if _param_like_name(d0) is not None and d1 is x_node:
+        d_node = d0
+    elif _param_like_name(d1) is not None and d0 is x_node:
+        d_node = d1
+    else:
+        return None
+
+    return dict(
+        hA=hA_node, dt=dt_node, A=a_node, ssm_state_prev=ssm_state_prev,
+        B_ssm=b_ssm_node, x=x_node, ssm_state_new=ssm_state_new,
+        C_ssm=c_ssm_node, D=d_node, y=y_add,
+    )
+
+
+def _mamba_window_stack_inputs_legal(
+    matches: List[Dict[str, torch.fx.Node]],
+    window_start_timestep: int,
+) -> bool:
+    """Phase-0-style reachability legality check, transplanted to this
+    rewriter's own stack inputs. Stacking x/dt/B_ssm/C_ssm ahead of a single
+    window-spanning fused call is only valid because those four tensors are,
+    in Mamba's canonical form, computable independently of the scan's own
+    outputs within the window -- only ssm_state threads across timesteps,
+    and that threading is handled *inside* the fused kernel via
+    ssm_state_prev, not by the stack. If a future model variant fed y or
+    ssm_state_new from one timestep in this window back into another
+    timestep's x/dt/B/C (a feedback-type recurrence Mamba's canonical form
+    doesn't have), stacking would silently compute on stale/wrong values
+    since the whole stack is materialized before the fused call runs. This
+    walks backward from each stack input, bounded exactly like
+    _is_batching_source_legal in fx_spatial_batching.py: stop at
+    placeholder/get_attr, or at any node already committed before this
+    window (timestep < window_start_timestep, e.g. the incoming
+    ssm_state_prev chain) -- and reject if that walk ever reaches this
+    window's own y/ssm_state_new.
+    """
+    forbidden: Set[torch.fx.Node] = set()
+    for m in matches:
+        forbidden.add(m["y"])
+        forbidden.add(m["ssm_state_new"])
+
+    visited: Set[torch.fx.Node] = set()
+    frontier: List[torch.fx.Node] = []
+    for m in matches:
+        frontier.extend([m["x"], m["dt"], m["B_ssm"], m["C_ssm"]])
+
+    while frontier:
+        node = frontier.pop()
+        if node in visited:
+            continue
+        visited.add(node)
+        if node in forbidden:
+            return False
+        if node.op in ("placeholder", "get_attr"):
+            continue
+        node_timestep = _get_chronos_meta(node, "timestep")
+        if isinstance(node_timestep, int) and node_timestep < window_start_timestep:
+            continue
+        frontier.extend(node.all_input_nodes)
+    return True
+
+
+def rewrite_mamba_scan_to_fused(gm: torch.fx.GraphModule, window_size: int) -> int:
+    """Groups matched per-timestep scan steps (see _match_mamba_scan_step) by
+    (A parameter identity, window), and for every complete window of
+    window_size consecutive instances, stacks their x/dt/B_ssm/C_ssm into
+    [window,...] tensors, replaces the whole per-step chain with a single
+    fused_temporal_selective_scan call spanning the window, and unstacks y
+    back into per-t values -- this is what actually gets Phase B's kernel
+    its ~48x microbenchmarked win (a single launch for the window instead of
+    one tiny elementwise op sequence per timestep), unlike a one-shot
+    per-instance swap. Requires annotate_temporal_metadata to have already
+    run (uses chronos_timestep to order instances within a window; falls
+    back to graph position order if unannotated).
+    """
+    order = {node: index for index, node in enumerate(gm.graph.nodes)}
+    groups: Dict[Tuple[str, int], List[Tuple[int, Dict[str, torch.fx.Node]]]] = {}
+    for node in list(gm.graph.nodes):
+        if node.target is not torch.exp:
+            continue
+        match = _match_mamba_scan_step(node)
+        if match is None:
+            continue
+        layer_key = _param_like_name(match["A"])
+        if layer_key is None:
+            continue
+        timestep = _get_chronos_meta(node, "timestep")
+        if not isinstance(timestep, int):
+            timestep = order[node]
+        window_id = timestep // window_size
+        groups.setdefault((layer_key, window_id), []).append((timestep, match))
+
+    replaced = 0
+    # Process windows in per-layer chronological order (sorted by
+    # (layer_key, window_id), not raw dict insertion order) so that when a
+    # layer has multiple windows (T > window_size), each later window's
+    # ssm_state_prev can be rewired to the *previous* window's fused
+    # h_final output below -- otherwise it would keep pointing at the raw
+    # pre-rewrite node, which after the previous window's
+    # replace_all_uses_with(h_final) has 0 users and would normally be
+    # dead-code-eliminated; re-using it here would instead resurrect that
+    # entire unfused per-timestep chain alongside the new fused call,
+    # silently doubling the compute for that window and leaving h_final
+    # unused.
+    state_override: Dict[str, torch.fx.Node] = {}
+    for (layer_key, _window_id), items in sorted(groups.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+        if len(items) != window_size:
+            continue
+        items = sorted(items, key=lambda pair: pair[0])
+        matches = [m for _, m in items]
+        if any(m["A"] is not matches[0]["A"] for m in matches):
+            continue
+        window_start_timestep = items[0][0]
+        if not _mamba_window_stack_inputs_legal(matches, window_start_timestep):
+            continue
+
+        ssm_state_prev_node = state_override.get(layer_key, matches[0]["ssm_state_prev"])
+
+        anchor = matches[-1]["hA"]
+        with gm.graph.inserting_before(anchor):
+            x_stack = gm.graph.call_function(torch.stack, args=([m["x"] for m in matches],), kwargs={"dim": 0})
+            x_stack.name = f"{anchor.name}_x_stack"
+            dt_stack = gm.graph.call_function(torch.stack, args=([m["dt"] for m in matches],), kwargs={"dim": 0})
+            dt_stack.name = f"{anchor.name}_dt_stack"
+            b_stack = gm.graph.call_function(torch.stack, args=([m["B_ssm"] for m in matches],), kwargs={"dim": 0})
+            b_stack.name = f"{anchor.name}_b_stack"
+            c_stack = gm.graph.call_function(torch.stack, args=([m["C_ssm"] for m in matches],), kwargs={"dim": 0})
+            c_stack.name = f"{anchor.name}_c_stack"
+            fused = gm.graph.call_function(
+                torch.ops.snn_custom.fused_temporal_selective_scan,
+                args=(x_stack, dt_stack, b_stack, c_stack, matches[0]["A"], matches[0]["D"], ssm_state_prev_node),
+            )
+            fused.name = f"{anchor.name}_fused_scan"
+            y_seq = gm.graph.call_function(operator.getitem, args=(fused, 0))
+            y_seq.name = f"{anchor.name}_y_seq"
+            h_final = gm.graph.call_function(operator.getitem, args=(fused, 1))
+            h_final.name = f"{anchor.name}_h_final"
+            y_nodes = []
+            for index in range(window_size):
+                y_t = gm.graph.call_function(operator.getitem, args=(y_seq, index))
+                y_t.name = f"{anchor.name}_y_t{index}"
+                y_nodes.append(y_t)
+
+        for m, y_t in zip(matches, y_nodes):
+            m["y"].replace_all_uses_with(y_t)
+        matches[-1]["ssm_state_new"].replace_all_uses_with(h_final)
+        state_override[layer_key] = h_final
+        replaced += len(matches)
+
+    if replaced:
+        gm.graph.eliminate_dead_code()
+        gm.graph.lint()
+        gm.recompile()
+    return replaced

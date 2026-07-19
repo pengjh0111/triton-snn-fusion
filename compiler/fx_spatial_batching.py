@@ -717,6 +717,108 @@ def _is_generated_spatial_batching_node(node: torch.fx.Node) -> bool:
     )
 
 
+_BATCH_LEGALITY_MAX_VISITED = 512
+
+
+def _is_batching_source_legal(source_node: torch.fx.Node, candidate_timestep: int) -> bool:
+    """Reject batching a candidate op across its t-instances if one of its
+    tensor inputs is not actually independent per timestep, i.e. it
+    transitively depends on a node produced by a *different* timestep's
+    block without going through a recognized "safe" boundary first.
+
+    This is the general form of the bug feedback networks (ConvLSTM/GRU/
+    Mamba-style W_h-side conv or linear consuming h_prev/c_prev/ssm_state)
+    trigger: existing SNN models never hit this path because every
+    conv/bn/pool input is always either the externally supplied per-t stack
+    (_match_temporal_stack_getitem), an already-batched-and-rechunked prior
+    layer's output (_match_batched_chunk_getitem), or a value produced
+    within the SAME timestep's block -- membrane-state recurrence in SNNs is
+    always hidden behind an atomic snn_custom.* op boundary
+    (_is_stateful_or_fused_snn_node), which this walk treats as opaque and
+    does not descend into (its output is validated as same-timestep by
+    construction, so what it does internally with cross-timestep state is
+    irrelevant to callers).
+
+    Bounded BFS: get_attr/placeholder (params/buffers, timestep-invariant),
+    a temporal_stack_getitem match, a previous_batched_chunk_getitem match,
+    or an snn_custom.*/lif op boundary all stop the walk on that branch as
+    "safe". A node whose own chronos_timestep annotation differs from
+    candidate_timestep proves a genuine cross-iteration dependency and
+    fails the whole check immediately. Nodes at the same timestep (or
+    unannotated, e.g. plain constants) are transparently walked through.
+    """
+    visited = set()
+    frontier = [source_node]
+    visited_count = 0
+    while frontier:
+        node = frontier.pop()
+        if node in visited:
+            continue
+        visited.add(node)
+        visited_count += 1
+        if visited_count > _BATCH_LEGALITY_MAX_VISITED:
+            # Could not prove safety within the search budget -- conservatively reject.
+            return False
+        if node.op in ("get_attr", "placeholder"):
+            continue
+        if _match_temporal_stack_getitem(node) is not None:
+            continue
+        if _match_batched_chunk_getitem(node) is not None:
+            continue
+        if _is_stateful_or_fused_snn_node(node):
+            continue
+        if (
+            _getitem_index(node) is not None
+            and isinstance(node.args[0], torch.fx.Node)
+            and (
+                node.args[0].op == "placeholder"
+                or _get_chronos_meta(node.args[0], "timestep") is None
+            )
+        ):
+            # A direct getitem(external_sequence_source, constant_t) where
+            # the source is either the raw placeholder or, more generally,
+            # any node with no chronos_timestep annotation at all -- i.e. a
+            # value computed *outside* every per-timestep block (before the
+            # first marker), such as ChronosDeepSpeech2.frontend()'s conv
+            # output reshaped once before the T-loop indexes into it: that
+            # reshape sits outside all blocks by construction (nothing
+            # anchors it), so checking specifically for op=="placeholder"
+            # missed it and produced the exact same off-by-one symptom this
+            # boundary condition was added to fix, one level removed. This
+            # is the "sequence" input-mode analogue of
+            # _match_temporal_stack_getitem's specific fused_temporal_*-stack
+            # pattern: a compile-time-constant slice of an externally
+            # supplied full sequence tensor is genuinely independent per t
+            # regardless of which timestep's block split_fx_graph_into_timesteps
+            # happened to assign it to (the select necessarily sits just
+            # before the block boundary marker that consumes it, so it is
+            # annotated with the *previous* timestep even though its data is
+            # this timestep's -- a boundary-adjacency artifact, not a real
+            # cross-iteration dependency).
+            continue
+        node_timestep = _get_chronos_meta(node, "timestep")
+        if isinstance(node_timestep, int):
+            if node_timestep != candidate_timestep:
+                return False
+            # Same-timestep match: this node's own annotation already
+            # certifies it as a genuinely-this-t value regardless of what
+            # its own inputs are -- if ITS computation were itself unsafe to
+            # batch (e.g. it directly consumes a cross-timestep value), that
+            # gets caught independently when IT is evaluated as its own
+            # candidate. Batching legality is a per-op property, not
+            # transitive over the whole ancestry: e.g. layer1's xproj(h_t)
+            # is safe to batch across t even though h_t's own production
+            # internally reads layer0's h_{t-1} -- h_t itself, as the value
+            # xproj consumes, is correctly this-t's data. Continuing to
+            # descend here would incorrectly reject every same-block
+            # consumer of any node whose *own* history happens to touch a
+            # prior timestep anywhere upstream.
+            continue
+        for arg in list(node.args) + list(node.kwargs.values()):
+            frontier.extend(_collect_input_nodes(arg))
+    return True
+
+
 def _extract_candidate(
     gm: torch.fx.GraphModule,
     node: torch.fx.Node,
@@ -787,6 +889,20 @@ def _extract_candidate(
     if not isinstance(timestep, int):
         stats.skip("missing_timestep", f"node={node.name} kind={kind} has no _chronos_timestep")
         return None
+    for tensor_input in tensor_inputs:
+        if (
+            _match_temporal_stack_getitem(tensor_input) is not None
+            or _match_batched_chunk_getitem(tensor_input) is not None
+        ):
+            continue
+        if not _is_batching_source_legal(tensor_input, timestep):
+            stats.skip(
+                "feedback_dependency",
+                f"node={node.name} kind={kind} input={tensor_input.name} depends on a different "
+                f"timestep's block (cross-iteration recurrence, e.g. W_h-side conv/linear consuming "
+                f"h_prev) -- batching would silently reuse the wrong per-t value",
+            )
+            return None
     shape, dtype = _get_tensor_shape_dtype(node)
     if shape is None or dtype is None:
         shape, dtype = _get_tensor_shape_dtype(input_node)

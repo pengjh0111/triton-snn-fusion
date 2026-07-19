@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.fx.passes.fake_tensor_prop import FakeTensorProp
 from spikingjelly.activation_based import functional, layer, neuron, surrogate
 from spikingjelly.activation_based.model import spiking_resnet, spiking_vgg
@@ -76,6 +77,10 @@ from compiler.fx_lif_temporal_rewrite import (
     rewrite_temporal_lif_state_to_fused,
     rewrite_temporal_linear_lif_state_to_fused,
     rewrite_temporal_lif_avgpool_linear_to_fused,
+    collect_mamba_scan_patterns,
+    rewrite_convlstm_cell_to_fused,
+    rewrite_gru_cell_to_fused,
+    rewrite_mamba_scan_to_fused,
 )
 from compiler.fx_spatial_batching import apply_spatial_batching
 from compiler.fx_temporal_annotation import annotate_temporal_metadata
@@ -239,6 +244,11 @@ class RewriteCounters:
     temporal_graph_getitem_from_temporal: int = 0
     temporal_graph_materialized_timestep_tensors: int = 0
     temporal_graph_fragmentation_paths: int = 0
+    convlstm_replaced_patterns: int = 0
+    gru_replaced_patterns: int = 0
+    mamba_replaced_patterns: int = 0
+    mamba_schedule_ok: bool = True
+    mamba_schedule_reason: str = ""
 
 
 class SingleStepModeLoopWrapper(nn.Module):
@@ -270,6 +280,56 @@ SingleStepWrapper = SingleStepModeLoopWrapper
 MultiStepWrapper = MultiStepModeWrapper
 
 
+class SequenceInputLoopWrapper(nn.Module):
+    """Sequence-input analogue of SingleStepModeLoopWrapper: the T-loop
+    lives here, not inside the model. The one structural difference from
+    SingleStepModeLoopWrapper is that each iteration feeds a genuinely
+    different x_seq[t] slice instead of replicating the same x -- these
+    models (ConvLSTM/Mamba/DeepSpeech2) need real per-t input, unlike the
+    rate-coded SNN convention where every step sees identical input and
+    only internal membrane state varies.
+
+    model must expose:
+      - step(x_t, *state) -> (y_t, *new_state)   (explicit state I/O, the
+        exact shape a single-step ONNX export needs)
+      - init_state(batch_size, device, dtype) -> tuple(state)
+      - optionally frontend(x) -> x_seq for models whose "outside the
+        temporal region" preprocessing (e.g. DeepSpeech2's conv frontend)
+        needs to run once, in full batch, before the loop; models without
+        one are given their input directly as x_seq.
+    """
+
+    def __init__(self, model: nn.Module, T: int):
+        super().__init__()
+        self.model = model
+        self.T = T
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x_seq = self.model.frontend(x) if hasattr(self.model, "frontend") else x
+        batch_size = x_seq.shape[1]
+        state = self.model.init_state(batch_size, x_seq.device, x_seq.dtype)
+        outputs = []
+        for t in range(self.T):
+            result = self.model.step(x_seq[t], *state)
+            y_t, state = result[0], result[1:]
+            outputs.append(y_t)
+        return torch.stack(outputs, dim=0)
+
+
+class SequenceInputMultiStepWrapper(SequenceInputLoopWrapper):
+    """Sequence-input analogue of MultiStepModeWrapper. The existing SNN
+    "multi-step" convention calls a step_mode="m" module ONCE with a
+    [T,...]-shaped tensor and lets it vectorize/loop over T internally.
+    Genuinely-recurrent models (LSTM/GRU/SSM state) have no such vectorized
+    fast path -- an explicit T-loop is unavoidable either way -- so this
+    class is identical to SequenceInputLoopWrapper. It exists as a
+    separately-named subclass purely so callers that dispatch on wrapper
+    *kind* (single-step vs multi-step case family, mirroring
+    SingleStepModeLoopWrapper/MultiStepModeWrapper) don't need a special
+    case for sequence-input models.
+    """
+
+
 CHRONOS_MODEL_CHOICES = [
     "resnet18",
     "resnet34",
@@ -282,7 +342,30 @@ CHRONOS_MODEL_CHOICES = [
     "mobilenetv2",
     "spiketransformer",
     "spikebert",
+    "convlstm",
+    "mamba",
+    "deepspeech2",
 ]
+
+# Per-model input convention, declared once here and consulted everywhere a
+# wrapper/input/case-construction decision depends on it (make_model_input,
+# benchmark_one_model's wrapper selection) instead of scattered model_name
+# checks. "static_replicate": the existing SNN convention -- a single
+# [B,...] input is reused for all T steps (SingleStepModeLoopWrapper /
+# MultiStepModeWrapper), output varies only via internal membrane state.
+# "sequence": a genuine [T,B,...] (or frontend-preprocessed) input with
+# different data per timestep (SequenceInputLoopWrapper /
+# SequenceInputMultiStepWrapper). Every existing model defaults to
+# static_replicate; only the three new workloads use sequence.
+CHRONOS_MODEL_INPUT_MODE: Dict[str, str] = {
+    "convlstm": "sequence",
+    "mamba": "sequence",
+    "deepspeech2": "sequence",
+}
+
+
+def model_input_mode(model_name: str) -> str:
+    return CHRONOS_MODEL_INPUT_MODE.get(model_name, "static_replicate")
 
 
 def _lif_node_class(lif_impl: str):
@@ -602,6 +685,77 @@ class ChronosMobileNetV2(nn.Module):
         return self.layer(x)
 
 
+class ChronosConvLSTMCellEager(nn.Module):
+    """Single-step ConvLSTM cell body (Shi et al. 2015, no peephole)."""
+
+    def __init__(self, in_ch: int, hidden_ch: int):
+        super().__init__()
+        self.hidden_ch = hidden_ch
+        self.conv_x = nn.Conv2d(in_ch, 4 * hidden_ch, kernel_size=3, padding=1, bias=True)
+        self.conv_h = nn.Conv2d(hidden_ch, 4 * hidden_ch, kernel_size=3, padding=1, bias=False)
+
+    def forward(self, x_t: torch.Tensor, h_prev: torch.Tensor, c_prev: torch.Tensor):
+        xproj = self.conv_x(x_t)
+        hproj = self.conv_h(h_prev)
+        i, f, g, o = torch.chunk(xproj + hproj, 4, dim=1)
+        c_t = torch.sigmoid(f) * c_prev + torch.sigmoid(i) * torch.tanh(g)
+        h_t = torch.sigmoid(o) * torch.tanh(c_t)
+        return h_t, c_t
+
+
+class ChronosConvLSTM(nn.Module):
+    """Step-form model (sequence-input analogue of the SNN step_mode="s"
+    convention above): step() processes one timestep given explicit state
+    and returns (output, *new_state); the T-loop lives in
+    SequenceInputLoopWrapper/SequenceInputMultiStepWrapper, not here. State
+    is a flat tuple of tensors (h0, c0, h1, c1, ...) rather than the SNN
+    modules' hidden module-buffer state, since Kairos's FX passes (Phase 0's
+    batching legality check, Phase C's annotation extension) need h/c
+    visible as explicit graph values threaded across timesteps -- this is
+    also exactly the state-I/O shape a single-step ONNX export needs.
+    """
+
+    def __init__(
+        self,
+        *,
+        in_channels: int = 1,
+        hidden_channels: int = 64,
+        num_layers: int = 2,
+        num_classes: int = 10,
+        height: int = 64,
+        width: int = 64,
+    ):
+        super().__init__()
+        self.num_layers = num_layers
+        self.hidden_channels = hidden_channels
+        self.height = height
+        self.width = width
+        self.cells = nn.ModuleList(
+            ChronosConvLSTMCellEager(in_channels if i == 0 else hidden_channels, hidden_channels)
+            for i in range(num_layers)
+        )
+        self.head = nn.Conv2d(hidden_channels, num_classes, kernel_size=1, bias=True)
+
+    def init_state(self, batch_size: int, device, dtype) -> tuple:
+        state = []
+        for _ in range(self.num_layers):
+            state.append(torch.zeros(batch_size, self.hidden_channels, self.height, self.width, device=device, dtype=dtype))
+            state.append(torch.zeros(batch_size, self.hidden_channels, self.height, self.width, device=device, dtype=dtype))
+        return tuple(state)
+
+    def step(self, x_t: torch.Tensor, *state: torch.Tensor) -> tuple:
+        layer_input = x_t
+        new_state = []
+        for layer_idx, cell in enumerate(self.cells):
+            h_prev, c_prev = state[2 * layer_idx], state[2 * layer_idx + 1]
+            h_t, c_t = cell(layer_input, h_prev, c_prev)
+            new_state.append(h_t)
+            new_state.append(c_t)
+            layer_input = h_t
+        y_t = self.head(layer_input)
+        return (y_t, *new_state)
+
+
 class ChronosSpikeTransformerBlock(nn.Module):
     def __init__(
         self,
@@ -658,6 +812,107 @@ class ChronosSpikeTransformerBlock(nn.Module):
         return x
 
 
+class ChronosMambaBlockEager(nn.Module):
+    """Single-step minimal Mamba block (selective SSM), random init, no
+    pretrained weights -- pure performance test. State (conv_state,
+    ssm_state) is threaded explicitly by the outer T-loop in ChronosMamba,
+    matching ChronosConvLSTMCellEager's convention above.
+
+    conv_state is carried as the full d_conv-wide FIFO window (matching the
+    "# FIFO [B,1536,4]" comment in the canonical spec literally): each step
+    drops the oldest tap and appends the new x, keeping the window at
+    d_conv elements before and after the update, rather than a d_conv-1
+    "conceptual carry" that would require reconstructing the 4th tap
+    on every entry -- self-consistent with the update line
+    conv_state = cat(conv_state[:,:,1:], x) being 4-wide on both sides.
+    """
+
+    def __init__(self, d_model: int, d_inner: int, d_state: int, d_conv: int, dt_rank: int):
+        super().__init__()
+        self.d_inner = d_inner
+        self.d_state = d_state
+        self.d_conv = d_conv
+        self.dt_rank = dt_rank
+
+        self.in_proj = nn.Linear(d_model, 2 * d_inner, bias=False)
+        self.conv1d_w = nn.Parameter(torch.randn(d_inner, d_conv) * 0.05)
+        self.conv1d_b = nn.Parameter(torch.zeros(d_inner))
+        self.x_proj = nn.Linear(d_inner, dt_rank + 2 * d_state, bias=False)
+        self.dt_proj = nn.Linear(dt_rank, d_inner, bias=True)
+        # S4D-real-style negative init keeps exp(dt*A) bounded even though
+        # this is a random-init performance test, not a trained checkpoint.
+        self.A = nn.Parameter(-torch.rand(d_inner, d_state) - 0.5)
+        self.D = nn.Parameter(torch.ones(d_inner))
+        self.out_proj = nn.Linear(d_inner, d_model, bias=False)
+
+    def forward(self, x_t, conv_state, ssm_state):
+        xz = self.in_proj(x_t)
+        x, z = torch.chunk(xz, 2, dim=-1)
+
+        conv_state = torch.cat([conv_state[:, :, 1:], x.unsqueeze(-1)], dim=-1)
+        x = F.silu((conv_state * self.conv1d_w).sum(-1) + self.conv1d_b)
+
+        dt_bc = self.x_proj(x)
+        dt_in, B_ssm, C_ssm = torch.split(dt_bc, [self.dt_rank, self.d_state, self.d_state], dim=-1)
+        dt = F.softplus(self.dt_proj(dt_in))
+
+        hA = torch.exp(dt.unsqueeze(-1) * self.A)
+        ssm_state = hA * ssm_state + (dt.unsqueeze(-1) * B_ssm.unsqueeze(1)) * x.unsqueeze(-1)
+        y = (ssm_state * C_ssm.unsqueeze(1)).sum(-1) + self.D * x
+
+        out = self.out_proj(y * F.silu(z))
+        return out, conv_state, ssm_state
+
+
+class ChronosMamba(nn.Module):
+    def __init__(
+        self,
+        *,
+        d_model: int = 768,
+        n_layer: int = 24,
+        d_inner: int = 1536,
+        d_state: int = 16,
+        d_conv: int = 4,
+        dt_rank: int = 48,
+        num_classes: int = 10,
+    ):
+        super().__init__()
+        self.d_model = d_model
+        self.d_inner = d_inner
+        self.d_state = d_state
+        self.d_conv = d_conv
+        self.n_layer = n_layer
+        self.blocks = nn.ModuleList(
+            ChronosMambaBlockEager(d_model, d_inner, d_state, d_conv, dt_rank) for _ in range(n_layer)
+        )
+        self.norms = nn.ModuleList(nn.LayerNorm(d_model) for _ in range(n_layer))
+        self.final_norm = nn.LayerNorm(d_model)
+        self.head = nn.Linear(d_model, num_classes, bias=False)
+
+    def init_state(self, batch_size: int, device, dtype) -> tuple:
+        state = []
+        for _ in range(self.n_layer):
+            state.append(torch.zeros(batch_size, self.d_inner, self.d_conv, device=device, dtype=dtype))
+            state.append(torch.zeros(batch_size, self.d_inner, self.d_state, device=device, dtype=dtype))
+        return tuple(state)
+
+    def step(self, x_t: torch.Tensor, *state: torch.Tensor) -> tuple:
+        # x_t: [B, d_model] -- already-embedded input; embedding/lm_head
+        # deliberately do not enter the temporal region (per spec).
+        h = x_t
+        new_state = []
+        for layer_idx in range(self.n_layer):
+            conv_state, ssm_state = state[2 * layer_idx], state[2 * layer_idx + 1]
+            residual = h
+            y = self.norms[layer_idx](h)
+            y, conv_state, ssm_state = self.blocks[layer_idx](y, conv_state, ssm_state)
+            h = residual + y
+            new_state.append(conv_state)
+            new_state.append(ssm_state)
+        y_t = self.head(self.final_norm(h))
+        return (y_t, *new_state)
+
+
 class ChronosSpikeTransformer(nn.Module):
     def __init__(
         self,
@@ -695,6 +950,95 @@ class ChronosSpikeTransformer(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self._forward_impl(x)
+
+
+class ChronosGRUCellEager(nn.Module):
+    """Single-step GRUCell body, PyTorch GRUCell gate order [r|z|n]. State
+    (h) threaded explicitly by the outer T-loop in ChronosDeepSpeech2,
+    matching ChronosConvLSTMCellEager / ChronosMambaBlockEager above.
+    """
+
+    def __init__(self, input_size: int, hidden_size: int):
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.w_x = nn.Linear(input_size, 3 * hidden_size, bias=True)
+        self.w_h = nn.Linear(hidden_size, 3 * hidden_size, bias=True)
+
+    def forward(self, x_t: torch.Tensor, h_prev: torch.Tensor) -> torch.Tensor:
+        xproj = self.w_x(x_t)
+        hproj = self.w_h(h_prev)
+        xproj_r, xproj_z, xproj_n = torch.chunk(xproj, 3, dim=-1)
+        hproj_r, hproj_z, hproj_n = torch.chunk(hproj, 3, dim=-1)
+        r = torch.sigmoid(xproj_r + hproj_r)
+        z = torch.sigmoid(xproj_z + hproj_z)
+        n = torch.tanh(xproj_n + r * hproj_n)
+        h_t = (1 - z) * n + z * h_prev
+        return h_t
+
+
+class ChronosDeepSpeech2(nn.Module):
+    """conv frontend (2 layers, executed as a single full-batch call outside
+    the temporal region -- not inside the timestep loop) -> 3-layer
+    unidirectional GRU (hidden=800) -> FC(29). T_in (spectrogram time bins)
+    is derived from the target T so the conv frontend's time-stride math
+    lands exactly on T output frames: with stride_t=(2,1) across the two
+    conv layers and "same"-style frequency/time padding, T_in = 2*T is
+    exact (see build_model_input's deepspeech2 case).
+    """
+
+    def __init__(
+        self,
+        *,
+        freq_bins: int = 161,
+        conv_channels: int = 32,
+        gru_hidden: int = 800,
+        gru_layers: int = 3,
+        num_classes: int = 29,
+    ):
+        super().__init__()
+        self.freq_bins = freq_bins
+        self.gru_hidden = gru_hidden
+        self.gru_layers = gru_layers
+
+        self.conv1 = nn.Conv2d(1, conv_channels, kernel_size=(41, 11), stride=(2, 2), padding=(20, 5))
+        self.bn1 = nn.BatchNorm2d(conv_channels)
+        self.conv2 = nn.Conv2d(conv_channels, conv_channels, kernel_size=(21, 11), stride=(2, 1), padding=(10, 5))
+        self.bn2 = nn.BatchNorm2d(conv_channels)
+
+        freq_out = (freq_bins + 2 * 20 - 41) // 2 + 1
+        freq_out = (freq_out + 2 * 10 - 21) // 2 + 1
+        gru_input_size = conv_channels * freq_out
+
+        self.gru_cells = nn.ModuleList(
+            ChronosGRUCellEager(gru_input_size if i == 0 else gru_hidden, gru_hidden) for i in range(gru_layers)
+        )
+        self.fc = nn.Linear(gru_hidden, num_classes, bias=True)
+
+    def frontend(self, spectrogram: torch.Tensor) -> torch.Tensor:
+        # spectrogram: [B, 1, freq_bins, T_in] -- full-batch conv frontend,
+        # deliberately outside the timestep loop / temporal region (per
+        # spec). SequenceInputLoopWrapper calls this once before the T-loop
+        # (mirroring "循环外整批执行"); models without a frontend (ConvLSTM,
+        # Mamba) are given their x_seq directly and skip this hook.
+        feat = F.relu(self.bn1(self.conv1(spectrogram)))
+        feat = F.relu(self.bn2(self.conv2(feat)))
+        B, C, Freq, T = feat.shape
+        return feat.permute(3, 0, 1, 2).reshape(T, B, C * Freq)
+
+    def init_state(self, batch_size: int, device, dtype) -> tuple:
+        return tuple(
+            torch.zeros(batch_size, self.gru_hidden, device=device, dtype=dtype) for _ in range(self.gru_layers)
+        )
+
+    def step(self, x_t: torch.Tensor, *state: torch.Tensor) -> tuple:
+        layer_input = x_t
+        new_state = []
+        for layer_idx, cell in enumerate(self.gru_cells):
+            h_t = cell(layer_input, state[layer_idx])
+            new_state.append(h_t)
+            layer_input = h_t
+        y_t = self.fc(layer_input)
+        return (y_t, *new_state)
 
 
 class ChronosSpikeBERT(nn.Module):
@@ -753,6 +1097,40 @@ def make_model_input(model_name: str, args, dtype: torch.dtype) -> torch.Tensor:
             device=args.device,
             dtype=torch.int64,
         )
+    if model_name == "convlstm":
+        # [T, B, C, H, W], independently random per timestep -- a genuine
+        # sequence, unlike the repeated-same-frame convention below.
+        return torch.randn(
+            args.T,
+            args.batch_size,
+            args.convlstm_in_channels,
+            args.convlstm_height,
+            args.convlstm_width,
+            device=args.device,
+            dtype=dtype,
+        )
+    if model_name == "mamba":
+        # [T, B, d_model] -- already-embedded per spec (embedding not in the
+        # temporal region).
+        return torch.randn(
+            args.T,
+            args.batch_size,
+            args.mamba_d_model,
+            device=args.device,
+            dtype=dtype,
+        )
+    if model_name == "deepspeech2":
+        # [B, 1, freq_bins, T_in]; T_in = 2*T is exact for the conv
+        # frontend's stride math (see ChronosDeepSpeech2.frontend).
+        t_in = 2 * args.T
+        return torch.randn(
+            args.batch_size,
+            1,
+            args.deepspeech2_freq_bins,
+            t_in,
+            device=args.device,
+            dtype=dtype,
+        )
     return torch.randn(args.batch_size, 3, args.height, args.width, device=args.device, dtype=dtype)
 
 
@@ -791,7 +1169,55 @@ def make_resnet_layer(
     transformer_input_dim: int = 768,
     transformer_vocab_size: int = 30522,
     transformer_num_classes: int = 100,
+    convlstm_in_channels: int = 1,
+    convlstm_hidden_channels: int = 64,
+    convlstm_num_layers: int = 2,
+    convlstm_height: int = 64,
+    convlstm_width: int = 64,
+    mamba_d_model: int = 768,
+    mamba_n_layer: int = 24,
+    mamba_d_inner: int = 1536,
+    mamba_d_state: int = 16,
+    mamba_d_conv: int = 4,
+    mamba_dt_rank: int = 48,
+    deepspeech2_freq_bins: int = 161,
+    deepspeech2_conv_channels: int = 32,
+    deepspeech2_gru_hidden: int = 800,
+    deepspeech2_gru_layers: int = 3,
 ) -> nn.Module:
+    # step_mode is a spikingjelly concept (stateful module buffers) that
+    # doesn't apply to these explicit-state, step()/init_state()-form
+    # models -- the wrapper (SequenceInputLoopWrapper /
+    # SequenceInputMultiStepWrapper), not step_mode, decides how they're
+    # driven, so the same construction serves both "s" and "m" call sites.
+    if model_name == "convlstm":
+        return ChronosConvLSTM(
+            in_channels=convlstm_in_channels,
+            hidden_channels=convlstm_hidden_channels,
+            num_layers=convlstm_num_layers,
+            num_classes=10,
+            height=convlstm_height,
+            width=convlstm_width,
+        )
+    if model_name == "mamba":
+        return ChronosMamba(
+            d_model=mamba_d_model,
+            n_layer=mamba_n_layer,
+            d_inner=mamba_d_inner,
+            d_state=mamba_d_state,
+            d_conv=mamba_d_conv,
+            dt_rank=mamba_dt_rank,
+            num_classes=10,
+        )
+    if model_name == "deepspeech2":
+        return ChronosDeepSpeech2(
+            freq_bins=deepspeech2_freq_bins,
+            conv_channels=deepspeech2_conv_channels,
+            gru_hidden=deepspeech2_gru_hidden,
+            gru_layers=deepspeech2_gru_layers,
+            num_classes=29,
+        )
+
     spiking_neuron = _lif_node_class(lif_impl)
     if model_name == "resnet18":
         layer = spiking_resnet.spiking_resnet18(
@@ -915,6 +1341,54 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
             f"missing={annotation_stats.temporal_annotation_missing} "
             f"roles={annotation_stats.temporal_annotation_roles}"
         )
+
+        # Kairos workload rewrites (ConvLSTM/Mamba/DeepSpeech2-GRU). Each is
+        # independently toggleable and, per annotate_temporal_metadata's
+        # mutual-exclusivity note, their pattern collectors only ever match
+        # one of these three workloads' own gate chains -- so on every
+        # existing SNN model this whole block finds nothing and silently
+        # no-ops, exactly like the LIF-specific passes below no-op on these
+        # three new workloads.
+        if not args.disable_rewrite:
+            if not args.disable_convlstm_rewrite:
+                convlstm_replaced = rewrite_convlstm_cell_to_fused(gm)
+                counters.convlstm_replaced_patterns += convlstm_replaced
+                temporal_replaced_patterns += convlstm_replaced
+
+            if not args.disable_gru_rewrite:
+                gru_replaced = rewrite_gru_cell_to_fused(gm)
+                counters.gru_replaced_patterns += gru_replaced
+                temporal_replaced_patterns += gru_replaced
+
+            if not args.disable_mamba_rewrite and args.temporal_fuse_window > 1:
+                mamba_patterns = collect_mamba_scan_patterns(gm)
+                if mamba_patterns:
+                    mamba_schedule_window = args.temporal_schedule_window or args.temporal_fuse_window
+                    mamba_schedule_result = reorder_fx_graph_by_temporal_windows(
+                        gm,
+                        args.T,
+                        mamba_schedule_window,
+                        mamba_patterns,
+                        dump_dir=local_dir if args.temporal_schedule_dump else None,
+                        strict=args.temporal_schedule_strict,
+                    )
+                    counters.mamba_schedule_ok = mamba_schedule_result.ok
+                    counters.mamba_schedule_reason = mamba_schedule_result.reason
+                    if not mamba_schedule_result.ok:
+                        if args.temporal_schedule_strict:
+                            raise RuntimeError(mamba_schedule_result.reason)
+                        print(f"[MAMBA_SCHEDULE][FALLBACK] {mamba_schedule_result.reason}")
+                    else:
+                        mamba_replaced = rewrite_mamba_scan_to_fused(gm, args.temporal_fuse_window)
+                        counters.mamba_replaced_patterns += mamba_replaced
+                        temporal_replaced_patterns += mamba_replaced
+
+            if counters.convlstm_replaced_patterns or counters.gru_replaced_patterns or counters.mamba_replaced_patterns:
+                print(
+                    f"[KAIROS_REWRITE] convlstm={counters.convlstm_replaced_patterns} "
+                    f"gru={counters.gru_replaced_patterns} mamba={counters.mamba_replaced_patterns} "
+                    f"mamba_schedule_ok={counters.mamba_schedule_ok}"
+                )
 
         temporal_patterns = collect_conv_bn_lif_state_patterns(gm) if not args.disable_conv_bn_lif else []
         residual_patterns = collect_conv_bn_add_lif_state_patterns(gm) if not args.disable_conv_bn_lif else []

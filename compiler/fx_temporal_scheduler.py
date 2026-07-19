@@ -78,6 +78,48 @@ def split_fx_graph_into_timesteps(
     return blocks if len(blocks) == T else []
 
 
+def _closure_members(
+    input_boundary: Tuple[torch.fx.Node, ...],
+    output_boundary: Tuple[torch.fx.Node, ...],
+    other_boundary_nodes: Set[torch.fx.Node],
+) -> Set[torch.fx.Node]:
+    """members(instance) = {forward-reachable from input_boundary} ∩
+    {backward-reachable from output_boundary}, with both walks stopping at
+    any node in other_boundary_nodes (another instance's own boundary) so
+    one instance's closure can't leak into a neighboring instance's --
+    this is what lets the closure auto-discover an arbitrary-shaped DAG's
+    interior nodes (Mamba's conv1d/x_proj/dt_proj/softplus/unsqueeze
+    branches) without naming them, while still stopping at the true
+    per-instance boundary.
+    """
+    own_boundary = set(input_boundary) | set(output_boundary)
+    stop_at = other_boundary_nodes - own_boundary
+
+    forward: Set[torch.fx.Node] = set()
+    frontier = list(input_boundary)
+    while frontier:
+        node = frontier.pop()
+        if node in forward:
+            continue
+        forward.add(node)
+        if node in stop_at:
+            continue
+        frontier.extend(node.users)
+
+    backward: Set[torch.fx.Node] = set()
+    frontier = list(output_boundary)
+    while frontier:
+        node = frontier.pop()
+        if node in backward:
+            continue
+        backward.add(node)
+        if node in stop_at:
+            continue
+        frontier.extend(collect_input_nodes((node.args, node.kwargs)))
+
+    return forward & backward
+
+
 def annotate_nodes_with_layer_and_timestep(
     gm: torch.fx.GraphModule,
     timestep_blocks: List[List[torch.fx.Node]],
@@ -103,7 +145,89 @@ def annotate_nodes_with_layer_and_timestep(
             seen.add(pattern.layer_id)
     layer_rank = {layer_id: index for index, layer_id in enumerate(first_seen_layer_ids)}
 
+    all_boundary_nodes: Set[torch.fx.Node] = set()
+    all_input_boundary_nodes: Set[torch.fx.Node] = set()
     for pattern in temporal_patterns:
+        all_boundary_nodes.update(pattern.input_boundary)
+        all_boundary_nodes.update(pattern.output_boundary)
+        all_input_boundary_nodes.update(pattern.input_boundary)
+
+    # Two passes: closures for every closure-based pattern must all be
+    # known before computing any pattern's post-scan region, since that
+    # region's forward walk needs to stop at *any* pattern's closure
+    # (crucially including the next timestep's own closure, reached via
+    # this timestep's state-carry output such as Mamba's ssm_state_new --
+    # ssm_state_new legitimately feeds the next timestep's scan, which is
+    # not "post-scan" for this instance at all, and would be
+    # mis-claimed if that closure weren't already known).
+    closure_patterns = [p for p in temporal_patterns if p.input_boundary or p.output_boundary]
+    all_members: Dict[str, Set[torch.fx.Node]] = {}
+    for pattern in closure_patterns:
+        base = layer_rank.get(pattern.layer_id, 0) * 1000
+        members = _closure_members(pattern.input_boundary, pattern.output_boundary, all_boundary_nodes)
+        all_members[id(pattern)] = members
+        for member in members:
+            if member not in info:
+                continue
+            info[member] = NodeScheduleInfo(
+                timestep_index=info[member].timestep_index,
+                layer_index=base,
+                layer_id=pattern.layer_id,
+                pattern_role="closure_member",
+                original_order=order[member],
+            )
+
+    all_closure_members: Set[torch.fx.Node] = set().union(*all_members.values()) if all_members else set()
+
+    for pattern in closure_patterns:
+        base = layer_rank.get(pattern.layer_id, 0) * 1000
+        members = all_members[id(pattern)]
+        # Nodes downstream of this instance's own scan output (e.g.
+        # Mamba's y*silu(z)->out_proj->residual) are not part of the
+        # narrow scan-only closure above by design (they must run *after*
+        # the whole window's fused scan call, not per-t inline with it),
+        # but left fully unassigned they inherit a default block-local
+        # layer_index computed from raw physical position -- which, for a
+        # LATER layer's own post-scan region physically sitting inside an
+        # EARLIER timestep's block, can accidentally be *lower* than that
+        # later layer's explicit closure base, letting it jump ahead of
+        # its own layer's scan (confirmed via a real trace: layer 1's
+        # post-scan beat layer 1's own t=1 scan this way). Claim this
+        # region explicitly at base+500 -- above the scan closure (base+0)
+        # so it's deferred until the scan closure and cross-window state
+        # consumption finishes across the whole layer. Seeded only from
+        # output_boundary nodes *not* also used by any other closure (this
+        # excludes a state-carry output like ssm_state_new, whose real
+        # consumer is the next timestep's own closure, already claimed
+        # above and excluded via all_closure_members).
+        post_frontier = [
+            user for node in pattern.output_boundary for user in node.users
+            if user not in all_closure_members
+        ]
+        post_region: Set[torch.fx.Node] = set()
+        while post_frontier:
+            node = post_frontier.pop()
+            if node in post_region or node in members or node in all_closure_members:
+                continue
+            if node in all_input_boundary_nodes:
+                continue
+            post_region.add(node)
+            post_frontier.extend(node.users)
+        for member in post_region:
+            if member not in info:
+                continue
+            info[member] = NodeScheduleInfo(
+                timestep_index=info[member].timestep_index,
+                layer_index=base + 500,
+                layer_id=pattern.layer_id,
+                pattern_role="post_scan_member",
+                original_order=order[member],
+            )
+
+    closure_pattern_ids = {id(p) for p in closure_patterns}
+    for pattern in temporal_patterns:
+        if id(pattern) in closure_pattern_ids:
+            continue
         base = layer_rank.get(pattern.layer_id, 0) * 1000
         roles = [
             (pattern.conv_node, "conv", 0),

@@ -33,10 +33,13 @@ from benchmarks.validate_chronos_baselines import (
     LIF_IMPL_CHOICES,
     MultiStepModeWrapper,
     SingleStepModeLoopWrapper,
+    SequenceInputLoopWrapper,
+    SequenceInputMultiStepWrapper,
     RewriteCounters,
     make_model_input,
     make_resnet_layer,
     make_rewrite_backend,
+    model_input_mode,
     reset_lif_modules,
     synchronize_if_needed,
 )
@@ -245,6 +248,21 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         transformer_input_dim=args.transformer_input_dim,
         transformer_vocab_size=args.transformer_vocab_size,
         transformer_num_classes=args.transformer_num_classes,
+        convlstm_in_channels=args.convlstm_in_channels,
+        convlstm_hidden_channels=args.convlstm_hidden_channels,
+        convlstm_num_layers=args.convlstm_num_layers,
+        convlstm_height=args.convlstm_height,
+        convlstm_width=args.convlstm_width,
+        mamba_d_model=args.mamba_d_model,
+        mamba_n_layer=args.mamba_n_layer,
+        mamba_d_inner=args.mamba_d_inner,
+        mamba_d_state=args.mamba_d_state,
+        mamba_d_conv=args.mamba_d_conv,
+        mamba_dt_rank=args.mamba_dt_rank,
+        deepspeech2_freq_bins=args.deepspeech2_freq_bins,
+        deepspeech2_conv_channels=args.deepspeech2_conv_channels,
+        deepspeech2_gru_hidden=args.deepspeech2_gru_hidden,
+        deepspeech2_gru_layers=args.deepspeech2_gru_layers,
     )
     base_layer_m = make_resnet_layer(
         model_name,
@@ -259,6 +277,21 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         transformer_input_dim=args.transformer_input_dim,
         transformer_vocab_size=args.transformer_vocab_size,
         transformer_num_classes=args.transformer_num_classes,
+        convlstm_in_channels=args.convlstm_in_channels,
+        convlstm_hidden_channels=args.convlstm_hidden_channels,
+        convlstm_num_layers=args.convlstm_num_layers,
+        convlstm_height=args.convlstm_height,
+        convlstm_width=args.convlstm_width,
+        mamba_d_model=args.mamba_d_model,
+        mamba_n_layer=args.mamba_n_layer,
+        mamba_d_inner=args.mamba_d_inner,
+        mamba_d_state=args.mamba_d_state,
+        mamba_d_conv=args.mamba_d_conv,
+        mamba_dt_rank=args.mamba_dt_rank,
+        deepspeech2_freq_bins=args.deepspeech2_freq_bins,
+        deepspeech2_conv_channels=args.deepspeech2_conv_channels,
+        deepspeech2_gru_hidden=args.deepspeech2_gru_hidden,
+        deepspeech2_gru_layers=args.deepspeech2_gru_layers,
     )
 
     base_layer_s = base_layer_s.to(
@@ -271,6 +304,17 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
     ).eval()
 
     x = make_model_input(model_name, args, dtype)
+
+    # Dispatch by declared input convention (CHRONOS_MODEL_INPUT_MODE), not
+    # a model_name set -- every existing SNN model resolves to the original
+    # replicate-same-input wrappers unchanged; convlstm/mamba/deepspeech2
+    # resolve to the sequence-input wrappers.
+    if model_input_mode(model_name) == "sequence":
+        single_step_wrapper_cls = SequenceInputLoopWrapper
+        multi_step_wrapper_cls = SequenceInputMultiStepWrapper
+    else:
+        single_step_wrapper_cls = SingleStepModeLoopWrapper
+        multi_step_wrapper_cls = MultiStepModeWrapper
 
     snn_custom_ops.configure_fused_op(
         backend=args.fused_op_backend,
@@ -288,7 +332,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
     if args.include_s_cases and not args.chronos_only:
         cases["baseline_single_step_mode_eager"] = (
-            SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(
+            single_step_wrapper_cls(copy.deepcopy(base_layer_s), args.T).to(
                 device=args.device,
                 dtype=dtype,
             ).eval(),
@@ -298,7 +342,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         execution_modes["baseline_single_step_mode_eager"] = "single_step_mode_loop"
 
         cases["baseline_single_step_mode_compile"] = (
-            SingleStepModeLoopWrapper(copy.deepcopy(base_layer_s), args.T).to(
+            single_step_wrapper_cls(copy.deepcopy(base_layer_s), args.T).to(
                 device=args.device,
                 dtype=dtype,
             ).eval(),
@@ -309,7 +353,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
 
     if not args.chronos_only:
         cases["baseline_multi_step_mode_eager"] = (
-            MultiStepModeWrapper(
+            multi_step_wrapper_cls(
                 copy.deepcopy(base_layer_m),
                 args.T,
             ).to(
@@ -322,7 +366,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         execution_modes["baseline_multi_step_mode_eager"] = "multi_step_mode_native"
 
         cases["baseline_multi_step_mode_compile"] = (
-            MultiStepModeWrapper(
+            multi_step_wrapper_cls(
                 copy.deepcopy(base_layer_m),
                 args.T,
             ).to(
@@ -366,7 +410,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             case_name = f"chronos_single_step_loop_compile_w{tw}"
 
             cases[case_name] = (
-                SingleStepModeLoopWrapper(
+                single_step_wrapper_cls(
                     copy.deepcopy(base_layer_s),
                     local_args.T,
                 ).to(
@@ -582,6 +626,24 @@ def parse_args():
     parser.add_argument("--transformer-vocab-size", type=int, default=30522)
     parser.add_argument("--transformer-num-classes", type=int, default=100)
 
+    parser.add_argument("--convlstm-in-channels", type=int, default=1)
+    parser.add_argument("--convlstm-hidden-channels", type=int, default=64)
+    parser.add_argument("--convlstm-num-layers", type=int, default=2)
+    parser.add_argument("--convlstm-height", type=int, default=64)
+    parser.add_argument("--convlstm-width", type=int, default=64)
+
+    parser.add_argument("--mamba-d-model", type=int, default=768)
+    parser.add_argument("--mamba-n-layer", type=int, default=24)
+    parser.add_argument("--mamba-d-inner", type=int, default=1536)
+    parser.add_argument("--mamba-d-state", type=int, default=16)
+    parser.add_argument("--mamba-d-conv", type=int, default=4)
+    parser.add_argument("--mamba-dt-rank", type=int, default=48)
+
+    parser.add_argument("--deepspeech2-freq-bins", type=int, default=161)
+    parser.add_argument("--deepspeech2-conv-channels", type=int, default=32)
+    parser.add_argument("--deepspeech2-gru-hidden", type=int, default=800)
+    parser.add_argument("--deepspeech2-gru-layers", type=int, default=3)
+
     parser.add_argument(
         "--lif-impl",
         choices=LIF_IMPL_CHOICES,
@@ -694,6 +756,15 @@ def parse_args():
 
     parser.add_argument("--disable-temporal-lif-rewrite", action="store_true")
     parser.add_argument("--disable-temporal-linear-lif-rewrite", action="store_true")
+
+    # Kairos workload rewrites (ConvLSTM/Mamba/DeepSpeech2-GRU), each
+    # independently toggleable and on by default -- mirrors the disable_*
+    # convention above. Silent no-ops on every existing SNN model since
+    # their pattern collectors only match the three new workloads' gate
+    # chains (see annotate_temporal_metadata's mutual-exclusivity note).
+    parser.add_argument("--disable-convlstm-rewrite", action="store_true")
+    parser.add_argument("--disable-mamba-rewrite", action="store_true")
+    parser.add_argument("--disable-gru-rewrite", action="store_true")
     parser.add_argument("--drop-intermediate-states", action="store_true")
     parser.add_argument("--enable-temporal-mean-rewrite", action="store_true")
     parser.add_argument("--disable-temporal-mean-rewrite", action="store_true")

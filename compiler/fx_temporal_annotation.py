@@ -11,7 +11,12 @@ from compiler.fx_lif_rewrite import (
     is_custom_lif_state_node,
     is_fused_conv_lif_state_node,
 )
-from compiler.fx_lif_temporal_rewrite import collect_conv_bn_lif_state_patterns
+from compiler.fx_lif_temporal_rewrite import (
+    collect_conv_bn_lif_state_patterns,
+    collect_convlstm_cell_patterns,
+    collect_gru_cell_patterns,
+    collect_mamba_scan_patterns,
+)
 from compiler.fx_temporal_scheduler import split_fx_graph_into_timesteps
 
 
@@ -132,7 +137,21 @@ def annotate_temporal_metadata(
             raise RuntimeError("T and temporal_window must be positive")
         return stats
 
-    temporal_patterns = collect_conv_bn_lif_state_patterns(gm)
+    # LIF-based SNN models and the three sequence-input Kairos workloads
+    # (ConvLSTM/Mamba/DeepSpeech2) are mutually exclusive per graph -- at
+    # most one of these four collectors returns anything non-empty for a
+    # given gm, so merging is safe. split_fx_graph_into_timesteps /
+    # _select_marker_group only ever consult pattern.conv_node (the
+    # per-timestep anchor) and pattern.layer_id (grouping), so the
+    # non-LIF-specific patterns from the new collectors (built via
+    # _make_synthetic_temporal_pattern) work through the exact same
+    # machinery without any changes to it.
+    temporal_patterns = (
+        collect_conv_bn_lif_state_patterns(gm)
+        + collect_convlstm_cell_patterns(gm)
+        + collect_mamba_scan_patterns(gm)
+        + collect_gru_cell_patterns(gm)
+    )
     fused_candidate_nodes = set()
     for pattern in temporal_patterns:
         fused_candidate_nodes.update(

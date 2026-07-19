@@ -536,6 +536,40 @@ def fused_temporal_lif_state_torch(
     return torch.stack(spikes, dim=0), v
 
 
+def fused_convlstm_cell_torch(gates_sum, c_prev):
+    if gates_sum.dim() != 4:
+        raise RuntimeError(f"fused_convlstm_cell requires gates_sum [B,4C,H,W], got dim={gates_sum.dim()}")
+    i, f, g, o = torch.chunk(gates_sum, 4, dim=1)
+    c_t = torch.sigmoid(f) * c_prev + torch.sigmoid(i) * torch.tanh(g)
+    h_t = torch.sigmoid(o) * torch.tanh(c_t)
+    return h_t, c_t
+
+
+def fused_temporal_selective_scan_torch(x_seq, dt_seq, b_seq, c_seq, A, D, h_init):
+    if x_seq.dim() != 3:
+        raise RuntimeError(f"fused_temporal_selective_scan requires x_seq [T,B,d_inner], got dim={x_seq.dim()}")
+    state = h_init
+    ys = []
+    for t in range(int(x_seq.shape[0])):
+        x_t, dt_t, b_t, c_t = x_seq[t], dt_seq[t], b_seq[t], c_seq[t]
+        hA = torch.exp(dt_t.unsqueeze(-1) * A)
+        state = hA * state + (dt_t.unsqueeze(-1) * b_t.unsqueeze(1)) * x_t.unsqueeze(-1)
+        y_t = (state * c_t.unsqueeze(1)).sum(-1) + D * x_t
+        ys.append(y_t)
+    return torch.stack(ys, dim=0), state
+
+
+def fused_gru_cell_torch(xproj, hproj, h_prev):
+    if xproj.dim() != 2:
+        raise RuntimeError(f"fused_gru_cell requires xproj [B,3H], got dim={xproj.dim()}")
+    xproj_r, xproj_z, xproj_n = torch.chunk(xproj, 3, dim=-1)
+    hproj_r, hproj_z, hproj_n = torch.chunk(hproj, 3, dim=-1)
+    r = torch.sigmoid(xproj_r + hproj_r)
+    z = torch.sigmoid(xproj_z + hproj_z)
+    n = torch.tanh(xproj_n + r * hproj_n)
+    return (1 - z) * n + z * h_prev
+
+
 def fused_temporal_lif_avgpool_linear_torch(
     x_seq,
     v_init,
@@ -831,6 +865,24 @@ def _fused_temporal_lif_state_meta(
     if x_seq.dim() < 2:
         raise RuntimeError(f"fused_temporal_lif_state requires x_seq [T,...], got dim={x_seq.dim()}")
     return x_seq.new_empty(x_seq.shape), x_seq.new_empty(x_seq.shape[1:])
+
+
+def _fused_convlstm_cell_meta(gates_sum, c_prev):
+    if gates_sum.dim() != 4:
+        raise RuntimeError(f"fused_convlstm_cell requires gates_sum [B,4C,H,W], got dim={gates_sum.dim()}")
+    return c_prev.new_empty(c_prev.shape), c_prev.new_empty(c_prev.shape)
+
+
+def _fused_temporal_selective_scan_meta(x_seq, dt_seq, b_seq, c_seq, A, D, h_init):
+    if x_seq.dim() != 3:
+        raise RuntimeError(f"fused_temporal_selective_scan requires x_seq [T,B,d_inner], got dim={x_seq.dim()}")
+    return x_seq.new_empty(x_seq.shape), h_init.new_empty(h_init.shape)
+
+
+def _fused_gru_cell_meta(xproj, hproj, h_prev):
+    if xproj.dim() != 2:
+        raise RuntimeError(f"fused_gru_cell requires xproj [B,3H], got dim={xproj.dim()}")
+    return h_prev.new_empty(h_prev.shape)
 
 
 def _fused_temporal_lif_avgpool_linear_meta(
@@ -1737,6 +1789,72 @@ def _linear_lif_shape_desc(xs, weight, bias, v_init):
     )
 
 
+def _fused_convlstm_cell_impl(gates_sum, c_prev):
+    _CALL_STATS["total"] += 1
+    if _CONFIG.backend == "triton" and isinstance(gates_sum, torch.Tensor) and gates_sum.is_cuda:
+        try:
+            from kernels.generated_convlstm_cell_kernel import run_fused_convlstm_cell_kernel
+
+            h_t, c_t = run_fused_convlstm_cell_kernel(gates_sum, c_prev)
+            _CALL_STATS["triton"] += 1
+            if _CONFIG.verbose:
+                print(f"[TRITON][HIT][convlstm_cell] shape={tuple(gates_sum.shape)}")
+            return h_t, c_t
+        except Exception as exc:
+            _CALL_STATS["fallback"] += 1
+            _record_fallback("convlstm_cell", [str(exc)], f"shape={tuple(gates_sum.shape)}")
+            if _CONFIG.strict_triton:
+                raise
+    else:
+        _CALL_STATS["fallback"] += 1
+
+    return fused_convlstm_cell_torch(gates_sum, c_prev)
+
+
+def _fused_temporal_selective_scan_impl(x_seq, dt_seq, b_seq, c_seq, A, D, h_init):
+    _CALL_STATS["total"] += 1
+    if _CONFIG.backend == "triton" and isinstance(x_seq, torch.Tensor) and x_seq.is_cuda:
+        try:
+            from kernels.generated_temporal_selective_scan_kernel import run_fused_temporal_selective_scan_kernel
+
+            y_seq, h_final = run_fused_temporal_selective_scan_kernel(x_seq, dt_seq, b_seq, c_seq, A, D, h_init)
+            _CALL_STATS["triton"] += 1
+            if _CONFIG.verbose:
+                print(f"[TRITON][HIT][temporal_selective_scan] shape={tuple(x_seq.shape)}")
+            return y_seq, h_final
+        except Exception as exc:
+            _CALL_STATS["fallback"] += 1
+            _record_fallback("temporal_selective_scan", [str(exc)], f"shape={tuple(x_seq.shape)}")
+            if _CONFIG.strict_triton:
+                raise
+    else:
+        _CALL_STATS["fallback"] += 1
+
+    return fused_temporal_selective_scan_torch(x_seq, dt_seq, b_seq, c_seq, A, D, h_init)
+
+
+def _fused_gru_cell_impl(xproj, hproj, h_prev):
+    _CALL_STATS["total"] += 1
+    if _CONFIG.backend == "triton" and isinstance(xproj, torch.Tensor) and xproj.is_cuda:
+        try:
+            from kernels.generated_gru_cell_kernel import run_fused_gru_cell_kernel
+
+            h_t = run_fused_gru_cell_kernel(xproj, hproj, h_prev)
+            _CALL_STATS["triton"] += 1
+            if _CONFIG.verbose:
+                print(f"[TRITON][HIT][gru_cell] shape={tuple(xproj.shape)}")
+            return h_t
+        except Exception as exc:
+            _CALL_STATS["fallback"] += 1
+            _record_fallback("gru_cell", [str(exc)], f"shape={tuple(xproj.shape)}")
+            if _CONFIG.strict_triton:
+                raise
+    else:
+        _CALL_STATS["fallback"] += 1
+
+    return fused_gru_cell_torch(xproj, hproj, h_prev)
+
+
 def _fused_temporal_lif_state_impl(
     x_seq,
     v_init,
@@ -2096,6 +2214,21 @@ def register_snn_custom_ops():
     try:
         def_lib = torch.library.Library("snn_custom", "DEF")
         def_lib.define(
+            "fused_convlstm_cell("
+            "Tensor gates_sum, Tensor c_prev"
+            ") -> (Tensor, Tensor)"
+        )
+        def_lib.define(
+            "fused_temporal_selective_scan("
+            "Tensor x_seq, Tensor dt_seq, Tensor b_seq, Tensor c_seq, Tensor A, Tensor D, Tensor h_init"
+            ") -> (Tensor, Tensor)"
+        )
+        def_lib.define(
+            "fused_gru_cell("
+            "Tensor xproj, Tensor hproj, Tensor h_prev"
+            ") -> Tensor"
+        )
+        def_lib.define(
             "lif_forward_state("
             "Tensor x, Tensor v_prev, float v_threshold, float v_reset, float tau, bool detach_reset"
             ") -> (Tensor, Tensor)"
@@ -2227,6 +2360,15 @@ def register_snn_custom_ops():
 
     try:
         impl_lib = torch.library.Library("snn_custom", "IMPL")
+        impl_lib.impl("fused_convlstm_cell", _fused_convlstm_cell_impl, "CPU")
+        impl_lib.impl("fused_convlstm_cell", _fused_convlstm_cell_impl, "CUDA")
+        impl_lib.impl("fused_convlstm_cell", _fused_convlstm_cell_meta, "Meta")
+        impl_lib.impl("fused_temporal_selective_scan", _fused_temporal_selective_scan_impl, "CPU")
+        impl_lib.impl("fused_temporal_selective_scan", _fused_temporal_selective_scan_impl, "CUDA")
+        impl_lib.impl("fused_temporal_selective_scan", _fused_temporal_selective_scan_meta, "Meta")
+        impl_lib.impl("fused_gru_cell", _fused_gru_cell_impl, "CPU")
+        impl_lib.impl("fused_gru_cell", _fused_gru_cell_impl, "CUDA")
+        impl_lib.impl("fused_gru_cell", _fused_gru_cell_meta, "Meta")
         impl_lib.impl("lif_forward_state", _lif_forward_state_impl, "CPU")
         impl_lib.impl("lif_forward_state", _lif_forward_state_impl, "CUDA")
         impl_lib.impl("lif_forward_state", _lif_forward_state_meta, "Meta")
