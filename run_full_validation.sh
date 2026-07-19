@@ -9,7 +9,7 @@ mkdir -p ${OUT_ROOT}
 
 WINDOWS=(1 4 8 16)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2" "spiketransformer" "spikebert")
-MODELS=("mobilenetv1" "mobilenetv2")
+MODELS=("convlstm" "mamba" "deepspeech2")
 
 # Full per-case diagnostic output (annotation/spatial-batching/rewrite/pass
 # stats, one line per fused window, etc.) is verbose and is always kept
@@ -132,6 +132,23 @@ for MODEL in "${MODELS[@]}"; do
     BATCH_SIZES=(1 4 8 16)
   fi
 
+  # Per-model input shape. Image models use the generic --height/--width
+  # (224x224). ConvLSTM has its own --convlstm-height/--convlstm-width
+  # flags (already defaulted to 64x64 in make_model_input) -- the generic
+  # --height/--width is never read for it, so pass the matching 64x64
+  # here too rather than a misleading 224x224. Mamba/DeepSpeech2 are pure
+  # sequence-input models (input built from --mamba-* / --deepspeech2-*
+  # flags alone, dispatched via KAIROS_MODEL_INPUT_MODE registration
+  # metadata) with no spatial height/width concept at all, so the flag is
+  # omitted for them entirely rather than passed and ignored.
+  if [[ "${MODEL}" == "convlstm" ]]; then
+    HEIGHT_WIDTH_ARGS=(--height 64 --width 64)
+  elif [[ "${MODEL}" == "mamba" || "${MODEL}" == "deepspeech2" ]]; then
+    HEIGHT_WIDTH_ARGS=()
+  else
+    HEIGHT_WIDTH_ARGS=(--height 224 --width 224)
+  fi
+
   if [[ "${RUN_MODE}" == "baseline" ]]; then
     ACTIVE_WINDOWS=("baseline")
   else
@@ -160,8 +177,7 @@ for MODEL in "${MODELS[@]}"; do
         --lif-impl kairos \
         --T 16 \
         --batch-size ${BATCH_SIZE} \
-        --height 224 \
-        --width 224 \
+        "${HEIGHT_WIDTH_ARGS[@]}" \
         --device cuda \
         --dtype fp32 \
         --fused-op-backend triton \

@@ -41,6 +41,9 @@ MODELS=(
   "mobilenetv2"
   "spiketransformer"
   "spikebert"
+  "convlstm"
+  "mamba"
+  "deepspeech2"
 )
 
 PRECISIONS=(

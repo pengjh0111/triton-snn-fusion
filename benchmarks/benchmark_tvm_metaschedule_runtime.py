@@ -24,6 +24,9 @@ KAIROS_MODEL_CHOICES = [
     "mobilenetv2",
     "spiketransformer",
     "spikebert",
+    "convlstm",
+    "mamba",
+    "deepspeech2",
 ]
 LIF_IMPL_CHOICES = ["kairos", "spikingjelly"]
 
@@ -195,6 +198,7 @@ def benchmark_onnx_with_tvm(
     num_trials_per_iter: int,
     runner: str,
     builder: str,
+    T: int,
     repeat: int,
     number: int,
     out_dir: Path,
@@ -227,6 +231,14 @@ def benchmark_onnx_with_tvm(
             input_shape = (batch_size, sequence_length, transformer_input_dim)
         elif model_name == "spikebert":
             input_shape = (batch_size, sequence_length)
+        elif model_name == "convlstm":
+            # matches export_onnx's own hardcoded convlstm input (Phase A
+            # scope: not threaded through per-model CLI flags yet).
+            input_shape = (T, batch_size, 1, 64, 64)
+        elif model_name == "mamba":
+            input_shape = (T, batch_size, 768)
+        elif model_name == "deepspeech2":
+            input_shape = (batch_size, 1, 161, 2 * T)
         else:
             input_shape = (batch_size, 3, height, width)
         mod, params = load_onnx_as_relay(onnx_path, input_shape, relay, onnx)
@@ -417,6 +429,7 @@ def main():
                         num_trials_per_iter=args.num_trials_per_iter,
                         runner=args.runner,
                         builder=args.builder,
+                        T=args.T,
                         repeat=args.repeat,
                         number=args.number,
                         out_dir=run_dir,
