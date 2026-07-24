@@ -222,10 +222,14 @@ def benchmark_onnx_with_tvm(
 
     try:
         np, onnx, tvm, relay, graph_executor, ms = import_tvm_deps()
-        target = tvm.target.Target(target_text)
         dev = tvm.cuda(dev_id)
         if not dev.exist:
             raise RuntimeError(f"TVM CUDA device {dev_id} is not available")
+        target = (
+            tvm.target.Target.from_device(dev)
+            if target_text.strip() == "cuda"
+            else tvm.target.Target(target_text)
+        )
 
         if model_name == "spiketransformer":
             input_shape = (batch_size, sequence_length, transformer_input_dim)

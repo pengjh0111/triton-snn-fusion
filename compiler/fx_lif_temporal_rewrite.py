@@ -413,6 +413,76 @@ def _make_synthetic_temporal_pattern(
     )
 
 
+def _find_convlstm_outputs_from_chunk(chunk_node: torch.fx.Node) -> Optional[Tuple[torch.fx.Node, torch.fx.Node]]:
+    """Read-only walk from the gate-split chunk(_,4,dim=1) node (the same
+    node collect_convlstm_cell_patterns's own forward-walk locates) forward
+    to h_t/c_t, mirroring rewrite_convlstm_cell_to_fused's matching exactly
+    -- used only to populate the closure output_boundary for scheduling
+    (see TemporalPattern.output_boundary); imprecision here just degrades
+    scheduling quality (falls back to block-local default positioning), it
+    cannot cause an incorrect rewrite since rewrite_convlstm_cell_to_fused
+    re-matches independently and is untouched by this function.
+    """
+    if chunk_node.target is not torch.chunk or len(chunk_node.args) < 2 or chunk_node.args[1] != 4:
+        return None
+    if len(chunk_node.users) != 4:
+        return None
+    getitems: Dict[int, torch.fx.Node] = {}
+    for user in chunk_node.users:
+        idx = _getitem_index(user)
+        if idx is None or idx in getitems:
+            return None
+        getitems[idx] = user
+    if set(getitems.keys()) != {0, 1, 2, 3}:
+        return None
+    i_node, f_node, g_node, o_node = getitems[0], getitems[1], getitems[2], getitems[3]
+    if any(len(gn.users) != 1 for gn in (i_node, f_node, g_node, o_node)):
+        return None
+
+    sig_f = next(iter(f_node.users))
+    if sig_f.target is not torch.sigmoid or len(sig_f.users) != 1:
+        return None
+    mul_fc = next(iter(sig_f.users))
+    if mul_fc.target not in (operator.mul, torch.mul) or len(mul_fc.users) != 1:
+        return None
+
+    sig_i = next(iter(i_node.users))
+    if sig_i.target is not torch.sigmoid or len(sig_i.users) != 1:
+        return None
+    tanh_g = next(iter(g_node.users))
+    if tanh_g.target is not torch.tanh or len(tanh_g.users) != 1:
+        return None
+    mul_ig_candidates = set(sig_i.users) & set(tanh_g.users)
+    if len(mul_ig_candidates) != 1:
+        return None
+    mul_ig = next(iter(mul_ig_candidates))
+    if mul_ig.target not in (operator.mul, torch.mul) or len(mul_ig.users) != 1:
+        return None
+
+    c_t_candidates = set(mul_fc.users) & set(mul_ig.users)
+    if len(c_t_candidates) != 1:
+        return None
+    c_t_node = next(iter(c_t_candidates))
+    if c_t_node.target not in (operator.add, torch.add):
+        return None
+
+    sig_o = next(iter(o_node.users))
+    if sig_o.target is not torch.sigmoid or len(sig_o.users) != 1:
+        return None
+    tanh_c_t_candidates = [u for u in c_t_node.users if u.target is torch.tanh]
+    if len(tanh_c_t_candidates) != 1 or len(tanh_c_t_candidates[0].users) != 1:
+        return None
+    tanh_c_t = tanh_c_t_candidates[0]
+    h_t_candidates = set(sig_o.users) & set(tanh_c_t.users)
+    if len(h_t_candidates) != 1:
+        return None
+    h_t_node = next(iter(h_t_candidates))
+    if h_t_node.target not in (operator.mul, torch.mul):
+        return None
+
+    return h_t_node, c_t_node
+
+
 def collect_convlstm_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
     """Per-timestep anchor for ConvLSTM: xproj = conv_x(x_t) -- the first op
     of each timestep's cell (KairosConvLSTMCellEager.forward: xproj is
@@ -438,21 +508,50 @@ def collect_convlstm_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPat
             continue
         # forward-walk a few hops to confirm this conv's output reaches an
         # add -> chunk(_,4,dim=1), the ConvLSTM gate-split signature.
-        found_chunk = False
+        chunk_node = None
         frontier = list(node.users)
         for _ in range(4):
             next_frontier = []
             for user in frontier:
                 if user.target is torch.chunk and len(user.args) > 1 and user.args[1] == 4 and user.kwargs.get("dim") == 1:
-                    found_chunk = True
+                    chunk_node = user
                     break
                 next_frontier.extend(user.users)
-            if found_chunk:
+            if chunk_node is not None:
                 break
             frontier = next_frontier
-        if not found_chunk:
+        if chunk_node is None:
             continue
-        patterns.append(_make_synthetic_temporal_pattern(node, f"convlstm_cell:{layer_key}", node.args[0]))
+        outputs = _find_convlstm_outputs_from_chunk(chunk_node)
+        # input_boundary must cover *both* of the cell's genuine entry
+        # points: xproj's own input (x_t) and hproj's own input (h_prev,
+        # the W_h-side recurrence). hproj is NOT forward-reachable from
+        # xproj's input at all -- it's a separate branch that only merges
+        # with the xproj-descended chain at add=xproj+hproj -- so a
+        # closure computed from x_t alone (forward-from-input ∩
+        # backward-from-output) silently excludes the entire hproj/chunk/
+        # gate-split branch from this instance's membership, leaving it to
+        # the default block-local positioning; confirmed via a real 3-layer
+        # GRU trace to cause a topological-order violation once the
+        # rewriter later merges both branches (see the GRU collector's
+        # matching analogous fix below for the full analysis). ConvLSTM's
+        # chunk_node.args[0] is exactly the xproj+hproj add node (verified
+        # via rewrite_convlstm_cell_to_fused's own matching), so hproj is a
+        # one-hop lookup from here.
+        input_boundary_nodes = [node.args[0]] if isinstance(node.args[0], torch.fx.Node) else []
+        add_node = chunk_node.args[0] if chunk_node.args else None
+        if isinstance(add_node, torch.fx.Node) and add_node.target in (operator.add, torch.add) and len(add_node.args) >= 2:
+            hproj_node = add_node.args[0] if add_node.args[1] is node else (add_node.args[1] if add_node.args[0] is node else None)
+            if isinstance(hproj_node, torch.fx.Node) and hproj_node.args and isinstance(hproj_node.args[0], torch.fx.Node):
+                input_boundary_nodes.append(hproj_node.args[0])
+        input_boundary = tuple(input_boundary_nodes)
+        output_boundary = outputs if outputs is not None else ()
+        patterns.append(
+            _make_synthetic_temporal_pattern(
+                node, f"convlstm_cell:{layer_key}", node.args[0],
+                input_boundary=input_boundary, output_boundary=output_boundary,
+            )
+        )
     return patterns
 
 
@@ -543,6 +642,121 @@ def collect_mamba_scan_patterns(gm: torch.fx.GraphModule) -> List[TemporalPatter
     return result
 
 
+def _find_gru_h_t_from_xproj_chunk(xproj_chunk: torch.fx.Node) -> Optional[Tuple[torch.fx.Node, torch.fx.Node]]:
+    """Read-only walk from the xproj gate-split chunk(_,3,dim=-1) node (the
+    same node collect_gru_cell_patterns's own forward-walk locates) forward
+    to h_t (and, along the way, hproj's own chunk -- returned too, since
+    the collector needs it to find h_prev for the closure input_boundary;
+    see the "both entry points" note in collect_gru_cell_patterns and its
+    ConvLSTM analogue). Transposes rewrite_gru_cell_to_fused's own matching
+    (which walks from the *hproj* chunk instead, since that's what its own
+    outer scan loop finds first) onto the xproj side, since that's the node
+    the collector already has as its anchor. Used only to populate the
+    closure input/output_boundary for scheduling (see TemporalPattern's
+    docstring); imprecision here just degrades scheduling quality, it cannot cause an
+    incorrect rewrite since rewrite_gru_cell_to_fused re-matches
+    independently and is untouched by this function.
+    """
+    if xproj_chunk.target is not torch.chunk or len(xproj_chunk.args) < 2 or xproj_chunk.args[1] != 3:
+        return None
+    if len(xproj_chunk.users) != 3:
+        return None
+    getitems: Dict[int, torch.fx.Node] = {}
+    for user in xproj_chunk.users:
+        idx = _getitem_index(user)
+        if idx is None or idx in getitems:
+            return None
+        getitems[idx] = user
+    if set(getitems.keys()) != {0, 1, 2}:
+        return None
+    xproj_r, xproj_z, xproj_n = getitems[0], getitems[1], getitems[2]
+    if any(len(gn.users) != 1 for gn in (xproj_r, xproj_z, xproj_n)):
+        return None
+
+    add_r = next(iter(xproj_r.users))
+    if add_r.target not in (operator.add, torch.add) or len(add_r.users) != 1 or len(add_r.args) < 2:
+        return None
+    hproj_r = add_r.args[0] if add_r.args[1] is xproj_r else (add_r.args[1] if add_r.args[0] is xproj_r else None)
+    if not isinstance(hproj_r, torch.fx.Node):
+        return None
+    r_node = next(iter(add_r.users))
+    if r_node.target is not torch.sigmoid or len(r_node.users) != 1:
+        return None
+
+    if len(hproj_r.users) != 1:
+        return None
+    hproj_chunk = hproj_r.args[0] if _getitem_index(hproj_r) == 0 and isinstance(hproj_r.args[0], torch.fx.Node) else None
+    if hproj_chunk is None or hproj_chunk.target is not torch.chunk:
+        return None
+    if len(hproj_chunk.args) < 2 or hproj_chunk.args[1] != 3 or hproj_chunk.kwargs.get("dim") != -1:
+        return None
+    hproj_getitems: Dict[int, torch.fx.Node] = {}
+    for user in hproj_chunk.users:
+        idx = _getitem_index(user)
+        if idx is None or idx in hproj_getitems:
+            return None
+        hproj_getitems[idx] = user
+    if set(hproj_getitems.keys()) != {0, 1, 2}:
+        return None
+    hproj_r2, hproj_z, hproj_n = hproj_getitems[0], hproj_getitems[1], hproj_getitems[2]
+    if hproj_r2 is not hproj_r:
+        return None
+    if any(len(gn.users) != 1 for gn in (hproj_z, hproj_n)):
+        return None
+
+    add_z_candidates = set(xproj_z.users) & set(hproj_z.users)
+    if len(add_z_candidates) != 1:
+        return None
+    add_z = next(iter(add_z_candidates))
+    if add_z.target not in (operator.add, torch.add) or len(add_z.users) != 1:
+        return None
+    z_node = next(iter(add_z.users))
+    if z_node.target is not torch.sigmoid or len(z_node.users) != 2:
+        return None
+
+    mul_r_hn_candidates = set(r_node.users) & set(hproj_n.users)
+    if len(mul_r_hn_candidates) != 1:
+        return None
+    mul_r_hn = next(iter(mul_r_hn_candidates))
+    if mul_r_hn.target not in (operator.mul, torch.mul) or len(mul_r_hn.users) != 1:
+        return None
+    add_n_candidates = set(xproj_n.users) & set(mul_r_hn.users)
+    if len(add_n_candidates) != 1:
+        return None
+    add_n = next(iter(add_n_candidates))
+    if add_n.target not in (operator.add, torch.add) or len(add_n.users) != 1:
+        return None
+    n_node = next(iter(add_n.users))
+    if n_node.target is not torch.tanh or len(n_node.users) != 1:
+        return None
+
+    one_minus_z_candidates = [u for u in z_node.users if u.target in (operator.sub, torch.sub)]
+    if len(one_minus_z_candidates) != 1:
+        return None
+    one_minus_z = one_minus_z_candidates[0]
+    if len(one_minus_z.users) != 1:
+        return None
+    mul_1mz_n_candidates = set(one_minus_z.users) & set(n_node.users)
+    if len(mul_1mz_n_candidates) != 1:
+        return None
+    mul_1mz_n = next(iter(mul_1mz_n_candidates))
+    if mul_1mz_n.target not in (operator.mul, torch.mul) or len(mul_1mz_n.users) != 1:
+        return None
+    mul_z_h_candidates = [u for u in z_node.users if u.target in (operator.mul, torch.mul)]
+    if len(mul_z_h_candidates) != 1:
+        return None
+    mul_z_h = mul_z_h_candidates[0]
+    if len(mul_z_h.users) != 1:
+        return None
+    h_t_candidates = set(mul_1mz_n.users) & set(mul_z_h.users)
+    if len(h_t_candidates) != 1:
+        return None
+    h_t_node = next(iter(h_t_candidates))
+    if h_t_node.target not in (operator.add, torch.add):
+        return None
+    return h_t_node, hproj_chunk
+
+
 def collect_gru_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]:
     """Per-timestep anchor for the DeepSpeech2 GRU stack: xproj = w_x(x_t) --
     the first op of each timestep's cell (KairosGRUCellEager.forward:
@@ -558,21 +772,48 @@ def collect_gru_cell_patterns(gm: torch.fx.GraphModule) -> List[TemporalPattern]
         layer_key = _param_like_name(weight_x)
         if layer_key is None or "w_x" not in layer_key:
             continue
-        found_chunk = False
+        chunk_node = None
         frontier = list(node.users)
         for _ in range(3):
             next_frontier = []
             for user in frontier:
                 if user.target is torch.chunk and len(user.args) > 1 and user.args[1] == 3 and user.kwargs.get("dim") == -1:
-                    found_chunk = True
+                    chunk_node = user
                     break
                 next_frontier.extend(user.users)
-            if found_chunk:
+            if chunk_node is not None:
                 break
             frontier = next_frontier
-        if not found_chunk:
+        if chunk_node is None:
             continue
-        patterns.append(_make_synthetic_temporal_pattern(node, f"gru_cell:{layer_key}", node.args[0]))
+        result = _find_gru_h_t_from_xproj_chunk(chunk_node)
+        # input_boundary must cover both of the cell's genuine entry points:
+        # xproj's own input (x_t) and hproj's own input (h_prev, the W_h-side
+        # recurrence) -- hproj is not forward-reachable from xproj's input at
+        # all, it's a separate branch that only merges with the
+        # xproj-descended chain at add_r/add_z/mul_r_hn, so a closure
+        # computed from x_t alone silently excludes the entire hproj/chunk/
+        # gate-split branch from this instance's membership (confirmed via a
+        # real 3-layer GRU trace to cause a topological-order violation once
+        # the rewriter later merges both branches -- moved=510, schedule
+        # reported ok, but gm.graph.lint() failed with "Argument 'hproj' ...
+        # used before it has been defined" after rewrite_gru_cell_to_fused
+        # ran). See collect_convlstm_cell_patterns's identical fix.
+        input_boundary_nodes = [node.args[0]] if isinstance(node.args[0], torch.fx.Node) else []
+        h_t_node = None
+        if result is not None:
+            h_t_node, hproj_chunk = result
+            hproj_node = hproj_chunk.args[0] if hproj_chunk.args else None
+            if isinstance(hproj_node, torch.fx.Node) and hproj_node.args and isinstance(hproj_node.args[0], torch.fx.Node):
+                input_boundary_nodes.append(hproj_node.args[0])
+        input_boundary = tuple(input_boundary_nodes)
+        output_boundary = (h_t_node,) if h_t_node is not None else ()
+        patterns.append(
+            _make_synthetic_temporal_pattern(
+                node, f"gru_cell:{layer_key}", node.args[0],
+                input_boundary=input_boundary, output_boundary=output_boundary,
+            )
+        )
     return patterns
 
 

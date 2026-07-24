@@ -45,6 +45,15 @@ def resolve_dtype(dtype: str):
 class ExportableStatefulIFNode(CustomStatefulIFNode):
     """ONNX/TensorRT export-only decomposition of Kairos stateful LIF."""
 
+    def reset_state(self):
+        if self._reset_v.device != self.v.device or self._reset_v.dtype != self.v.dtype:
+            self._reset_v = torch.tensor(
+                0.0, device=self.v.device, dtype=self.v.dtype
+            )
+        # Preserve the same zero-state semantics without aliasing two module
+        # buffers, which TorchScript TracedModule rejects.
+        self.v = self._reset_v.clone()
+
     def forward(self, x):
         self.reset_state_if_needed(x)
         if float(self.tau) <= 1.0:
@@ -74,7 +83,10 @@ def _make_exportable_lif_node(module: CustomStatefulIFNode) -> ExportableStatefu
         v_reset=module.v_reset,
         tau=module.tau,
         detach_reset=module.detach_reset,
-        surrogate_function=module.surrogate_function,
+        # TorchScript rejects shared submodule identities even when the
+        # surrogate is unused by this export-only forward. Preserve the same
+        # surrogate configuration while giving every LIF node its own module.
+        surrogate_function=copy.deepcopy(module.surrogate_function),
         step_mode=module.step_mode,
     )
     exportable.v = module.v.detach().clone()

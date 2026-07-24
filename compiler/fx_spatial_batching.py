@@ -184,6 +184,107 @@ def _match_temporal_stack_getitem(node: torch.fx.Node) -> Optional[TemporalStack
     )
 
 
+def _is_fused_temporal_stack_source(node: torch.fx.Node) -> bool:
+    """True iff node is the SNN-native fused-temporal-op getitem pattern
+    _match_temporal_stack_getitem produces stack sources from: node itself
+    is spike_stack = getitem(temporal_tuple, 0), so the fused_temporal_*
+    call being tested for is node.args[0] (temporal_tuple), *not* node
+    itself -- node.op is always "call_function" targeting
+    operator.getitem, never the fused op directly (confirmed by a real
+    MobileNetV2 regression this exact confusion caused: checking node
+    itself made this always return False for genuine SNN stack sources
+    too, routing them through the window-slice path meant only for
+    _match_external_sequence_getitem's sources, and narrowing an
+    already-exactly-window-sized tensor at a nonzero window offset went
+    out of bounds).
+
+    Used at rewrite time to decide whether a temporal-stack source needs
+    the window-slice step _match_external_sequence_getitem's sources
+    require -- see that function's docstring for why the two cases can't
+    share the same flatten path unchanged. By construction the two
+    matchers' outputs are disjoint (_match_temporal_stack_getitem only
+    returns non-None when this predicate holds; _match_external_sequence_getitem
+    only matches placeholders, never a fused_temporal_* getitem), so this
+    check safely tells them apart without adding any new fields to
+    TemporalStackInput.
+    """
+    if node.op != "call_function" or not node.args or not isinstance(node.args[0], torch.fx.Node):
+        return False
+    temporal_tuple = node.args[0]
+    if temporal_tuple.op != "call_function":
+        return False
+    target_text = _target_text(temporal_tuple.target)
+    return "snn_custom.fused_temporal_" in target_text or "snn_custom::fused_temporal_" in target_text
+
+
+def _match_external_sequence_getitem(node: torch.fx.Node, temporal_window: int) -> Optional[TemporalStackInput]:
+    """Recognizes x_t = x_seq[t] -- a single getitem indexing directly into
+    the model's own top-level input placeholder (a genuine whole-sequence
+    [T, ...] tensor for a SequenceInputLoopWrapper-style model, e.g.
+    ConvLSTM/Mamba) -- the Kairos sequence-input workloads' analogue of
+    _match_temporal_stack_getitem's SNN-specific double-getitem-from-a-
+    fused-op pattern, letting the batched-group rewrite reference the
+    original whole-sequence tensor directly instead of needing every
+    per-t getitem "available before" a single insertion point (the whole
+    point of the "stack shortcut": t=1's x_seq[1] is already sitting right
+    next to t=0's x_seq[0] in one pre-existing tensor -- there's nothing to
+    wait for or re-stack).
+
+    Deliberately restricted to source.op == "placeholder" -- a real
+    function argument, unambiguously never anything else -- rather than
+    the broader "no timestep annotation" heuristic tried first. That
+    broader version produced two confirmed false positives on existing SNN
+    models (both lack _kairos_meta timestep annotation for the same
+    reason this case does -- they're materialized mid-pass, before
+    annotate_temporal_metadata ever saw them): a prior spatial-batching
+    iteration's own batched intermediate, and a `new_empty`-allocated
+    per-timestep output buffer inside the existing fused_linear_lif_state
+    rewrite (name pattern *_temporal_fused_linear_lif_state_spike_stack).
+    Blacklisting each pattern as discovered doesn't bound the search space
+    with any confidence; placeholder-only does, at the cost of not
+    covering KairosDeepSpeech2's "frontend output" case (a computed node,
+    not a placeholder) -- a real, scoped gap, not a silent one, and safe
+    to leave for a follow-up since DeepSpeech2's win is dominated by the
+    GRU cell rewrite itself, not this batching layer.
+
+    Unlike the SNN case, this source's own dim0 is the *full* T, not just
+    one window's worth (a fused_temporal_* op only ever produces one
+    window's stack at a time, so its getitem-0 output is already exactly
+    window-sized) -- rewrite_spatial_batch_group's temporal-stack branch
+    must narrow to [window_start:window_start+window] before flattening,
+    or the flatten merges the wrong element count into the batch dim
+    (confirmed via a real trace: window=4 out of T=16 produced a
+    4x-oversized flatten and a downstream shape-mismatch crash). See
+    _is_fused_temporal_stack_source, which is how the rewrite step tells
+    this case apart from the SNN one to know whether to narrow first.
+
+    TemporalStackInput.timestep is window-*relative* (0..window-1), not the
+    getitem's raw absolute index into the full T-length source -- the one
+    place that field is consumed (group_spatial_batch_candidates's
+    "stack_timesteps != list(range(temporal_window))" completeness check)
+    hardcodes a 0-based-per-window expectation, which is trivially true for
+    the SNN case (a fused_temporal_* op's own stack output only ever holds
+    one window's worth of data, so its raw getitem indices are already
+    0..window-1) but not for this whole-sequence case, where raw indices
+    range over the full T (confirmed via a real trace: only window_id=0
+    happened to pass this check by coincidence, since 0..window-1 vs
+    0..window-1 only lines up for the very first window).
+    """
+    absolute_timestep = _getitem_index(node)
+    if absolute_timestep is None or not node.args or not isinstance(node.args[0], torch.fx.Node):
+        return None
+    source = node.args[0]
+    if source.op != "placeholder":
+        return None
+    return TemporalStackInput(
+        temporal_tuple=source,
+        spike_stack=source,
+        getitem_node=node,
+        timestep=absolute_timestep % temporal_window if temporal_window > 0 else absolute_timestep,
+        source_op="external_sequence_input",
+    )
+
+
 def _match_batched_chunk_getitem(node: torch.fx.Node) -> Optional[BatchedChunkInput]:
     timestep = _getitem_index(node)
     if timestep is None or not node.args or not isinstance(node.args[0], torch.fx.Node):
@@ -846,7 +947,12 @@ def _extract_candidate(
         return None
     tensor_inputs = _candidate_tensor_inputs(node, kind)
     temporal_stack_inputs = tuple(
-        item for item in (_match_temporal_stack_getitem(input_item) for input_item in tensor_inputs) if item is not None
+        item
+        for item in (
+            _match_temporal_stack_getitem(input_item) or _match_external_sequence_getitem(input_item, temporal_window)
+            for input_item in tensor_inputs
+        )
+        if item is not None
     )
     previous_batched_inputs = tuple(
         item for item in (_match_batched_chunk_getitem(input_item) for input_item in tensor_inputs) if item is not None
@@ -860,6 +966,7 @@ def _extract_candidate(
                 _is_generated_spatial_batching_node(input_item)
                 and _match_temporal_stack_getitem(input_item) is None
                 and _match_batched_chunk_getitem(input_item) is None
+                and _match_external_sequence_getitem(input_item, temporal_window) is None
             ):
                 stats.skip(
                     "add_direct_generated_batched_input",
@@ -879,7 +986,7 @@ def _extract_candidate(
         if len(previous_batched_inputs) == 2 and previous_batched_inputs[0].timestep != previous_batched_inputs[1].timestep:
             stats.skip("previous_batched_add_timestep_mismatch", f"node={node.name} add previous chunk timesteps differ")
             return None
-    primary_temporal_stack = _match_temporal_stack_getitem(input_node)
+    primary_temporal_stack = _match_temporal_stack_getitem(input_node) or _match_external_sequence_getitem(input_node, temporal_window)
     primary_previous_batched = _match_batched_chunk_getitem(input_node)
     timestep = _get_kairos_meta(node, "timestep")
     if not isinstance(timestep, int) and primary_temporal_stack is not None:
@@ -893,6 +1000,7 @@ def _extract_candidate(
         if (
             _match_temporal_stack_getitem(tensor_input) is not None
             or _match_batched_chunk_getitem(tensor_input) is not None
+            or _match_external_sequence_getitem(tensor_input, temporal_window) is not None
         ):
             continue
         if not _is_batching_source_legal(tensor_input, timestep):
@@ -1187,6 +1295,28 @@ def _make_temporal_stack_flatten(
     return flatten_node
 
 
+def _make_temporal_stack_batched_input(
+    gm: torch.fx.GraphModule,
+    stack_node: torch.fx.Node,
+    name_prefix: str,
+    window_start: int,
+    temporal_window: int,
+) -> torch.fx.Node:
+    """Builds the batched [window*B, ...] input for one temporal-stack
+    source, narrowing to this window's slice first when the source is a
+    whole-sequence tensor (see _match_external_sequence_getitem /
+    _is_fused_temporal_stack_source) -- an SNN fused-temporal-op source is
+    already exactly window-sized so it flattens directly, unchanged from
+    before this function existed.
+    """
+    if _is_fused_temporal_stack_source(stack_node):
+        return _make_temporal_stack_flatten(gm, stack_node, name_prefix, temporal_window)
+    narrowed = gm.graph.call_function(torch.narrow, args=(stack_node, 0, window_start, temporal_window))
+    narrowed.name = f"{name_prefix}_window_slice"
+    narrowed.meta["kairos_origin"] = "external_sequence_window_slice"
+    return _make_temporal_stack_flatten(gm, narrowed, name_prefix, temporal_window)
+
+
 def rewrite_spatial_batch_group(
     gm: torch.fx.GraphModule,
     group: SpatialBatchGroup,
@@ -1213,8 +1343,11 @@ def rewrite_spatial_batch_group(
 
     with gm.graph.inserting_before(first_node):
         if temporal_stack_nodes:
+            window_start = group.window_id * len(group.candidates)
             batched_inputs = tuple(
-                _make_temporal_stack_flatten(gm, stack_node, f"{first_node.name}_{index}", len(group.candidates))
+                _make_temporal_stack_batched_input(
+                    gm, stack_node, f"{first_node.name}_{index}", window_start, len(group.candidates)
+                )
                 for index, stack_node in enumerate(temporal_stack_nodes)
             )
             if stats is not None:

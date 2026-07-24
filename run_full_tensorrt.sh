@@ -29,22 +29,25 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
-
 MODELS=(
-  "resnet18"
-  "resnet34"
-  "alexnet"
-  "zfnet"
-  "vgg11"
-  "vgg16"
-  "mobilenetv1"
-  "mobilenetv2"
   "spiketransformer"
   "spikebert"
-  "convlstm"
-  "mamba"
-  "deepspeech2"
 )
+# MODELS=(
+#   "resnet18"
+#   "resnet34"
+#   "alexnet"
+#   "zfnet"
+#   "vgg11"
+#   "vgg16"
+#   "mobilenetv1"
+#   "mobilenetv2"
+#   "spiketransformer"
+#   "spikebert"
+#   "convlstm"
+#   "mamba"
+#   "deepspeech2"
+# )
 PRECISIONS=(
   "tf32"
 )

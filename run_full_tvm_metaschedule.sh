@@ -4,6 +4,20 @@ set -e
 
 cd /data/Triton-to-tile-IR/Tile_IR_Test/Chronos
 
+# This benchmark still uses Relay, which has been removed from /data/tvm.
+# Keep its compatible TVM/Python environment isolated from the Tile IR TVM build.
+TVM_COMPAT_ROOT=/data/tvm-relay-compat
+TVM_PYTHON=/home/ubuntu/miniconda3/envs/tvm-build-venv/bin/python
+TVM_SITE_PACKAGES=/home/ubuntu/miniconda3/envs/tvm-build-venv/lib/python3.11/site-packages
+
+if [[ ! -x "${TVM_PYTHON}" || ! -f "${TVM_COMPAT_ROOT}/build/libtvm.so" ]]; then
+  echo "Relay-compatible TVM environment is unavailable" >&2
+  exit 1
+fi
+
+export PYTHONPATH="${TVM_COMPAT_ROOT}/python:${TVM_SITE_PACKAGES}${PYTHONPATH:+:${PYTHONPATH}}"
+export TVM_LIBRARY_PATH="${TVM_COMPAT_ROOT}/build"
+
 OUT_ROOT=test/tvm_metaschedule_full_validation
 mkdir -p ${OUT_ROOT}
 
@@ -79,7 +93,7 @@ for MODEL in "${MODELS[@]}"; do
     OUT_DIR=${OUT_ROOT}/${MODEL}/${PREC}_b${BATCH_SIZE}
     mkdir -p ${OUT_DIR}
 
-python3 benchmarks/benchmark_tvm_metaschedule_runtime.py \
+"${TVM_PYTHON}" -S benchmarks/benchmark_tvm_metaschedule_runtime.py \
       --models ${MODEL} \
       --lif-impl kairos \
       --execution-modes single_step_mode \

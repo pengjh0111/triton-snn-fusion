@@ -77,6 +77,8 @@ from compiler.fx_lif_temporal_rewrite import (
     rewrite_temporal_lif_state_to_fused,
     rewrite_temporal_linear_lif_state_to_fused,
     rewrite_temporal_lif_avgpool_linear_to_fused,
+    collect_convlstm_cell_patterns,
+    collect_gru_cell_patterns,
     collect_mamba_scan_patterns,
     rewrite_convlstm_cell_to_fused,
     rewrite_gru_cell_to_fused,
@@ -1350,12 +1352,65 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         # no-ops, exactly like the LIF-specific passes below no-op on these
         # three new workloads.
         if not args.disable_rewrite:
+            # Each of the three collectors below also populates
+            # input_boundary/output_boundary (the closure-scheduling opt-in
+            # -- see TemporalPattern's docstring and the Mamba scheduler
+            # redesign) so reordering to layer-major order works correctly
+            # for all three, not just Mamba: without it, a later layer's
+            # per-timestep ops (e.g. ConvLSTM/GRU's W_x-side xproj) sit
+            # interleaved with earlier layers' ops in the original
+            # timestep-major trace order, and spatial batching's "all
+            # inputs available before the batched insertion point" check
+            # then rejects them even though W_x-side batching across
+            # timesteps is legal (only the W_h-side genuine recurrence,
+            # e.g. hproj, is correctly rejected -- reordering doesn't
+            # change that, it's an inherent sequential dependency within
+            # one layer, not an artifact of layer/timestep interleaving).
+            # ConvLSTM/GRU's input_boundary carries *two* entry points (the
+            # cell's W_x-side input and its W_h-side h_prev) since hproj is
+            # not forward-reachable from xproj's own input at all -- a
+            # closure computed from x_t alone silently excludes the entire
+            # hproj branch from the instance's membership (confirmed via a
+            # real 3-layer GRU trace to cause a topological-order
+            # violation the first time this was attempted); see
+            # collect_convlstm_cell_patterns / collect_gru_cell_patterns
+            # for the full analysis.
+            schedule_window = args.temporal_schedule_window or args.temporal_fuse_window
+
             if not args.disable_convlstm_rewrite:
+                convlstm_patterns = collect_convlstm_cell_patterns(gm)
+                if convlstm_patterns and schedule_window > 1:
+                    convlstm_schedule_result = reorder_fx_graph_by_temporal_windows(
+                        gm,
+                        args.T,
+                        schedule_window,
+                        convlstm_patterns,
+                        dump_dir=local_dir if args.temporal_schedule_dump else None,
+                        strict=args.temporal_schedule_strict,
+                    )
+                    if not convlstm_schedule_result.ok and args.temporal_schedule_strict:
+                        raise RuntimeError(convlstm_schedule_result.reason)
+                    elif not convlstm_schedule_result.ok:
+                        print(f"[CONVLSTM_SCHEDULE][FALLBACK] {convlstm_schedule_result.reason}")
                 convlstm_replaced = rewrite_convlstm_cell_to_fused(gm)
                 counters.convlstm_replaced_patterns += convlstm_replaced
                 temporal_replaced_patterns += convlstm_replaced
 
             if not args.disable_gru_rewrite:
+                gru_patterns = collect_gru_cell_patterns(gm)
+                if gru_patterns and schedule_window > 1:
+                    gru_schedule_result = reorder_fx_graph_by_temporal_windows(
+                        gm,
+                        args.T,
+                        schedule_window,
+                        gru_patterns,
+                        dump_dir=local_dir if args.temporal_schedule_dump else None,
+                        strict=args.temporal_schedule_strict,
+                    )
+                    if not gru_schedule_result.ok and args.temporal_schedule_strict:
+                        raise RuntimeError(gru_schedule_result.reason)
+                    elif not gru_schedule_result.ok:
+                        print(f"[GRU_SCHEDULE][FALLBACK] {gru_schedule_result.reason}")
                 gru_replaced = rewrite_gru_cell_to_fused(gm)
                 counters.gru_replaced_patterns += gru_replaced
                 temporal_replaced_patterns += gru_replaced
@@ -1363,7 +1418,7 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
             if not args.disable_mamba_rewrite and args.temporal_fuse_window > 1:
                 mamba_patterns = collect_mamba_scan_patterns(gm)
                 if mamba_patterns:
-                    mamba_schedule_window = args.temporal_schedule_window or args.temporal_fuse_window
+                    mamba_schedule_window = schedule_window
                     mamba_schedule_result = reorder_fx_graph_by_temporal_windows(
                         gm,
                         args.T,

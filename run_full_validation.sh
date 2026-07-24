@@ -7,7 +7,7 @@ cd /data/Triton-to-tile-IR/Tile_IR_Test/Chronos
 OUT_ROOT=test/full_validation
 mkdir -p ${OUT_ROOT}
 
-WINDOWS=(1 4 8 16)
+WINDOWS=(2)
 # MODELS=("resnet18" "resnet34" "vgg11" "vgg16" "alexnet" "zfnet" "mobilenetv1" "mobilenetv2" "spiketransformer" "spikebert")
 MODELS=("convlstm" "mamba" "deepspeech2")
 
