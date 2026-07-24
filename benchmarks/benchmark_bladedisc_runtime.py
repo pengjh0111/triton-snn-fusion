@@ -125,14 +125,19 @@ def benchmark(model, x, warmup, repeat):
             model(x)
     torch.cuda.synchronize()
     samples = []
+    schedule_samples = []
     for _ in range(repeat):
         reset_lif_modules(model)
         torch.cuda.synchronize()
         start = time.perf_counter()
         with torch.no_grad():
             model(x)
+        # Scheduling overhead: CPU-side dispatch time before the sync below,
+        # distinct from the full wall-clock sample recorded after sync.
+        dispatched = time.perf_counter()
         torch.cuda.synchronize()
         samples.append((time.perf_counter() - start) * 1000.0)
+        schedule_samples.append((dispatched - start) * 1000.0)
     return {
         "mean_ms": statistics.mean(samples),
         "min_ms": min(samples),
@@ -140,6 +145,8 @@ def benchmark(model, x, warmup, repeat):
         "p50_ms": percentile(samples, 0.50),
         "p90_ms": percentile(samples, 0.90),
         "repeat": repeat,
+        "schedule_mean_ms": statistics.mean(schedule_samples),
+        "schedule_min_ms": min(schedule_samples),
     }
 
 

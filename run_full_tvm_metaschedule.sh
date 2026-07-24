@@ -17,6 +17,7 @@ fi
 
 export PYTHONPATH="${TVM_COMPAT_ROOT}/python:${TVM_SITE_PACKAGES}${PYTHONPATH:+:${PYTHONPATH}}"
 export TVM_LIBRARY_PATH="${TVM_COMPAT_ROOT}/build"
+export TVM_DISABLE_EDITABLE=1
 
 OUT_ROOT=test/tvm_metaschedule_full_validation
 mkdir -p ${OUT_ROOT}

@@ -4,6 +4,7 @@ import argparse
 import inspect
 import json
 import sys
+import time
 import traceback
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -174,11 +175,24 @@ def run_tvm_graph_executor(lib, input_data, repeat: int, number: int, dev, graph
     )
     prof = timer()
     per_run_ms = [float(t) * 1000.0 / float(number) for t in prof.results]
+
+    # Scheduling overhead: CPU-side dispatch time for module.run() before the
+    # device sync, measured separately from time_evaluator's own device-synced
+    # timing above.
+    schedule_samples = []
+    for _ in range(repeat):
+        t0 = time.perf_counter()
+        module.run()
+        t1 = time.perf_counter()
+        dev.sync()
+        schedule_samples.append((t1 - t0) * 1000.0)
+
     return {
         "repeat": repeat,
         "number": number,
         "latency_ms": summarize_ms(per_run_ms),
         "raw_latency_ms": per_run_ms,
+        "schedule_ms": summarize_ms(schedule_samples),
     }
 
 

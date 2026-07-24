@@ -56,6 +56,8 @@ class BenchResult:
     p90_ms: Optional[float] = None
     repeat: int = 0
     error: str = ""
+    schedule_mean_ms: Optional[float] = None
+    schedule_min_ms: Optional[float] = None
 
 
 def percentile(values, q):
@@ -122,6 +124,7 @@ def compile_and_warmup(runnable, model, x, device, warmup, args):
 
 def benchmark_runnable(name, runnable, model, x, device, repeat, args):
     times = []
+    schedule_times = []
 
     try:
         for _ in range(repeat):
@@ -135,11 +138,17 @@ def benchmark_runnable(name, runnable, model, x, device, repeat, args):
             with torch.no_grad():
                 _ = runnable(x)
 
+            # Scheduling overhead: CPU-side dispatch time before the sync
+            # below, distinct from the full wall-clock sample recorded after
+            # sync.
+            dispatched = time.perf_counter()
+
             synchronize_if_needed(device)
 
             t1 = time.perf_counter()
 
             times.append((t1 - t0) * 1000.0)
+            schedule_times.append((dispatched - t0) * 1000.0)
 
         return BenchResult(
             name=name,
@@ -150,6 +159,8 @@ def benchmark_runnable(name, runnable, model, x, device, repeat, args):
             p50_ms=percentile(times, 0.50),
             p90_ms=percentile(times, 0.90),
             repeat=repeat,
+            schedule_mean_ms=statistics.mean(schedule_times),
+            schedule_min_ms=min(schedule_times),
         )
 
     except Exception:

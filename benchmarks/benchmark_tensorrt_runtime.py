@@ -325,6 +325,26 @@ def parse_trtexec_output(text: str) -> Dict[str, Any]:
             "median": float(gpu_match.group(4)),
         }
 
+    # Scheduling overhead: trtexec already reports this as "Enqueue Time"
+    # (CPU-side time to submit work to the GPU queue, distinct from GPU
+    # Compute Time above) -- just capturing an existing metric, no new
+    # measurement needed.
+    enqueue_match = re.search(
+        r"Enqueue Time:\s*min = ([\d.]+) ms, "
+        r"max = ([\d.]+) ms, "
+        r"mean = ([\d.]+) ms, "
+        r"median = ([\d.]+) ms",
+        text,
+    )
+
+    if enqueue_match:
+        out["schedule_ms"] = {
+            "min": float(enqueue_match.group(1)),
+            "max": float(enqueue_match.group(2)),
+            "mean": float(enqueue_match.group(3)),
+            "median": float(enqueue_match.group(4)),
+        }
+
     throughput_match = re.search(
         r"Throughput:\s*([\d.]+)\s*qps",
         text,
