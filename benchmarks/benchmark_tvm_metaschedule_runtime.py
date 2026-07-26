@@ -119,10 +119,16 @@ def tune_and_build_with_metaschedule(
     num_trials_per_iter: int,
     runner: str,
     builder: str,
+    builder_timeout_sec: float,
     ms,
 ):
     tune_relay, compile_relay = get_relay_integration(ms)
     work_dir.mkdir(parents=True, exist_ok=True)
+    builder_config = (
+        ms.builder.LocalBuilder(timeout_sec=builder_timeout_sec)
+        if builder == "local"
+        else builder
+    )
 
     database = call_with_supported_kwargs(
         tune_relay,
@@ -133,7 +139,7 @@ def tune_and_build_with_metaschedule(
         max_trials_global=max_trials_global,
         num_trials_per_iter=num_trials_per_iter,
         runner=runner,
-        builder=builder,
+        builder=builder_config,
     )
 
     lib = call_with_supported_kwargs(
@@ -212,6 +218,7 @@ def benchmark_onnx_with_tvm(
     num_trials_per_iter: int,
     runner: str,
     builder: str,
+    builder_timeout_sec: float,
     T: int,
     repeat: int,
     number: int,
@@ -230,6 +237,7 @@ def benchmark_onnx_with_tvm(
         "num_trials_per_iter": num_trials_per_iter,
         "runner": runner,
         "builder": builder,
+        "builder_timeout_sec": builder_timeout_sec,
         "parsed": {},
         "error": "",
     }
@@ -273,6 +281,7 @@ def benchmark_onnx_with_tvm(
                 num_trials_per_iter=num_trials_per_iter,
                 runner=runner,
                 builder=builder,
+                builder_timeout_sec=builder_timeout_sec,
                 ms=ms,
             )
             result["tvm_tune_ok"] = True
@@ -352,10 +361,11 @@ def main():
 
     parser.add_argument("--target", default="cuda")
     parser.add_argument("--dev-id", type=int, default=0)
-    parser.add_argument("--max-trials-global", type=int, default=1024)
+    parser.add_argument("--max-trials-global", type=int, default=8192)
     parser.add_argument("--num-trials-per-iter", type=int, default=64)
     parser.add_argument("--runner", default="local")
     parser.add_argument("--builder", default="local")
+    parser.add_argument("--builder-timeout-sec", type=float, default=300.0)
     parser.add_argument("--repeat", type=int, default=20)
     parser.add_argument("--number", type=int, default=10)
     parser.add_argument(
@@ -447,6 +457,7 @@ def main():
                         num_trials_per_iter=args.num_trials_per_iter,
                         runner=args.runner,
                         builder=args.builder,
+                        builder_timeout_sec=args.builder_timeout_sec,
                         T=args.T,
                         repeat=args.repeat,
                         number=args.number,
