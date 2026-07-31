@@ -173,11 +173,30 @@ def run_one(model_name, args):
             )
         cfg = torch_blade.Config()
         cfg.optimization_pipeline = torch_blade.mlir.backend_name()
-        cfg.enable_static_shape = True
+        # enable_static_shape=True crashes (heap corruption, "free(): invalid
+        # size", inside torch_blade.optimize() itself -- not a catchable
+        # Python exception) on mamba's SSM update, which does
+        # torch.split(x, [dt_rank, d_state, d_state], dim=-1) -- BladeDISC's
+        # shape-propagation logs "failed PropagateTensorShapeOnNode ...
+        # aten::split_with_sizes" and, in static-shape mode, doesn't recover
+        # from that cleanly. With this off, that becomes a harmless logged
+        # warning and compilation succeeds; verified no latency regression on
+        # resnet18 (1.29ms vs 1.31ms) since fully-static models don't depend
+        # on this flag to specialize on their traced shapes anyway.
+        cfg.enable_static_shape = False
+        # torch_blade.optimize() is where BladeDISC's MLIR/DISC backend does
+        # its own equivalent of autotuning (clustering, fusion, and -- per the
+        # repeated "lazyInitCUDA"-flanked delay seen in earlier runs -- real
+        # per-cluster codegen/profiling against the actual GPU). None of that
+        # was ever timed; assign into `result` immediately (not deferred to
+        # the final result.update() below) so it's captured even for models
+        # that fail at a later step, like mamba's runtime shape mismatch.
+        compile_start = time.perf_counter()
         with cfg:
             disc_model = torch_blade.optimize(
                 traced_model, model_inputs=(x,)
             )
+        result["autotune_seconds"] = time.perf_counter() - compile_start
         disc_graph = str(disc_model.forward.graph)
         if "torch_blade.Engine" not in disc_graph:
             raise RuntimeError(

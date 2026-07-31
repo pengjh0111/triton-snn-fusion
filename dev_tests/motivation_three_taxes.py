@@ -50,12 +50,14 @@ NCU_METRICS = (
 CSV_COLUMNS = (
     "mode",
     "T",
+    "flops_total",
     "dram_read_bytes",
     "dram_write_bytes",
     "dram_total_bytes",
     "min_bytes_theory",
     "kernel_count",
     "arith_intensity",
+    "achieved_tflops",
     "sm_tput_pct",
     "dram_tput_pct",
     "time_ms_mean",
@@ -108,6 +110,13 @@ class Inputs:
     v0: torch.Tensor
 
 
+@dataclass
+class LayerParams:
+    weight: torch.Tensor
+    bias: torch.Tensor
+    v0: torch.Tensor
+
+
 def dtype_from_name(name: str) -> torch.dtype:
     return {"fp16": torch.float16, "fp32": torch.float32}[name]
 
@@ -128,8 +137,10 @@ def fold_batch_norm(
 
 
 def make_inputs(problem: Problem, timesteps: int, dtype: torch.dtype, device: str, seed: int) -> Inputs:
-    generator = torch.Generator(device=device)
-    generator.manual_seed(seed)
+    input_generator = torch.Generator(device=device)
+    input_generator.manual_seed(seed)
+    parameter_generator = torch.Generator(device=device)
+    parameter_generator.manual_seed(seed + 104729)
     scale = 0.02
     x = torch.randn(
         timesteps,
@@ -137,7 +148,7 @@ def make_inputs(problem: Problem, timesteps: int, dtype: torch.dtype, device: st
         problem.cin,
         problem.height,
         problem.width,
-        generator=generator,
+        generator=input_generator,
         device=device,
         dtype=dtype,
     ) * scale
@@ -146,24 +157,24 @@ def make_inputs(problem: Problem, timesteps: int, dtype: torch.dtype, device: st
         problem.cin,
         problem.kernel,
         problem.kernel,
-        generator=generator,
+        generator=parameter_generator,
         device=device,
         dtype=dtype,
     ) * scale
     conv_bias = torch.randn(
-        problem.cout, generator=generator, device=device, dtype=dtype
+        problem.cout, generator=parameter_generator, device=device, dtype=dtype
     ) * scale
     gamma = 0.9 + torch.rand(
-        problem.cout, generator=generator, device=device, dtype=dtype
+        problem.cout, generator=parameter_generator, device=device, dtype=dtype
     ) * 0.2
     beta = torch.randn(
-        problem.cout, generator=generator, device=device, dtype=dtype
+        problem.cout, generator=parameter_generator, device=device, dtype=dtype
     ) * scale
     running_mean = torch.randn(
-        problem.cout, generator=generator, device=device, dtype=dtype
+        problem.cout, generator=parameter_generator, device=device, dtype=dtype
     ) * scale
     running_var = 0.5 + torch.rand(
-        problem.cout, generator=generator, device=device, dtype=dtype
+        problem.cout, generator=parameter_generator, device=device, dtype=dtype
     )
     weight, bias = fold_batch_norm(
         weight, conv_bias, gamma, beta, running_mean, running_var, eps=1e-5
@@ -239,7 +250,11 @@ def batched_forward(
 
 
 def fused_forward(
-    data: Inputs, problem: Problem, temporal_window: int
+    data: Inputs,
+    problem: Problem,
+    temporal_window: int,
+    use_autotune: bool,
+    diagnostics: Optional[Dict] = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     timesteps = int(data.x.shape[0])
     spikes = torch.empty(
@@ -270,25 +285,43 @@ def fused_forward(
             spikes[start:end],
             v_out,
             strict=True,
-            use_autotune=False,
+            use_autotune=use_autotune,
         )
+        if diagnostics is not None:
+            diagnostics.update(
+                {
+                    "kernel_key": result.kernel_key,
+                    "kernel_temporal_config": result.kernel_temporal_config,
+                    "kernel_diagnostics": result.kernel_diagnostics,
+                }
+            )
         v = result.v_next
     return spikes, v
 
 
 def mode_callable(
-    mode: str, data: Inputs, problem: Problem, temporal_window: int
+    mode: str,
+    data: Inputs,
+    problem: Problem,
+    temporal_window: int,
+    use_autotune: bool,
 ) -> Callable[[], Tuple[torch.Tensor, torch.Tensor]]:
     if mode == "per_step":
         return lambda: per_step_forward(data, problem)
     if mode == "batched":
         return lambda: batched_forward(data, problem, temporal_window)
     if mode == "fused":
-        return lambda: fused_forward(data, problem, temporal_window)
+        return lambda: fused_forward(
+            data, problem, temporal_window, use_autotune=use_autotune
+        )
     raise ValueError(f"unknown mode: {mode}")
 
 
 def time_cuda(fn: Callable, warmup: int, repeat: int) -> Tuple[float, float]:
+    # Compile and autotune outside both warmup and the measured event range.
+    with torch.no_grad():
+        fn()
+    torch.cuda.synchronize()
     with torch.no_grad():
         for _ in range(warmup):
             fn()
@@ -304,6 +337,106 @@ def time_cuda(fn: Callable, warmup: int, repeat: int) -> Tuple[float, float]:
         end.synchronize()
         samples.append(float(start.elapsed_time(end)))
     return statistics.mean(samples), statistics.pstdev(samples)
+
+
+def make_stack_params(
+    problem: Problem,
+    layers: int,
+    dtype: torch.dtype,
+    device: str,
+    seed: int,
+) -> List[LayerParams]:
+    params = []
+    for layer_index in range(layers):
+        sample = make_inputs(
+            problem, 1, dtype, device, seed + 1009 * (layer_index + 1)
+        )
+        params.append(LayerParams(sample.weight, sample.bias, sample.v0))
+    return params
+
+
+def per_step_stack_forward(
+    x: torch.Tensor, params: List[LayerParams], problem: Problem
+) -> Tuple[torch.Tensor, Tuple[torch.Tensor, ...]]:
+    states = [layer.v0 for layer in params]
+    outputs = []
+    for step in range(int(x.shape[0])):
+        current = x[step]
+        for index, layer in enumerate(params):
+            preact = F.conv2d(
+                current, layer.weight, layer.bias, stride=1, padding=problem.padding
+            )
+            current, states[index] = lif_forward_state_torch(
+                preact, states[index], 1.0, 0.0, 2.0, False
+            )
+        outputs.append(current)
+    return torch.stack(outputs), tuple(states)
+
+
+def batched_stack_forward(
+    x: torch.Tensor,
+    params: List[LayerParams],
+    problem: Problem,
+    temporal_window: int,
+) -> Tuple[torch.Tensor, Tuple[torch.Tensor, ...]]:
+    current = x
+    final_states = []
+    for layer in params:
+        timesteps, batch = current.shape[:2]
+        preact = F.conv2d(
+            current.flatten(0, 1),
+            layer.weight,
+            layer.bias,
+            stride=1,
+            padding=problem.padding,
+        ).view(timesteps, batch, problem.cout, problem.height, problem.width)
+        current, state = _lif_in_windows(preact, layer.v0, temporal_window)
+        final_states.append(state)
+    return current, tuple(final_states)
+
+
+def fused_stack_forward(
+    x: torch.Tensor,
+    params: List[LayerParams],
+    problem: Problem,
+    temporal_window: int,
+    use_autotune: bool,
+    diagnostics: Optional[List[Dict]] = None,
+) -> Tuple[torch.Tensor, Tuple[torch.Tensor, ...]]:
+    current = x
+    final_states = []
+    for index, layer in enumerate(params):
+        layer_diagnostics = {} if diagnostics is not None else None
+        current, state = fused_forward(
+            Inputs(current, layer.weight, layer.bias, layer.v0),
+            problem,
+            temporal_window,
+            use_autotune,
+            diagnostics=layer_diagnostics,
+        )
+        final_states.append(state)
+        if diagnostics is not None:
+            diagnostics.append({"layer": index, **layer_diagnostics})
+    return current, tuple(final_states)
+
+
+def stack_mode_callable(
+    mode: str,
+    x: torch.Tensor,
+    params: List[LayerParams],
+    problem: Problem,
+    temporal_window: int,
+    use_autotune: bool,
+) -> Callable:
+    if mode == "per_step":
+        return lambda: per_step_stack_forward(x, params, problem)
+    if mode == "batched":
+        return lambda: batched_stack_forward(x, params, problem, temporal_window)
+    if mode == "fused":
+        return lambda: fused_stack_forward(
+            x, params, problem, temporal_window, use_autotune
+        )
+    raise ValueError(f"unknown mode: {mode}")
 
 
 def correctness(
@@ -326,6 +459,30 @@ def correctness(
             "spike_mismatch_ratio": float(spike_mismatch),
             "spike_max_abs": float(spike_diff.max().item()),
             "state_max_abs": float(state_diff.max().item()),
+        }
+    return checks
+
+
+def stack_correctness(outputs, dtype_name: str) -> Dict[str, Dict[str, float]]:
+    reference_spikes, reference_states = outputs["per_step"]
+    atol = 2e-2 if dtype_name == "fp16" else 5e-2
+    rtol = 2e-2 if dtype_name == "fp16" else 1e-2
+    checks = {}
+    for mode, (spikes, states) in outputs.items():
+        spike_mismatch = (spikes != reference_spikes).float().mean().item()
+        state_diffs = [
+            float((state - reference).abs().max().item())
+            for state, reference in zip(states, reference_states)
+        ]
+        state_ok = all(
+            torch.allclose(state, reference, atol=atol, rtol=rtol)
+            for state, reference in zip(states, reference_states)
+        )
+        spike_ok = spike_mismatch <= (1e-3 if dtype_name == "fp16" else 5e-3)
+        checks[mode] = {
+            "ok": bool(spike_ok and state_ok),
+            "spike_mismatch_ratio": float(spike_mismatch),
+            "state_max_abs": max(state_diffs, default=0.0),
         }
     return checks
 
@@ -443,7 +600,7 @@ def _parse_ncu_wide_rows(rows: List[Dict[str, str]]) -> Dict[str, float]:
 
 
 def collect_ncu(
-    args, mode: str, timesteps: int, out_dir: Path
+    args, mode: str, timesteps: int, out_dir: Path, layers: int = 1
 ) -> Dict[str, float]:
     ncu = resolve_ncu_path(args.ncu_path)
     if ncu is None:
@@ -451,7 +608,12 @@ def collect_ncu(
             f"NCU executable not found: {args.ncu_path}. "
             "Pass an absolute path with --ncu-path; sudo may replace PATH via secure_path."
         )
-    report = out_dir / "ncu" / f"{mode}_T{timesteps}.csv"
+    report_name = (
+        f"{mode}_T{timesteps}.csv"
+        if layers == 1
+        else f"multilayer_{mode}_L{layers}_T{timesteps}.csv"
+    )
+    report = out_dir / "ncu" / report_name
     report.parent.mkdir(parents=True, exist_ok=True)
     child = [
         sys.executable,
@@ -477,7 +639,11 @@ def collect_ncu(
         str(args.temporal_window),
         "--seed",
         str(args.seed),
+        "--profile-layers",
+        str(layers),
     ]
+    if not args.use_autotune:
+        child.append("--no-use-autotune")
     cmd = [
         ncu,
         "--target-processes",
@@ -520,7 +686,30 @@ def profile_child(args) -> None:
     problem = problem_from_args(args)
     timesteps = args.t_values[0]
     data = make_inputs(problem, timesteps, dtype_from_name(args.dtype), "cuda", args.seed)
-    fn = mode_callable(args.mode, data, problem, args.temporal_window)
+    if args.profile_layers == 1:
+        fn = mode_callable(
+            args.mode,
+            data,
+            problem,
+            args.temporal_window,
+            args.use_autotune,
+        )
+    else:
+        params = make_stack_params(
+            problem,
+            args.profile_layers,
+            dtype_from_name(args.dtype),
+            "cuda",
+            args.seed,
+        )
+        fn = stack_mode_callable(
+            args.mode,
+            data.x,
+            params,
+            problem,
+            args.temporal_window,
+            args.use_autotune,
+        )
     with torch.no_grad():
         fn()
     torch.cuda.synchronize()
@@ -595,7 +784,9 @@ def write_breakdown(path: Path, rows: List[Dict], problem: Problem, args) -> Non
     write_csv(path, breakdown, columns)
 
 
-def write_paper_summary(path: Path, rows: List[Dict], args) -> None:
+def write_paper_summary(
+    path: Path, rows: List[Dict], multilayer_rows: List[Dict], args
+) -> None:
     selected = {
         row["mode"]: row for row in rows if int(row["T"]) == args.breakdown_t
     }
@@ -630,7 +821,148 @@ def write_paper_summary(path: Path, rows: List[Dict], args) -> None:
             "NCU performance-counter data was not requested. Run with "
             "--collect-ncu before using this experiment in the paper.\n"
         )
+    deepest = max(args.layer_counts)
+    stack = {
+        row["mode"]: row
+        for row in multilayer_rows
+        if int(row["layer_count"]) == deepest
+    }
+    if len(stack) == len(MODES) and math.isfinite(
+        float(stack["batched"]["dram_total_bytes"])
+    ):
+        batched = stack["batched"]
+        fused_stack = stack["fused"]
+        crossover = (
+            "and fused is faster than batched-only"
+            if float(fused_stack["time_ms_mean"]) < float(batched["time_ms_mean"])
+            else "while fused is not faster than batched-only at this stack depth"
+        )
+        text += (
+            f"At L={deepest}, T={args.multilayer_t}, batched-only transferred "
+            f"{float(batched['dram_total_bytes']) / 1e9:.3f} GB versus "
+            f"{float(fused_stack['dram_total_bytes']) / 1e9:.3f} GB for fused, "
+            f"{crossover}. Single-layer latency is treated as auxiliary evidence.\n"
+        )
     path.write_text(text, encoding="utf-8")
+
+
+def run_multilayer_experiment(args, problem: Problem, out_dir: Path) -> List[Dict]:
+    timesteps = args.multilayer_t
+    dtype = dtype_from_name(args.dtype)
+    base = make_inputs(problem, timesteps, dtype, "cuda", args.seed)
+    element_bytes = torch.empty((), dtype=dtype).element_size()
+    rows = []
+    if max(args.layer_counts) > 1 and problem.cin != problem.cout:
+        raise ValueError(
+            "homogeneous multilayer stack requires --cin == --cout so each "
+            "layer output can feed the next layer"
+        )
+    for layers in args.layer_counts:
+        print(f"[multilayer] L={layers} T={timesteps}")
+        params = make_stack_params(problem, layers, dtype, "cuda", args.seed)
+        outputs = {}
+        for mode in MODES:
+            fn = stack_mode_callable(
+                mode,
+                base.x,
+                params,
+                problem,
+                args.temporal_window,
+                args.use_autotune,
+            )
+            with torch.no_grad():
+                outputs[mode] = fn()
+        torch.cuda.synchronize()
+        checks = stack_correctness(outputs, args.dtype)
+        failed = [mode for mode, check in checks.items() if not check["ok"]]
+        if failed:
+            raise AssertionError(
+                f"multilayer correctness failed at L={layers}: {failed}; {checks}"
+            )
+
+        layer_flops = problem.flops(timesteps)
+        flops_total = layers * layer_flops
+        layer_input_elems = (
+            timesteps * problem.batch * problem.cin * problem.height * problem.width
+        )
+        layer_output_elems = timesteps * problem.output_elements_per_step
+        min_bytes = (
+            layers
+            * (
+                layer_input_elems
+                + layer_output_elems
+                + problem.weight_elements
+            )
+        ) * element_bytes
+        for mode in MODES:
+            fn = stack_mode_callable(
+                mode,
+                base.x,
+                params,
+                problem,
+                args.temporal_window,
+                args.use_autotune,
+            )
+            mean_ms, std_ms = time_cuda(fn, args.warmup, args.repeat)
+            profile = {
+                "dram_read_bytes": math.nan,
+                "dram_write_bytes": math.nan,
+                "kernel_count": math.nan,
+                "sm_tput_pct": math.nan,
+                "dram_tput_pct": math.nan,
+            }
+            if args.collect_ncu:
+                profile = collect_ncu(
+                    args, mode, timesteps, out_dir, layers=layers
+                )
+            total_bytes = profile["dram_read_bytes"] + profile["dram_write_bytes"]
+            intensity = (
+                flops_total / total_bytes
+                if math.isfinite(total_bytes) and total_bytes > 0
+                else math.nan
+            )
+            achieved = flops_total / (mean_ms * 1e9) if mean_ms > 0 else math.nan
+            rows.append(
+                {
+                    "mode": mode,
+                    "layer_count": layers,
+                    "T": timesteps,
+                    "flops_total": flops_total,
+                    **profile,
+                    "dram_total_bytes": total_bytes,
+                    "min_bytes_theory": min_bytes,
+                    "arith_intensity": intensity,
+                    "achieved_tflops": achieved,
+                    "time_ms_mean": mean_ms,
+                    "time_ms_std": std_ms,
+                    "correctness_ok": checks[mode]["ok"],
+                }
+            )
+            print(
+                f"  {mode:<9} FLOP={flops_total / 1e9:.3f}G "
+                f"time={mean_ms:.4f}ms "
+                f"DRAM={total_bytes if math.isfinite(total_bytes) else 'NCU-not-collected'}"
+            )
+    columns = (
+        "mode",
+        "layer_count",
+        "T",
+        "flops_total",
+        "dram_read_bytes",
+        "dram_write_bytes",
+        "dram_total_bytes",
+        "min_bytes_theory",
+        "kernel_count",
+        "arith_intensity",
+        "achieved_tflops",
+        "sm_tput_pct",
+        "dram_tput_pct",
+        "time_ms_mean",
+        "time_ms_std",
+        "correctness_ok",
+    )
+    write_csv(out_dir / "three_taxes_multilayer.csv", rows, columns)
+    return rows
 
 
 def lock_gpu_clock(clock_mhz: Optional[int]) -> None:
@@ -735,6 +1067,7 @@ def main(args) -> None:
     restore_sudo_output_ownership(out_dir)
     rows: List[Dict] = []
     correctness_rows = []
+    fused_configs = {}
     element_bytes = torch.empty((), dtype=dtype_from_name(args.dtype)).element_size()
 
     for timesteps in args.t_values:
@@ -744,7 +1077,13 @@ def main(args) -> None:
         )
         outputs = {}
         for mode in MODES:
-            fn = mode_callable(mode, data, problem, args.temporal_window)
+            fn = mode_callable(
+                mode,
+                data,
+                problem,
+                args.temporal_window,
+                args.use_autotune,
+            )
             with torch.no_grad():
                 outputs[mode] = fn()
         torch.cuda.synchronize()
@@ -756,7 +1095,26 @@ def main(args) -> None:
             raise AssertionError(f"correctness failed at T={timesteps}: {failed}; {checks}")
 
         for mode in MODES:
-            fn = mode_callable(mode, data, problem, args.temporal_window)
+            fn = mode_callable(
+                mode,
+                data,
+                problem,
+                args.temporal_window,
+                args.use_autotune,
+            )
+            if mode == "fused":
+                diagnostics = {}
+                with torch.no_grad():
+                    fused_forward(
+                        data,
+                        problem,
+                        args.temporal_window,
+                        args.use_autotune,
+                        diagnostics=diagnostics,
+                    )
+                torch.cuda.synchronize()
+                fused_configs[str(timesteps)] = diagnostics
+                print(f"  fused config: {diagnostics.get('kernel_temporal_config')}")
             mean_ms, std_ms = time_cuda(fn, args.warmup, args.repeat)
             profile = {
                 "dram_read_bytes": math.nan,
@@ -768,25 +1126,33 @@ def main(args) -> None:
             if args.collect_ncu:
                 profile = collect_ncu(args, mode, timesteps, out_dir)
             total_bytes = profile["dram_read_bytes"] + profile["dram_write_bytes"]
+            flops_total = problem.flops(timesteps)
             intensity = (
-                problem.flops(timesteps) / total_bytes
+                flops_total / total_bytes
                 if math.isfinite(total_bytes) and total_bytes > 0
                 else math.nan
+            )
+            achieved = (
+                flops_total / (mean_ms * 1e9) if mean_ms > 0 else math.nan
             )
             rows.append(
                 {
                     "mode": mode,
                     "T": timesteps,
+                    "flops_total": flops_total,
                     **profile,
                     "dram_total_bytes": total_bytes,
                     "min_bytes_theory": problem.min_bytes(timesteps, element_bytes),
                     "arith_intensity": intensity,
+                    "achieved_tflops": achieved,
                     "time_ms_mean": mean_ms,
                     "time_ms_std": std_ms,
                 }
             )
             print(
-                f"  {mode:<9} {mean_ms:.4f} +/- {std_ms:.4f} ms "
+                f"  {mode:<9} FLOP={flops_total / 1e9:.3f}G "
+                f"{mean_ms:.4f} +/- {std_ms:.4f} ms "
+                f"AI={intensity if math.isfinite(intensity) else 'NCU-not-collected'} "
                 f"DRAM={total_bytes if math.isfinite(total_bytes) else 'NCU-not-collected'}"
             )
 
@@ -797,12 +1163,26 @@ def main(args) -> None:
         ("mode", "T", "ok", "spike_mismatch_ratio", "spike_max_abs", "state_max_abs"),
     )
     write_breakdown(out_dir / "three_taxes_breakdown.csv", rows, problem, args)
-    write_paper_summary(out_dir / "paper_summary.md", rows, args)
+    multilayer_rows = run_multilayer_experiment(args, problem, out_dir)
+    write_paper_summary(
+        out_dir / "paper_summary.md", rows, multilayer_rows, args
+    )
     metadata = environment_metadata(args)
     metadata["problem"] = problem.__dict__
     metadata["t_values"] = args.t_values
     metadata["dtype"] = args.dtype
     metadata["temporal_window"] = args.temporal_window
+    metadata["use_autotune"] = args.use_autotune
+    metadata["fused_configs_by_T"] = fused_configs
+    metadata["multilayer_t"] = args.multilayer_t
+    metadata["layer_counts"] = args.layer_counts
+    metadata["flop_formula"] = (
+        "2*C_out*C_in*KH*KW*H_out*W_out*T*B; one multiply-add = 2 FLOP"
+    )
+    metadata["single_layer_flops_by_T"] = {
+        str(t): problem.flops(t) for t in args.t_values
+    }
+    metadata["multilayer_rows"] = len(multilayer_rows)
     metadata["correctness_passed"] = True
     (out_dir / "metadata.json").write_text(
         json.dumps(metadata, indent=2), encoding="utf-8"
@@ -824,6 +1204,14 @@ def parse_args():
     parser.add_argument("--temporal-window", type=int, default=16)
     parser.add_argument("--warmup", type=int, default=20)
     parser.add_argument("--repeat", type=int, default=100)
+    parser.add_argument(
+        "--use-autotune",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Complete Triton autotuning before timed fused measurements.",
+    )
+    parser.add_argument("--multilayer-t", type=int, default=16)
+    parser.add_argument("--layer-counts", nargs="+", type=int, default=[1, 2, 3, 4])
     parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--out-dir", default="test/motivation_three_taxes")
     parser.add_argument("--collect-ncu", action="store_true")
@@ -839,6 +1227,7 @@ def parse_args():
     )
     parser.add_argument("--lock-gpu-clock-mhz", type=int, default=None)
     parser.add_argument("--profile-child", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--profile-layers", type=int, default=1, help=argparse.SUPPRESS)
     parser.add_argument("--mode", choices=MODES, help=argparse.SUPPRESS)
     return parser.parse_args()
 

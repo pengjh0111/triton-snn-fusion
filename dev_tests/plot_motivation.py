@@ -15,12 +15,18 @@ import numpy as np
 
 
 COL = {
-    "per_step": "#B5761F",
-    "batched": "#8A9199",
-    "fused": "#2E7D6F",
+    "per_step": "#2C5F8A",
+    "batched": "#2E7D6F",
+    "fused": "#6B4E8F",
     "theory": "#8A9199",
     "roofline": "#33475B",
     "accent": "#882255",
+    "spatial_fill": "#DCE9F5",
+    "temporal_fill": "#E6DFF0",
+    "fused_fill": "#EAF4F1",
+    "ink": "#33475B",
+    "muted": "#8A9199",
+    "grid": "#EDF1F5",
 }
 LABEL = {"per_step": "Per-step", "batched": "Batched-only", "fused": "Fused"}
 MARKER = {"per_step": "o", "batched": "s", "fused": "^"}
@@ -44,6 +50,71 @@ def read_rows(path: Path):
     return rows
 
 
+def expected_flops(metadata, timesteps, layers=1):
+    problem = metadata["problem"]
+    kernel = problem.get("kernel", 3)
+    return (
+        2
+        * problem["cout"]
+        * problem["cin"]
+        * kernel
+        * kernel
+        * problem["height"]
+        * problem["width"]
+        * timesteps
+        * problem["batch"]
+        * layers
+    )
+
+
+def audit_derived_metrics(rows, metadata, layer_field=None):
+    for row in rows:
+        layers = int(row[layer_field]) if layer_field else 1
+        formula_flops = expected_flops(metadata, row["T"], layers)
+        csv_flops = row.get("flops_total", math.nan)
+        if math.isfinite(csv_flops) and not math.isclose(
+            csv_flops, formula_flops, rel_tol=0, abs_tol=0
+        ):
+            raise ValueError(
+                f"FLOP mismatch for {row['mode']} T={row['T']} L={layers}: "
+                f"CSV={csv_flops}, formula={formula_flops}"
+            )
+        row["flops_total"] = float(formula_flops)
+        traffic = row["dram_total_bytes"]
+        latency = row["time_ms_mean"]
+        row["arith_intensity"] = (
+            formula_flops / traffic
+            if math.isfinite(traffic) and traffic > 0
+            else math.nan
+        )
+        row["achieved_tflops"] = (
+            formula_flops / (latency * 1e9)
+            if math.isfinite(latency) and latency > 0
+            else math.nan
+        )
+
+
+def print_roofline_audit(rows, metadata, representative_t):
+    problem = metadata["problem"]
+    print(
+        "[FLOP audit] "
+        f"T={representative_t} B={problem['batch']} "
+        f"Cin={problem['cin']} Cout={problem['cout']} "
+        f"K={problem.get('kernel', 3)} Hout={problem['height']} "
+        f"Wout={problem['width']} "
+        f"FLOP={expected_flops(metadata, representative_t) / 1e9:.6f} GFLOP"
+    )
+    for row in rows:
+        if row["T"] != representative_t:
+            continue
+        print(
+            f"  {row['mode']}: DRAM={row['dram_total_bytes'] / 1e6:.6f} MB "
+            f"AI={row['arith_intensity']:.6f} FLOP/B "
+            f"time={row['time_ms_mean']:.6f} ms "
+            f"performance={row['achieved_tflops']:.6f} TFLOP/s"
+        )
+
+
 def series(rows, mode, field):
     selected = sorted((row for row in rows if row["mode"] == mode), key=lambda x: x["T"])
     return np.array([row["T"] for row in selected]), np.array([row[field] for row in selected])
@@ -60,6 +131,12 @@ def configure():
             "ytick.labelsize": 7,
             "lines.linewidth": 1.35,
             "axes.linewidth": 0.7,
+            "axes.edgecolor": COL["ink"],
+            "axes.labelcolor": COL["ink"],
+            "axes.titlecolor": COL["ink"],
+            "text.color": COL["ink"],
+            "xtick.color": COL["ink"],
+            "ytick.color": COL["ink"],
             "pdf.fonttype": 42,
             "ps.fonttype": 42,
         }
@@ -86,7 +163,7 @@ def plot_taxes(rows, output: Path):
     ax.set_xticks(tx, [str(value) for value in tx])
     ax.set_xlabel("Timesteps (T)")
     ax.set_ylabel("HBM traffic (GB)")
-    ax.grid(True, color="#E6E6E6", linewidth=0.55)
+    ax.grid(True, color=COL["grid"], linewidth=0.55)
 
     kernels = ax.twinx()
     for mode, linestyle in (("per_step", ":"), ("fused", "-.")):
@@ -140,18 +217,7 @@ def plot_roofline(rows, metadata, output: Path, representative_t: int):
         latency = row["time_ms_mean"]
         if not (math.isfinite(ai) and math.isfinite(latency) and latency > 0):
             continue
-        problem = metadata["problem"]
-        flops = (
-            2
-            * problem["cout"]
-            * problem["height"]
-            * problem["width"]
-            * problem["cin"]
-            * 9
-            * representative_t
-            * problem["batch"]
-        )
-        performance = flops / (latency * 1e-3) / 1e12
+        performance = row["achieved_tflops"]
         mode = row["mode"]
         ax.scatter(
             ai,
@@ -169,7 +235,7 @@ def plot_roofline(rows, metadata, output: Path, representative_t: int):
     ax.set_yscale("log")
     ax.set_xlabel("Arithmetic intensity (FLOP/byte)")
     ax.set_ylabel("Performance (TFLOP/s)")
-    ax.grid(True, which="both", color="#E6E6E6", linewidth=0.55)
+    ax.grid(True, which="both", color=COL["grid"], linewidth=0.55)
     ax.legend(loc="lower right", frameon=False)
     if not complete:
         ax.text(
@@ -184,6 +250,182 @@ def plot_roofline(rows, metadata, output: Path, representative_t: int):
     plt.close(fig)
 
 
+def plot_multilayer(rows, output: Path):
+    fig, (traffic_ax, time_ax) = plt.subplots(
+        1, 2, figsize=(7.0, 2.4), constrained_layout=True
+    )
+    for mode in ("per_step", "batched", "fused"):
+        selected = sorted(
+            (row for row in rows if row["mode"] == mode),
+            key=lambda row: row["layer_count"],
+        )
+        x = np.array([row["layer_count"] for row in selected])
+        traffic = np.array([row["dram_total_bytes"] for row in selected])
+        latency = np.array([row["time_ms_mean"] for row in selected])
+        traffic_ax.plot(
+            x,
+            traffic / 1e9,
+            marker=MARKER[mode],
+            color=COL[mode],
+            label=LABEL[mode],
+        )
+        time_ax.plot(
+            x,
+            latency,
+            marker=MARKER[mode],
+            color=COL[mode],
+            label=LABEL[mode],
+        )
+    theory = sorted(
+        (row for row in rows if row["mode"] == "per_step"),
+        key=lambda row: row["layer_count"],
+    )
+    traffic_ax.plot(
+        [row["layer_count"] for row in theory],
+        [row["min_bytes_theory"] / 1e9 for row in theory],
+        "--",
+        color=COL["theory"],
+        label="HBM lower bound",
+    )
+    for ax in (traffic_ax, time_ax):
+        ax.set_xlabel("Stack depth (layers)")
+        ax.set_xticks(sorted({int(row["layer_count"]) for row in rows}))
+        ax.grid(True, color=COL["grid"], linewidth=0.55)
+    traffic_ax.set_ylabel("HBM traffic (GB)")
+    traffic_ax.set_title("(a) Main evidence: HBM traffic")
+    time_ax.set_ylabel("Latency (ms)")
+    time_ax.set_title("(b) Auxiliary: end-to-end latency")
+    traffic_ax.legend(frameon=False, loc="upper left")
+    fig.savefig(output, format="pdf")
+    plt.close(fig)
+
+
+def plot_combined(rows, multilayer_rows, output: Path):
+    """Combine the timestep tax plot and multilayer traffic plot in one row."""
+    combined_style = {
+        "font.size": 14.0625,
+        "axes.labelsize": 15,
+        "axes.titlesize": 15,
+        "legend.fontsize": 12.75,
+        "xtick.labelsize": 13.125,
+        "ytick.labelsize": 13.125,
+    }
+    with plt.rc_context(combined_style):
+        fig, (tax_ax, stack_ax) = plt.subplots(
+            1, 2, figsize=(7.15, 2.55), constrained_layout=True
+        )
+
+        for mode in ("per_step", "batched", "fused"):
+            x, traffic = series(rows, mode, "dram_total_bytes")
+            tax_ax.plot(
+                x,
+                traffic / 1e9,
+                marker=MARKER[mode],
+                color=COL[mode],
+                label=LABEL[mode],
+            )
+        theory_rows = sorted(
+            (row for row in rows if row["mode"] == "per_step"),
+            key=lambda row: row["T"],
+        )
+        timesteps = np.array([row["T"] for row in theory_rows])
+        lower_bound = (
+            np.array([row["min_bytes_theory"] for row in theory_rows]) / 1e9
+        )
+        tax_ax.plot(
+            timesteps,
+            lower_bound,
+            "--",
+            color=COL["theory"],
+            label="HBM lower bound",
+        )
+        per_x, per_traffic = series(rows, "per_step", "dram_total_bytes")
+        _, fused_traffic = series(rows, "fused", "dram_total_bytes")
+        if np.all(np.isfinite(per_traffic)) and np.all(np.isfinite(fused_traffic)):
+            tax_ax.fill_between(
+                per_x,
+                fused_traffic / 1e9,
+                per_traffic / 1e9,
+                color=COL["spatial_fill"],
+                alpha=0.75,
+                linewidth=0,
+            )
+        tax_ax.set_xscale("log", base=2)
+        tax_ax.set_xticks(timesteps, [str(value) for value in timesteps])
+        tax_ax.set_xlabel("Timesteps (T)")
+        tax_ax.set_ylabel("HBM traffic (GB)")
+        tax_ax.set_title("(a) Temporal accumulation")
+        tax_ax.grid(True, color=COL["grid"], linewidth=0.55)
+
+        launches_ax = tax_ax.twinx()
+        for mode, linestyle in (("per_step", ":"), ("fused", "-.")):
+            x, launches = series(rows, mode, "kernel_count")
+            launches_ax.plot(
+                x,
+                launches,
+                linestyle,
+                marker=MARKER[mode],
+                color=COL[mode],
+                alpha=0.72,
+                label=f"{LABEL[mode]} launches",
+            )
+        launches_ax.set_yscale("log")
+        launches_ax.set_ylabel("Kernel launches", color=COL["muted"])
+        launches_ax.tick_params(axis="y", colors=COL["muted"], labelsize=13.125)
+
+        for mode in ("per_step", "batched", "fused"):
+            selected = sorted(
+                (row for row in multilayer_rows if row["mode"] == mode),
+                key=lambda row: row["layer_count"],
+            )
+            depths = np.array([row["layer_count"] for row in selected])
+            traffic = np.array([row["dram_total_bytes"] for row in selected])
+            stack_ax.plot(
+                depths,
+                traffic / 1e9,
+                marker=MARKER[mode],
+                color=COL[mode],
+                label=LABEL[mode],
+            )
+        stack_theory = sorted(
+            (row for row in multilayer_rows if row["mode"] == "per_step"),
+            key=lambda row: row["layer_count"],
+        )
+        stack_ax.plot(
+            [row["layer_count"] for row in stack_theory],
+            [row["min_bytes_theory"] / 1e9 for row in stack_theory],
+            "--",
+            color=COL["theory"],
+            label="HBM lower bound",
+        )
+        stack_ax.set_xlabel("Stack depth (layers)")
+        stack_ax.set_ylabel("HBM traffic (GB)")
+        stack_ax.set_title("(b) Cross-layer accumulation")
+        stack_ax.set_xticks(
+            sorted({int(row["layer_count"]) for row in multilayer_rows})
+        )
+        stack_ax.grid(True, color=COL["grid"], linewidth=0.55)
+
+        handles, labels = tax_ax.get_legend_handles_labels()
+        launch_handles, launch_labels = launches_ax.get_legend_handles_labels()
+        stack_handles, stack_labels = stack_ax.get_legend_handles_labels()
+        combined = {}
+        for handle, label in zip(
+            handles + launch_handles + stack_handles,
+            labels + launch_labels + stack_labels,
+        ):
+            combined.setdefault(label, handle)
+        fig.legend(
+            combined.values(),
+            combined.keys(),
+            loc="outside upper center",
+            ncol=3,
+            frameon=False,
+        )
+        fig.savefig(output, format="pdf")
+        plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", default="test/motivation_three_taxes")
@@ -192,6 +434,8 @@ def main():
     input_dir = Path(args.input_dir)
     rows = read_rows(input_dir / "three_taxes_by_T.csv")
     metadata = json.loads((input_dir / "metadata.json").read_text(encoding="utf-8"))
+    audit_derived_metrics(rows, metadata)
+    print_roofline_audit(rows, metadata, args.representative_t)
     configure()
     plot_taxes(rows, input_dir / "fig_motivation_taxes.pdf")
     plot_roofline(
@@ -200,8 +444,23 @@ def main():
         input_dir / "fig_motivation_roofline.pdf",
         args.representative_t,
     )
+    multilayer_path = input_dir / "three_taxes_multilayer.csv"
+    if multilayer_path.exists():
+        multilayer_rows = read_rows(multilayer_path)
+        audit_derived_metrics(multilayer_rows, metadata, layer_field="layer_count")
+        plot_multilayer(
+            multilayer_rows, input_dir / "fig_motivation_multilayer.pdf"
+        )
+        plot_combined(
+            rows,
+            multilayer_rows,
+            input_dir / "fig_motivation_combined.pdf",
+        )
     print(f"[write] {input_dir / 'fig_motivation_taxes.pdf'}")
     print(f"[write] {input_dir / 'fig_motivation_roofline.pdf'}")
+    if multilayer_path.exists():
+        print(f"[write] {input_dir / 'fig_motivation_multilayer.pdf'}")
+        print(f"[write] {input_dir / 'fig_motivation_combined.pdf'}")
 
 
 if __name__ == "__main__":

@@ -110,6 +110,31 @@ def get_relay_integration(ms):
     return tune_relay, compile_relay
 
 
+def find_untuned_tasks(mod, target, params, database, ms):
+    """Return task names for which MetaSchedule never recorded a measured schedule.
+
+    tune_relay always registers a database workload entry for every extracted
+    task, but only tasks with at least one successfully measured candidate get
+    a tuning record. Tasks with zero records make compile_relay fall back to
+    an unscheduled (unbound) PrimFunc, which fails VerifyMemory on a CUDA
+    target instead of producing executable code.
+    """
+    extract_tasks = getattr(ms.relay_integration, "extract_tasks", None)
+    if extract_tasks is None:
+        return []
+
+    untuned = []
+    for task in extract_tasks(mod, target, params):
+        task_mod = task.dispatched[0]
+        if not database.has_workload(task_mod):
+            untuned.append(task.task_name)
+            continue
+        workload = database.commit_workload(task_mod)
+        if not database.get_top_k(workload, 1):
+            untuned.append(task.task_name)
+    return untuned
+
+
 def tune_and_build_with_metaschedule(
     mod,
     params,
@@ -121,6 +146,8 @@ def tune_and_build_with_metaschedule(
     builder: str,
     builder_timeout_sec: float,
     ms,
+    relay,
+    tvm,
 ):
     tune_relay, compile_relay = get_relay_integration(ms)
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -142,6 +169,18 @@ def tune_and_build_with_metaschedule(
         builder=builder_config,
     )
 
+    untuned_tasks = find_untuned_tasks(mod, target, params, database, ms)
+    if untuned_tasks:
+        print(
+            f"[TVM METASCHEDULE] {len(untuned_tasks)} task(s) have no measured "
+            "schedule in the tuning database; falling back to a non-MetaSchedule "
+            "Relay build (opt_level=3) to guarantee executable kernel code:"
+        )
+        for name in untuned_tasks:
+            print(f"  - {name}")
+        lib = build_without_tuning(mod, params, target, relay, tvm)
+        return database, lib, untuned_tasks
+
     lib = call_with_supported_kwargs(
         compile_relay,
         database=database,
@@ -149,7 +188,7 @@ def tune_and_build_with_metaschedule(
         target=target,
         params=params,
     )
-    return database, lib
+    return database, lib, untuned_tasks
 
 
 def build_without_tuning(mod, params, target, relay, tvm):
@@ -272,7 +311,7 @@ def benchmark_onnx_with_tvm(
 
         tune_dir = out_dir / "ms_work_dir"
         if max_trials_global > 0:
-            _, lib = tune_and_build_with_metaschedule(
+            _, lib, untuned_tasks = tune_and_build_with_metaschedule(
                 mod=mod,
                 params=params,
                 target=target,
@@ -283,8 +322,13 @@ def benchmark_onnx_with_tvm(
                 builder=builder,
                 builder_timeout_sec=builder_timeout_sec,
                 ms=ms,
+                relay=relay,
+                tvm=tvm,
             )
             result["tvm_tune_ok"] = True
+            result["tvm_tune_untuned_tasks"] = untuned_tasks
+            if untuned_tasks:
+                result["tvm_compile_fallback"] = "opt_level=3 (no MetaSchedule schedule for all tasks)"
         else:
             lib = build_without_tuning(mod, params, target, relay, tvm)
             result["tvm_tune_ok"] = False

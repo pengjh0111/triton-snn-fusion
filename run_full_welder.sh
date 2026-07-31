@@ -10,6 +10,7 @@ mkdir -p ${OUT_ROOT}
 BATCH_SIZE_OVERRIDE=""
 TOPK=20
 ARCH="RTX5090"
+NOFUSION=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --batch-size)
@@ -36,11 +37,20 @@ while [[ $# -gt 0 ]]; do
       ARCH="$2"
       shift 2
       ;;
+    --nofusion)
+      NOFUSION=1
+      shift 1
+      ;;
     -h|--help)
-      echo "Usage: $0 [--batch-size N] [--topk K] [--arch NAME]"
+      echo "Usage: $0 [--batch-size N] [--topk K] [--arch NAME] [--nofusion]"
       echo "  --batch-size N  use N for every model; otherwise use per-model defaults"
       echo "  --topk K        welder tuning trials per subgraph (default 20)"
       echo "  --arch NAME     welder arch profile (default RTX5090)"
+      echo "  --nofusion      tune every op individually instead of building"
+      echo "                  multi-node welder fusion groups"
+      echo "  (--skip-dot is always passed: lowers Dot kernels to cuBLAS instead of"
+      echo "   welder-generated ones; some Dot/DotSplitK shapes at T=16 have no valid"
+      echo "   welder tile found, which crashes nnfusion's codegen without this)"
       exit 0
       ;;
     *)
@@ -51,14 +61,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 MODELS=(
-  "resnet18"
-  "resnet34"
-  "alexnet"
-  "zfnet"
-  "vgg11"
-  "vgg16"
-  "mobilenetv1"
-  "mobilenetv2"
   "spiketransformer"
   "spikebert"
   "convlstm"
@@ -98,6 +100,11 @@ for MODEL in "${MODELS[@]}"; do
     OUT_DIR=${OUT_ROOT}/${MODEL}/${PREC}_b${BATCH_SIZE}
     mkdir -p ${OUT_DIR}
 
+    EXTRA_ARGS=()
+    if [[ "${NOFUSION}" == "1" ]]; then
+      EXTRA_ARGS+=(--nofusion)
+    fi
+
     python3 benchmarks/benchmark_welder_runtime.py \
       --models ${MODEL} \
       --lif-impl kairos \
@@ -116,6 +123,8 @@ for MODEL in "${MODELS[@]}"; do
       --transformer-num-classes 100 \
       --topk ${TOPK} \
       --arch ${ARCH} \
+      --skip-dot \
+      "${EXTRA_ARGS[@]}" \
       --out-dir ${OUT_DIR} \
       2>&1 | tee ${OUT_DIR}/runtime.log
 
