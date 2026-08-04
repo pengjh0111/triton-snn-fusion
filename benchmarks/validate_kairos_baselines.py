@@ -221,6 +221,8 @@ class RewriteCounters:
     canonicalize_getitem_stack_removed: int = 0
     canonicalize_stack_chunk_removed: int = 0
     canonicalize_getitem_stack_chunk_removed: int = 0
+    canonicalize_stack_nested_chunk_removed: int = 0
+    canonicalize_getitem_stack_nested_chunk_removed: int = 0
     canonicalize_cat_linear_chunk_removed: int = 0
     canonicalize_cat_linear_chunk_getitem_replaced: int = 0
     temporal_mean_rewrites: int = 0
@@ -1678,6 +1680,7 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
                     dump_dir=local_dir if args.spatial_batching_dump else None,
                     strict=args.spatial_batching_strict,
                     enable_chain=False,
+                    max_iter=getattr(args, "spatial_batching_max_iter", 8),
                 )
                 counters.spatial_batch_groups += spatial_stats.spatial_batch_groups
                 counters.spatial_batched_ops += spatial_stats.spatial_batched_ops
@@ -1735,6 +1738,8 @@ def make_rewrite_backend(args, graph_dir: Path, counters: RewriteCounters):
         counters.canonicalize_getitem_stack_removed += canonicalize_stats.canonicalize_getitem_stack_removed
         counters.canonicalize_stack_chunk_removed += canonicalize_stats.canonicalize_stack_chunk_removed
         counters.canonicalize_getitem_stack_chunk_removed += canonicalize_stats.canonicalize_getitem_stack_chunk_removed
+        counters.canonicalize_stack_nested_chunk_removed += canonicalize_stats.canonicalize_stack_nested_chunk_removed
+        counters.canonicalize_getitem_stack_nested_chunk_removed += canonicalize_stats.canonicalize_getitem_stack_nested_chunk_removed
         counters.canonicalize_cat_linear_chunk_removed += canonicalize_stats.canonicalize_cat_linear_chunk_removed
         counters.canonicalize_cat_linear_chunk_getitem_replaced += (
             canonicalize_stats.canonicalize_cat_linear_chunk_getitem_replaced

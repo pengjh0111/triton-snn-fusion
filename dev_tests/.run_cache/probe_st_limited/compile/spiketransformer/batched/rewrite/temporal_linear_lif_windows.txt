@@ -1,0 +1,149 @@
+window_0:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_input_proj_parameters_weight_|bias=None|input=shape=(4, 256, 768)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default', 'lif_forward_state_default_33', 'lif_forward_state_default_66', 'lif_forward_state_default_99', 'lif_forward_state_default_132', 'lif_forward_state_default_165', 'lif_forward_state_default_198', 'lif_forward_state_default_231', 'lif_forward_state_default_264', 'lif_forward_state_default_297', 'lif_forward_state_default_330', 'lif_forward_state_default_363', 'lif_forward_state_default_396', 'lif_forward_state_default_429', 'lif_forward_state_default_462', 'lif_forward_state_default_495']
+
+window_1:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_1', 'lif_forward_state_default_34', 'lif_forward_state_default_67', 'lif_forward_state_default_100', 'lif_forward_state_default_133', 'lif_forward_state_default_166', 'lif_forward_state_default_199', 'lif_forward_state_default_232', 'lif_forward_state_default_265', 'lif_forward_state_default_298', 'lif_forward_state_default_331', 'lif_forward_state_default_364', 'lif_forward_state_default_397', 'lif_forward_state_default_430', 'lif_forward_state_default_463', 'lif_forward_state_default_496']
+
+window_2:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_2', 'lif_forward_state_default_35', 'lif_forward_state_default_68', 'lif_forward_state_default_101', 'lif_forward_state_default_134', 'lif_forward_state_default_167', 'lif_forward_state_default_200', 'lif_forward_state_default_233', 'lif_forward_state_default_266', 'lif_forward_state_default_299', 'lif_forward_state_default_332', 'lif_forward_state_default_365', 'lif_forward_state_default_398', 'lif_forward_state_default_431', 'lif_forward_state_default_464', 'lif_forward_state_default_497']
+
+window_3:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_3', 'lif_forward_state_default_36', 'lif_forward_state_default_69', 'lif_forward_state_default_102', 'lif_forward_state_default_135', 'lif_forward_state_default_168', 'lif_forward_state_default_201', 'lif_forward_state_default_234', 'lif_forward_state_default_267', 'lif_forward_state_default_300', 'lif_forward_state_default_333', 'lif_forward_state_default_366', 'lif_forward_state_default_399', 'lif_forward_state_default_432', 'lif_forward_state_default_465', 'lif_forward_state_default_498']
+
+window_4:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_5', 'lif_forward_state_default_38', 'lif_forward_state_default_71', 'lif_forward_state_default_104', 'lif_forward_state_default_137', 'lif_forward_state_default_170', 'lif_forward_state_default_203', 'lif_forward_state_default_236', 'lif_forward_state_default_269', 'lif_forward_state_default_302', 'lif_forward_state_default_335', 'lif_forward_state_default_368', 'lif_forward_state_default_401', 'lif_forward_state_default_434', 'lif_forward_state_default_467', 'lif_forward_state_default_500']
+
+window_5:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_6', 'lif_forward_state_default_39', 'lif_forward_state_default_72', 'lif_forward_state_default_105', 'lif_forward_state_default_138', 'lif_forward_state_default_171', 'lif_forward_state_default_204', 'lif_forward_state_default_237', 'lif_forward_state_default_270', 'lif_forward_state_default_303', 'lif_forward_state_default_336', 'lif_forward_state_default_369', 'lif_forward_state_default_402', 'lif_forward_state_default_435', 'lif_forward_state_default_468', 'lif_forward_state_default_501']
+
+window_6:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_7', 'lif_forward_state_default_40', 'lif_forward_state_default_73', 'lif_forward_state_default_106', 'lif_forward_state_default_139', 'lif_forward_state_default_172', 'lif_forward_state_default_205', 'lif_forward_state_default_238', 'lif_forward_state_default_271', 'lif_forward_state_default_304', 'lif_forward_state_default_337', 'lif_forward_state_default_370', 'lif_forward_state_default_403', 'lif_forward_state_default_436', 'lif_forward_state_default_469', 'lif_forward_state_default_502']
+
+window_7:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_9', 'lif_forward_state_default_42', 'lif_forward_state_default_75', 'lif_forward_state_default_108', 'lif_forward_state_default_141', 'lif_forward_state_default_174', 'lif_forward_state_default_207', 'lif_forward_state_default_240', 'lif_forward_state_default_273', 'lif_forward_state_default_306', 'lif_forward_state_default_339', 'lif_forward_state_default_372', 'lif_forward_state_default_405', 'lif_forward_state_default_438', 'lif_forward_state_default_471', 'lif_forward_state_default_504']
+
+window_8:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_10', 'lif_forward_state_default_43', 'lif_forward_state_default_76', 'lif_forward_state_default_109', 'lif_forward_state_default_142', 'lif_forward_state_default_175', 'lif_forward_state_default_208', 'lif_forward_state_default_241', 'lif_forward_state_default_274', 'lif_forward_state_default_307', 'lif_forward_state_default_340', 'lif_forward_state_default_373', 'lif_forward_state_default_406', 'lif_forward_state_default_439', 'lif_forward_state_default_472', 'lif_forward_state_default_505']
+
+window_9:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_11', 'lif_forward_state_default_44', 'lif_forward_state_default_77', 'lif_forward_state_default_110', 'lif_forward_state_default_143', 'lif_forward_state_default_176', 'lif_forward_state_default_209', 'lif_forward_state_default_242', 'lif_forward_state_default_275', 'lif_forward_state_default_308', 'lif_forward_state_default_341', 'lif_forward_state_default_374', 'lif_forward_state_default_407', 'lif_forward_state_default_440', 'lif_forward_state_default_473', 'lif_forward_state_default_506']
+
+window_10:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_13', 'lif_forward_state_default_46', 'lif_forward_state_default_79', 'lif_forward_state_default_112', 'lif_forward_state_default_145', 'lif_forward_state_default_178', 'lif_forward_state_default_211', 'lif_forward_state_default_244', 'lif_forward_state_default_277', 'lif_forward_state_default_310', 'lif_forward_state_default_343', 'lif_forward_state_default_376', 'lif_forward_state_default_409', 'lif_forward_state_default_442', 'lif_forward_state_default_475', 'lif_forward_state_default_508']
+
+window_11:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_14', 'lif_forward_state_default_47', 'lif_forward_state_default_80', 'lif_forward_state_default_113', 'lif_forward_state_default_146', 'lif_forward_state_default_179', 'lif_forward_state_default_212', 'lif_forward_state_default_245', 'lif_forward_state_default_278', 'lif_forward_state_default_311', 'lif_forward_state_default_344', 'lif_forward_state_default_377', 'lif_forward_state_default_410', 'lif_forward_state_default_443', 'lif_forward_state_default_476', 'lif_forward_state_default_509']
+
+window_12:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_15', 'lif_forward_state_default_48', 'lif_forward_state_default_81', 'lif_forward_state_default_114', 'lif_forward_state_default_147', 'lif_forward_state_default_180', 'lif_forward_state_default_213', 'lif_forward_state_default_246', 'lif_forward_state_default_279', 'lif_forward_state_default_312', 'lif_forward_state_default_345', 'lif_forward_state_default_378', 'lif_forward_state_default_411', 'lif_forward_state_default_444', 'lif_forward_state_default_477', 'lif_forward_state_default_510']
+
+window_13:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_17', 'lif_forward_state_default_50', 'lif_forward_state_default_83', 'lif_forward_state_default_116', 'lif_forward_state_default_149', 'lif_forward_state_default_182', 'lif_forward_state_default_215', 'lif_forward_state_default_248', 'lif_forward_state_default_281', 'lif_forward_state_default_314', 'lif_forward_state_default_347', 'lif_forward_state_default_380', 'lif_forward_state_default_413', 'lif_forward_state_default_446', 'lif_forward_state_default_479', 'lif_forward_state_default_512']
+
+window_14:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_18', 'lif_forward_state_default_51', 'lif_forward_state_default_84', 'lif_forward_state_default_117', 'lif_forward_state_default_150', 'lif_forward_state_default_183', 'lif_forward_state_default_216', 'lif_forward_state_default_249', 'lif_forward_state_default_282', 'lif_forward_state_default_315', 'lif_forward_state_default_348', 'lif_forward_state_default_381', 'lif_forward_state_default_414', 'lif_forward_state_default_447', 'lif_forward_state_default_480', 'lif_forward_state_default_513']
+
+window_15:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_19', 'lif_forward_state_default_52', 'lif_forward_state_default_85', 'lif_forward_state_default_118', 'lif_forward_state_default_151', 'lif_forward_state_default_184', 'lif_forward_state_default_217', 'lif_forward_state_default_250', 'lif_forward_state_default_283', 'lif_forward_state_default_316', 'lif_forward_state_default_349', 'lif_forward_state_default_382', 'lif_forward_state_default_415', 'lif_forward_state_default_448', 'lif_forward_state_default_481', 'lif_forward_state_default_514']
+
+window_16:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_21', 'lif_forward_state_default_54', 'lif_forward_state_default_87', 'lif_forward_state_default_120', 'lif_forward_state_default_153', 'lif_forward_state_default_186', 'lif_forward_state_default_219', 'lif_forward_state_default_252', 'lif_forward_state_default_285', 'lif_forward_state_default_318', 'lif_forward_state_default_351', 'lif_forward_state_default_384', 'lif_forward_state_default_417', 'lif_forward_state_default_450', 'lif_forward_state_default_483', 'lif_forward_state_default_516']
+
+window_17:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_22', 'lif_forward_state_default_55', 'lif_forward_state_default_88', 'lif_forward_state_default_121', 'lif_forward_state_default_154', 'lif_forward_state_default_187', 'lif_forward_state_default_220', 'lif_forward_state_default_253', 'lif_forward_state_default_286', 'lif_forward_state_default_319', 'lif_forward_state_default_352', 'lif_forward_state_default_385', 'lif_forward_state_default_418', 'lif_forward_state_default_451', 'lif_forward_state_default_484', 'lif_forward_state_default_517']
+
+window_18:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_23', 'lif_forward_state_default_56', 'lif_forward_state_default_89', 'lif_forward_state_default_122', 'lif_forward_state_default_155', 'lif_forward_state_default_188', 'lif_forward_state_default_221', 'lif_forward_state_default_254', 'lif_forward_state_default_287', 'lif_forward_state_default_320', 'lif_forward_state_default_353', 'lif_forward_state_default_386', 'lif_forward_state_default_419', 'lif_forward_state_default_452', 'lif_forward_state_default_485', 'lif_forward_state_default_518']
+
+window_19:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_25', 'lif_forward_state_default_58', 'lif_forward_state_default_91', 'lif_forward_state_default_124', 'lif_forward_state_default_157', 'lif_forward_state_default_190', 'lif_forward_state_default_223', 'lif_forward_state_default_256', 'lif_forward_state_default_289', 'lif_forward_state_default_322', 'lif_forward_state_default_355', 'lif_forward_state_default_388', 'lif_forward_state_default_421', 'lif_forward_state_default_454', 'lif_forward_state_default_487', 'lif_forward_state_default_520']
+
+window_20:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_26', 'lif_forward_state_default_59', 'lif_forward_state_default_92', 'lif_forward_state_default_125', 'lif_forward_state_default_158', 'lif_forward_state_default_191', 'lif_forward_state_default_224', 'lif_forward_state_default_257', 'lif_forward_state_default_290', 'lif_forward_state_default_323', 'lif_forward_state_default_356', 'lif_forward_state_default_389', 'lif_forward_state_default_422', 'lif_forward_state_default_455', 'lif_forward_state_default_488', 'lif_forward_state_default_521']
+
+window_21:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_27', 'lif_forward_state_default_60', 'lif_forward_state_default_93', 'lif_forward_state_default_126', 'lif_forward_state_default_159', 'lif_forward_state_default_192', 'lif_forward_state_default_225', 'lif_forward_state_default_258', 'lif_forward_state_default_291', 'lif_forward_state_default_324', 'lif_forward_state_default_357', 'lif_forward_state_default_390', 'lif_forward_state_default_423', 'lif_forward_state_default_456', 'lif_forward_state_default_489', 'lif_forward_state_default_522']
+
+window_22:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_29', 'lif_forward_state_default_62', 'lif_forward_state_default_95', 'lif_forward_state_default_128', 'lif_forward_state_default_161', 'lif_forward_state_default_194', 'lif_forward_state_default_227', 'lif_forward_state_default_260', 'lif_forward_state_default_293', 'lif_forward_state_default_326', 'lif_forward_state_default_359', 'lif_forward_state_default_392', 'lif_forward_state_default_425', 'lif_forward_state_default_458', 'lif_forward_state_default_491', 'lif_forward_state_default_524']
+
+window_23:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_30', 'lif_forward_state_default_63', 'lif_forward_state_default_96', 'lif_forward_state_default_129', 'lif_forward_state_default_162', 'lif_forward_state_default_195', 'lif_forward_state_default_228', 'lif_forward_state_default_261', 'lif_forward_state_default_294', 'lif_forward_state_default_327', 'lif_forward_state_default_360', 'lif_forward_state_default_393', 'lif_forward_state_default_426', 'lif_forward_state_default_459', 'lif_forward_state_default_492', 'lif_forward_state_default_525']
+
+window_24:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_31', 'lif_forward_state_default_64', 'lif_forward_state_default_97', 'lif_forward_state_default_130', 'lif_forward_state_default_163', 'lif_forward_state_default_196', 'lif_forward_state_default_229', 'lif_forward_state_default_262', 'lif_forward_state_default_295', 'lif_forward_state_default_328', 'lif_forward_state_default_361', 'lif_forward_state_default_394', 'lif_forward_state_default_427', 'lif_forward_state_default_460', 'lif_forward_state_default_493', 'lif_forward_state_default_526']

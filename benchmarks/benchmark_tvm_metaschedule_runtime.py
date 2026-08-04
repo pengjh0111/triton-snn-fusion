@@ -1,6 +1,7 @@
 # benchmarks/benchmark_tvm_metaschedule_runtime.py
 
 import argparse
+import contextlib
 import inspect
 import json
 import sys
@@ -110,6 +111,64 @@ def get_relay_integration(ms):
     return tune_relay, compile_relay
 
 
+def build_relay_pass_config(fuse_max_depth: Optional[int]) -> Dict[str, Any]:
+    """Base pass_config used by extract_tasks/compile_relay, with an optional
+    override for relay.FuseOps.max_depth (TVM's C++ default is 256, which lets
+    long chains of injective ops like fake-quant simulation graphs get fused
+    into a single sketch-generation target and blow up AutoInline's candidate
+    search; capping it keeps fused subgraphs small enough to tune in
+    reasonable time).
+    """
+    pass_config: Dict[str, Any] = {
+        "relay.backend.use_meta_schedule": True,
+        "relay.backend.tir_converter": "default",
+    }
+    if fuse_max_depth is not None and fuse_max_depth > 0:
+        pass_config["relay.FuseOps.max_depth"] = fuse_max_depth
+    return pass_config
+
+
+def build_fallback_pass_config(fuse_max_depth: Optional[int]) -> Dict[str, Any]:
+    """pass_config for build_without_tuning, which deliberately skips
+    MetaSchedule and has no meta_schedule.Database in scope. It must NOT
+    include relay.backend.use_meta_schedule=True (unlike
+    build_relay_pass_config) -- doing so makes the TE compiler look for a
+    database context that was never entered and hard-fail with
+    'use_meta_schedule is enabled ... but no meta_schedule.Database context is
+    provided'. Only relay.FuseOps.max_depth is relevant here.
+    """
+    pass_config: Dict[str, Any] = {}
+    if fuse_max_depth is not None and fuse_max_depth > 0:
+        pass_config["relay.FuseOps.max_depth"] = fuse_max_depth
+    return pass_config
+
+
+@contextlib.contextmanager
+def patched_extract_tasks(ms, pass_config: Dict[str, Any]):
+    """tune_relay() and find_untuned_tasks() both call extract_tasks() without
+    forwarding a pass_config, so extract_tasks always falls back to its own
+    hardcoded default (no relay.FuseOps.max_depth override). Neither tune_relay
+    nor find_untuned_tasks accepts pass_config either, so the only way to make
+    task extraction respect our fuse-depth cap is to substitute extract_tasks
+    for the duration of the call. compile_relay() does accept pass_config
+    directly, so it isn't patched here -- callers should pass pass_config to it
+    explicitly, using the same dict, so tuning-time and compile-time fusion
+    boundaries match.
+    """
+    relay_integration = ms.relay_integration
+    original_extract_tasks = relay_integration.extract_tasks
+
+    def extract_tasks_with_pass_config(mod, target, params, **kwargs):
+        kwargs.setdefault("pass_config", pass_config)
+        return original_extract_tasks(mod, target, params, **kwargs)
+
+    relay_integration.extract_tasks = extract_tasks_with_pass_config
+    try:
+        yield
+    finally:
+        relay_integration.extract_tasks = original_extract_tasks
+
+
 def find_untuned_tasks(mod, target, params, database, ms):
     """Return task names for which MetaSchedule never recorded a measured schedule.
 
@@ -148,6 +207,7 @@ def tune_and_build_with_metaschedule(
     ms,
     relay,
     tvm,
+    fuse_max_depth: Optional[int] = None,
 ):
     tune_relay, compile_relay = get_relay_integration(ms)
     work_dir.mkdir(parents=True, exist_ok=True)
@@ -156,43 +216,48 @@ def tune_and_build_with_metaschedule(
         if builder == "local"
         else builder
     )
+    pass_config = build_relay_pass_config(fuse_max_depth)
 
-    database = call_with_supported_kwargs(
-        tune_relay,
-        mod=mod,
-        target=target,
-        params=params,
-        work_dir=str(work_dir),
-        max_trials_global=max_trials_global,
-        num_trials_per_iter=num_trials_per_iter,
-        runner=runner,
-        builder=builder_config,
-    )
-
-    untuned_tasks = find_untuned_tasks(mod, target, params, database, ms)
-    if untuned_tasks:
-        print(
-            f"[TVM METASCHEDULE] {len(untuned_tasks)} task(s) have no measured "
-            "schedule in the tuning database; falling back to a non-MetaSchedule "
-            "Relay build (opt_level=3) to guarantee executable kernel code:"
+    with patched_extract_tasks(ms, pass_config):
+        database = call_with_supported_kwargs(
+            tune_relay,
+            mod=mod,
+            target=target,
+            params=params,
+            work_dir=str(work_dir),
+            max_trials_global=max_trials_global,
+            num_trials_per_iter=num_trials_per_iter,
+            runner=runner,
+            builder=builder_config,
         )
-        for name in untuned_tasks:
-            print(f"  - {name}")
-        lib = build_without_tuning(mod, params, target, relay, tvm)
-        return database, lib, untuned_tasks
 
-    lib = call_with_supported_kwargs(
-        compile_relay,
-        database=database,
-        mod=mod,
-        target=target,
-        params=params,
-    )
+        untuned_tasks = find_untuned_tasks(mod, target, params, database, ms)
+        if untuned_tasks:
+            print(
+                f"[TVM METASCHEDULE] {len(untuned_tasks)} task(s) have no measured "
+                "schedule in the tuning database; falling back to a non-MetaSchedule "
+                "Relay build (opt_level=3) to guarantee executable kernel code:"
+            )
+            for name in untuned_tasks:
+                print(f"  - {name}")
+            lib = build_without_tuning(
+                mod, params, target, relay, tvm, build_fallback_pass_config(fuse_max_depth)
+            )
+            return database, lib, untuned_tasks
+
+        lib = call_with_supported_kwargs(
+            compile_relay,
+            database=database,
+            mod=mod,
+            target=target,
+            params=params,
+            pass_config=pass_config,
+        )
     return database, lib, untuned_tasks
 
 
-def build_without_tuning(mod, params, target, relay, tvm):
-    with tvm.transform.PassContext(opt_level=3):
+def build_without_tuning(mod, params, target, relay, tvm, pass_config: Optional[Dict[str, Any]] = None):
+    with tvm.transform.PassContext(opt_level=3, config=pass_config or {}):
         return relay.build(mod, target=target, params=params)
 
 
@@ -262,6 +327,7 @@ def benchmark_onnx_with_tvm(
     repeat: int,
     number: int,
     out_dir: Path,
+    fuse_max_depth: Optional[int] = None,
 ):
     result: Dict[str, Any] = {
         "ok": False,
@@ -277,6 +343,7 @@ def benchmark_onnx_with_tvm(
         "runner": runner,
         "builder": builder,
         "builder_timeout_sec": builder_timeout_sec,
+        "fuse_max_depth": fuse_max_depth,
         "parsed": {},
         "error": "",
     }
@@ -324,13 +391,16 @@ def benchmark_onnx_with_tvm(
                 ms=ms,
                 relay=relay,
                 tvm=tvm,
+                fuse_max_depth=fuse_max_depth,
             )
             result["tvm_tune_ok"] = True
             result["tvm_tune_untuned_tasks"] = untuned_tasks
             if untuned_tasks:
                 result["tvm_compile_fallback"] = "opt_level=3 (no MetaSchedule schedule for all tasks)"
         else:
-            lib = build_without_tuning(mod, params, target, relay, tvm)
+            lib = build_without_tuning(
+                mod, params, target, relay, tvm, build_fallback_pass_config(fuse_max_depth)
+            )
             result["tvm_tune_ok"] = False
             result["note"] = "max_trials_global <= 0, built with Relay opt_level=3 without MetaSchedule tuning"
 
@@ -410,6 +480,17 @@ def main():
     parser.add_argument("--runner", default="local")
     parser.add_argument("--builder", default="local")
     parser.add_argument("--builder-timeout-sec", type=float, default=300.0)
+    parser.add_argument(
+        "--fuse-max-depth",
+        type=int,
+        default=5,
+        help="Override for relay.FuseOps.max_depth (TVM's C++ default is 256). "
+        "Caps how many ops FuseOps can chain into a single fused subgraph before "
+        "MetaSchedule tunes it; long injective chains (e.g. fake-quant style "
+        "greater/where/cast/divide chains) left uncapped can make AutoInline's "
+        "design-space generation take extremely long. Use <=0 to keep TVM's "
+        "built-in default.",
+    )
     parser.add_argument("--repeat", type=int, default=20)
     parser.add_argument("--number", type=int, default=10)
     parser.add_argument(
@@ -506,6 +587,7 @@ def main():
                         repeat=args.repeat,
                         number=args.number,
                         out_dir=run_dir,
+                        fuse_max_depth=args.fuse_max_depth,
                     )
                     result = {
                         **export_result,

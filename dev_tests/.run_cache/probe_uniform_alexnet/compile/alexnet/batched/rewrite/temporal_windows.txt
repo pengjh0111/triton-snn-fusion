@@ -1,0 +1,23 @@
+window_0:
+  layer_id=placeholder:l_self_modules_layer_modules_features_modules_4_parameters_weight_|placeholder:l_self_modules_layer_modules_features_modules_5_buffers_running_mean_|placeholder:l_self_modules_layer_modules_features_modules_5_buffers_running_var_
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_1', 'lif_forward_state_default_9', 'lif_forward_state_default_17', 'lif_forward_state_default_25', 'lif_forward_state_default_33', 'lif_forward_state_default_41', 'lif_forward_state_default_49', 'lif_forward_state_default_57', 'lif_forward_state_default_65', 'lif_forward_state_default_73', 'lif_forward_state_default_81', 'lif_forward_state_default_89', 'lif_forward_state_default_97', 'lif_forward_state_default_105', 'lif_forward_state_default_113', 'lif_forward_state_default_121']
+
+window_1:
+  layer_id=placeholder:l_self_modules_layer_modules_features_modules_8_parameters_weight_|placeholder:l_self_modules_layer_modules_features_modules_9_buffers_running_mean_|placeholder:l_self_modules_layer_modules_features_modules_9_buffers_running_var_
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_2', 'lif_forward_state_default_10', 'lif_forward_state_default_18', 'lif_forward_state_default_26', 'lif_forward_state_default_34', 'lif_forward_state_default_42', 'lif_forward_state_default_50', 'lif_forward_state_default_58', 'lif_forward_state_default_66', 'lif_forward_state_default_74', 'lif_forward_state_default_82', 'lif_forward_state_default_90', 'lif_forward_state_default_98', 'lif_forward_state_default_106', 'lif_forward_state_default_114', 'lif_forward_state_default_122']
+
+window_2:
+  layer_id=placeholder:l_self_modules_layer_modules_features_modules_11_parameters_weight_|placeholder:l_self_modules_layer_modules_features_modules_12_buffers_running_mean_|placeholder:l_self_modules_layer_modules_features_modules_12_buffers_running_var_
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_3', 'lif_forward_state_default_11', 'lif_forward_state_default_19', 'lif_forward_state_default_27', 'lif_forward_state_default_35', 'lif_forward_state_default_43', 'lif_forward_state_default_51', 'lif_forward_state_default_59', 'lif_forward_state_default_67', 'lif_forward_state_default_75', 'lif_forward_state_default_83', 'lif_forward_state_default_91', 'lif_forward_state_default_99', 'lif_forward_state_default_107', 'lif_forward_state_default_115', 'lif_forward_state_default_123']
+
+window_3:
+  layer_id=placeholder:l_self_modules_layer_modules_features_modules_14_parameters_weight_|placeholder:l_self_modules_layer_modules_features_modules_15_buffers_running_mean_|placeholder:l_self_modules_layer_modules_features_modules_15_buffers_running_var_
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_4', 'lif_forward_state_default_12', 'lif_forward_state_default_20', 'lif_forward_state_default_28', 'lif_forward_state_default_36', 'lif_forward_state_default_44', 'lif_forward_state_default_52', 'lif_forward_state_default_60', 'lif_forward_state_default_68', 'lif_forward_state_default_76', 'lif_forward_state_default_84', 'lif_forward_state_default_92', 'lif_forward_state_default_100', 'lif_forward_state_default_108', 'lif_forward_state_default_116', 'lif_forward_state_default_124']

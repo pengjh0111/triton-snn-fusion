@@ -16,6 +16,8 @@ class TemporalSpatialCanonicalizeStats:
     canonicalize_getitem_stack_removed: int = 0
     canonicalize_stack_chunk_removed: int = 0
     canonicalize_getitem_stack_chunk_removed: int = 0
+    canonicalize_stack_nested_chunk_removed: int = 0
+    canonicalize_getitem_stack_nested_chunk_removed: int = 0
     canonicalize_cat_linear_chunk_removed: int = 0
     canonicalize_cat_linear_chunk_getitem_replaced: int = 0
     temporal_mean_rewrites: int = 0
@@ -118,6 +120,17 @@ def _chunk_count(node: torch.fx.Node) -> Optional[int]:
         except Exception:
             return None
     return None
+
+
+def _chunk_dim(node: torch.fx.Node) -> Optional[int]:
+    if not _is_chunk(node):
+        return None
+    dim = node.kwargs.get("dim", None)
+    if dim is None and len(node.args) > 2:
+        dim = node.args[2]
+    if dim is None:
+        dim = 0
+    return dim if isinstance(dim, int) else None
 
 
 def _cat_inputs(node: torch.fx.Node) -> Optional[List[torch.fx.Node]]:
@@ -311,6 +324,99 @@ def _replace_stack_of_chunk_getitems(gm: torch.fx.GraphModule, stats: TemporalSp
 
         stats.canonicalize_stack_chunk_removed += 1
         stats.canonicalize_getitem_stack_chunk_removed += removed_getitems
+        changed = True
+    return changed
+
+
+def _replace_stack_of_nested_chunk_getitems(gm: torch.fx.GraphModule, stats: TemporalSpatialCanonicalizeStats) -> bool:
+    """Generalizes _replace_stack_of_chunk_getitems to a two-level nesting:
+
+        stack([getitem(chunk(getitem(chunk(X, N, 0), 0), K, D), S),
+               getitem(chunk(getitem(chunk(X, N, 0), 1), K, D), S),
+               ...
+               getitem(chunk(getitem(chunk(X, N, 0), N-1), K, D), S)], dim=0)
+
+    -- X split into N pieces along dim 0, EACH piece independently split
+    again into K pieces along some other dim D, and the SAME sub-index S
+    selected back out of every piece and restacked along dim 0. This is
+    exactly the shape produced when a downstream pass re-derives its own
+    per-t values by individually indexing an UPSTREAM spatial-batching
+    rewrite's own chunk-back-into-N-pieces output (e.g. Mamba's scan
+    fusion stacking x_t/dt_t/B_ssm_t/C_ssm_t that each secretly all trace
+    back to one already-batched Linear call) and then re-stacks them --
+    collapses to one reshape + one chunk of X directly, with zero data
+    movement for the outer N-way split (a pure view), instead of
+    materializing N*2 intermediate chunk/getitem tensors just to
+    reassemble the same information a moment later.
+
+    Kept as its own pass (rather than generalizing
+    _replace_stack_of_chunk_getitems to recurse) so that function's exact
+    existing single-level behavior is unchanged for every other caller.
+    """
+    changed = False
+    for stack in list(gm.graph.nodes):
+        inputs, dim = _stack_inputs_and_dim(stack)
+        if not inputs or dim != 0:
+            continue
+        if not all(_is_getitem(item) for item in inputs):
+            continue
+        inner_chunks = [item.args[0] for item in inputs]
+        if not all(isinstance(c, torch.fx.Node) and _is_chunk(c) for c in inner_chunks):
+            continue
+        sub_indices = [_getitem_index(item) for item in inputs]
+        if len(set(sub_indices)) != 1 or not isinstance(sub_indices[0], int):
+            continue
+        sub_index = sub_indices[0]
+        inner_counts = {_chunk_count(c) for c in inner_chunks}
+        inner_dims = {_chunk_dim(c) for c in inner_chunks}
+        if len(inner_counts) != 1 or None in inner_counts:
+            continue
+        if len(inner_dims) != 1 or None in inner_dims:
+            continue
+        inner_count = next(iter(inner_counts))
+        inner_dim = next(iter(inner_dims))
+        outer_items = [_chunk_input(c) for c in inner_chunks]
+        if not all(isinstance(item, torch.fx.Node) for item in outer_items):
+            continue
+        outer_chunk = _ordered_getitems_from_same_source(outer_items)
+        if not isinstance(outer_chunk, torch.fx.Node) or not _is_chunk(outer_chunk):
+            continue
+        if _chunk_dim(outer_chunk) != 0:
+            continue
+        source = _chunk_input(outer_chunk)
+        outer_count = _chunk_count(outer_chunk)
+        if source is None or outer_count != len(inputs):
+            continue
+
+        # Inserting a new leading dim shifts every non-negative dim index
+        # up by one; a negative index (counted from the end) is unaffected.
+        new_inner_dim = inner_dim + 1 if inner_dim >= 0 else inner_dim
+
+        with gm.graph.inserting_before(stack):
+            reshaped = gm.graph.call_method("unflatten", args=(source, 0, (len(inputs), -1)))
+            reshaped.meta.update(getattr(stack, "meta", {}))
+            rechunked = gm.graph.call_function(torch.chunk, args=(reshaped, inner_count, new_inner_dim))
+            replacement = gm.graph.call_function(operator.getitem, args=(rechunked, sub_index))
+        stack.replace_all_uses_with(replacement)
+        if len(stack.users) == 0:
+            gm.graph.erase_node(stack)
+
+        removed_getitems = 0
+        for item in reversed(inputs):
+            if len(item.users) == 0:
+                gm.graph.erase_node(item)
+                removed_getitems += 1
+        for chunk_node in set(inner_chunks):
+            if len(chunk_node.users) == 0:
+                gm.graph.erase_node(chunk_node)
+        for outer_item in set(outer_items):
+            if len(outer_item.users) == 0:
+                gm.graph.erase_node(outer_item)
+        if len(outer_chunk.users) == 0:
+            gm.graph.erase_node(outer_chunk)
+
+        stats.canonicalize_stack_nested_chunk_removed += 1
+        stats.canonicalize_getitem_stack_nested_chunk_removed += removed_getitems
         changed = True
     return changed
 
@@ -700,6 +806,7 @@ def canonicalize_temporal_spatial_ir(
             changed_once = False
             if canonicalize_chunk_stack:
                 changed |= _replace_stack_of_chunk_getitems(gm, stats)
+                changed |= _replace_stack_of_nested_chunk_getitems(gm, stats)
             if canonicalize_stack_getitem:
                 changed |= _replace_stack_of_getitems(gm, stats)
             if canonicalize_cat_linear_chunk:
@@ -742,6 +849,8 @@ def canonicalize_temporal_spatial_ir(
             f"getitem_stack_removed={stats.canonicalize_getitem_stack_removed} "
             f"stack_chunk_removed={stats.canonicalize_stack_chunk_removed} "
             f"getitem_stack_chunk_removed={stats.canonicalize_getitem_stack_chunk_removed} "
+            f"stack_nested_chunk_removed={stats.canonicalize_stack_nested_chunk_removed} "
+            f"getitem_stack_nested_chunk_removed={stats.canonicalize_getitem_stack_nested_chunk_removed} "
             f"cat_linear_chunk_removed={stats.canonicalize_cat_linear_chunk_removed} "
             f"cat_linear_chunk_getitem_replaced={stats.canonicalize_cat_linear_chunk_getitem_replaced} "
             f"temporal_mean_rewrites={stats.temporal_mean_rewrites} "

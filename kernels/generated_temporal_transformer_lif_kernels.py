@@ -1,3 +1,4 @@
+import os
 from typing import Tuple
 
 import torch
@@ -43,6 +44,9 @@ def _prune_linear_configs(configs, named_args, **kwargs):
         block_k = int(values["BLOCK_K"])
         block_n = int(values["BLOCK_N"])
         if tc > T or T % tc != 0:
+            continue
+        forced_p = os.environ.get("KAIROS_EVAL_FORCE_BTILE_T")
+        if forced_p is not None and tc != int(forced_p):
             continue
         if block_k > triton.next_power_of_2(in_features) * 2:
             continue
@@ -91,6 +95,12 @@ def _prune_linear_convstyle4_configs(configs, named_args, **kwargs):
     valid = []
     for config in configs:
         values = config.all_kwargs()
+        forced_p = os.environ.get("KAIROS_EVAL_FORCE_BTILE_T")
+        forced_r = os.environ.get("KAIROS_EVAL_FORCE_REUSE_GROUPS")
+        if forced_p is not None and int(values["BTILE_T"]) != int(forced_p):
+            continue
+        if forced_r is not None and int(values["REUSE_GROUPS"]) != int(forced_r):
+            continue
         block_k = int(values["BLOCK_K"])
         block_n = int(values["BLOCK_N"])
         if T != 4:

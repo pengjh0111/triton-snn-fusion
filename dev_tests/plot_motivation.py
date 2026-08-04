@@ -12,6 +12,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 
 COL = {
@@ -303,12 +304,12 @@ def plot_multilayer(rows, output: Path):
 def plot_combined(rows, multilayer_rows, output: Path):
     """Combine the timestep tax plot and multilayer traffic plot in one row."""
     combined_style = {
-        "font.size": 14.0625,
-        "axes.labelsize": 15,
-        "axes.titlesize": 15,
+        "font.size": 13.0625,
+        "axes.labelsize": 14,
+        "axes.titlesize": 14,
         "legend.fontsize": 12.75,
-        "xtick.labelsize": 13.125,
-        "ytick.labelsize": 13.125,
+        "xtick.labelsize": 12.125,
+        "ytick.labelsize": 12.125,
     }
     with plt.rc_context(combined_style):
         fig, (tax_ax, stack_ax) = plt.subplots(
@@ -329,16 +330,6 @@ def plot_combined(rows, multilayer_rows, output: Path):
             key=lambda row: row["T"],
         )
         timesteps = np.array([row["T"] for row in theory_rows])
-        lower_bound = (
-            np.array([row["min_bytes_theory"] for row in theory_rows]) / 1e9
-        )
-        tax_ax.plot(
-            timesteps,
-            lower_bound,
-            "--",
-            color=COL["theory"],
-            label="HBM lower bound",
-        )
         per_x, per_traffic = series(rows, "per_step", "dram_total_bytes")
         _, fused_traffic = series(rows, "fused", "dram_total_bytes")
         if np.all(np.isfinite(per_traffic)) and np.all(np.isfinite(fused_traffic)):
@@ -354,6 +345,7 @@ def plot_combined(rows, multilayer_rows, output: Path):
         tax_ax.set_xticks(timesteps, [str(value) for value in timesteps])
         tax_ax.set_xlabel("Timesteps (T)")
         tax_ax.set_ylabel("HBM traffic (GB)")
+        tax_ax.set_yticks([0, 1, 2])
         tax_ax.set_title("(a) Temporal accumulation")
         tax_ax.grid(True, color=COL["grid"], linewidth=0.55)
 
@@ -370,8 +362,9 @@ def plot_combined(rows, multilayer_rows, output: Path):
                 label=f"{LABEL[mode]} launches",
             )
         launches_ax.set_yscale("log")
+        launches_ax.set_yticks([1, 10, 100, 1000])
         launches_ax.set_ylabel("Kernel launches", color=COL["muted"])
-        launches_ax.tick_params(axis="y", colors=COL["muted"], labelsize=13.125)
+        launches_ax.tick_params(axis="y", colors=COL["muted"], labelsize=12.125)
 
         for mode in ("per_step", "batched", "fused"):
             selected = sorted(
@@ -387,24 +380,66 @@ def plot_combined(rows, multilayer_rows, output: Path):
                 color=COL[mode],
                 label=LABEL[mode],
             )
-        stack_theory = sorted(
+        per_stack = sorted(
             (row for row in multilayer_rows if row["mode"] == "per_step"),
             key=lambda row: row["layer_count"],
         )
-        stack_ax.plot(
-            [row["layer_count"] for row in stack_theory],
-            [row["min_bytes_theory"] / 1e9 for row in stack_theory],
-            "--",
-            color=COL["theory"],
-            label="HBM lower bound",
+        fused_stack = sorted(
+            (row for row in multilayer_rows if row["mode"] == "fused"),
+            key=lambda row: row["layer_count"],
         )
+        stack_depths = np.array([row["layer_count"] for row in per_stack])
+        per_stack_traffic = np.array(
+            [row["dram_total_bytes"] for row in per_stack]
+        )
+        fused_stack_traffic = np.array(
+            [row["dram_total_bytes"] for row in fused_stack]
+        )
+        if (
+            np.array_equal(
+                stack_depths,
+                np.array([row["layer_count"] for row in fused_stack]),
+            )
+            and np.all(np.isfinite(per_stack_traffic))
+            and np.all(np.isfinite(fused_stack_traffic))
+        ):
+            stack_ax.fill_between(
+                stack_depths,
+                fused_stack_traffic / 1e9,
+                per_stack_traffic / 1e9,
+                color=COL["spatial_fill"],
+                alpha=0.75,
+                linewidth=0,
+            )
         stack_ax.set_xlabel("Stack depth (layers)")
         stack_ax.set_ylabel("HBM traffic (GB)")
+        stack_ax.set_yticks([0, 1, 2])
         stack_ax.set_title("(b) Cross-layer accumulation")
         stack_ax.set_xticks(
             sorted({int(row["layer_count"]) for row in multilayer_rows})
         )
         stack_ax.grid(True, color=COL["grid"], linewidth=0.55)
+
+        stack_launches_ax = stack_ax.twinx()
+        for mode, linestyle in (("per_step", ":"), ("fused", "-.")):
+            selected = sorted(
+                (row for row in multilayer_rows if row["mode"] == mode),
+                key=lambda row: row["layer_count"],
+            )
+            stack_launches_ax.plot(
+                [row["layer_count"] for row in selected],
+                [row["kernel_count"] for row in selected],
+                linestyle,
+                marker=MARKER[mode],
+                color=COL[mode],
+                alpha=0.72,
+            )
+        stack_launches_ax.set_yscale("log")
+        stack_launches_ax.set_yticks([1, 10, 100, 1000])
+        stack_launches_ax.set_ylabel("Kernel launches", color=COL["muted"])
+        stack_launches_ax.tick_params(
+            axis="y", colors=COL["muted"], labelsize=12.125
+        )
 
         handles, labels = tax_ax.get_legend_handles_labels()
         launch_handles, launch_labels = launches_ax.get_legend_handles_labels()
@@ -415,9 +450,15 @@ def plot_combined(rows, multilayer_rows, output: Path):
             labels + launch_labels + stack_labels,
         ):
             combined.setdefault(label, handle)
+        legend_handles = list(combined.values())
+        legend_labels = list(combined.keys())
+        # Preserve the original 2x3 legend geometry after removing the HBM
+        # reference: the empty fourth slot is below Fused in column-major order.
+        legend_handles.insert(3, Line2D([], [], linestyle="none", alpha=0))
+        legend_labels.insert(3, "")
         fig.legend(
-            combined.values(),
-            combined.keys(),
+            legend_handles,
+            legend_labels,
             loc="outside upper center",
             ncol=3,
             frameon=False,

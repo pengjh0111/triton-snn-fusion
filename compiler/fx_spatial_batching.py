@@ -45,6 +45,19 @@ class SpatialBatchCandidate:
     temporal_stack_inputs: Tuple[TemporalStackInput, ...] = field(default_factory=tuple)
     previous_batched_input: Optional[BatchedChunkInput] = None
     previous_batched_inputs: Tuple[BatchedChunkInput, ...] = field(default_factory=tuple)
+    # "Mixed" dual-operand resolution (add/mul only): set when exactly one of
+    # the two tensor operands is stack/chain-sourced (temporal_stack_inputs or
+    # previous_batched_inputs has length 1, not 2) and the OTHER operand is a
+    # plain, legally-per-timestep value (passed _is_batching_source_legal but
+    # isn't itself a recognized stack/chain source) -- e.g. Mamba's
+    # `y * silu(z)`, where y comes from the fused scan's per-window stack and
+    # z is freshly computed each timestep from this same layer's own in_proj.
+    # mixed_plain_operand_index is which of node.args[0]/args[1] is the plain
+    # side (0 or 1); mixed_plain_input is that operand's node for THIS
+    # candidate specifically (grouped across the window and cat'd at rewrite
+    # time -- see _mixed_operand_inputs_for_group).
+    mixed_plain_operand_index: Optional[int] = None
+    mixed_plain_input: Optional[torch.fx.Node] = None
 
 
 @dataclass
@@ -87,6 +100,8 @@ class SpatialBatchingStats:
     spatial_previous_batched_groups: int = 0
     spatial_reused_previous_batched_inputs: int = 0
     spatial_chunk_cat_avoided: int = 0
+    spatial_mixed_operand_groups: int = 0
+    spatial_batched_mul: int = 0
     spatial_batch_skipped: int = 0
     reasons: Dict[str, int] = field(default_factory=dict)
     log: List[str] = field(default_factory=list)
@@ -657,6 +672,23 @@ def _is_add_node(node: torch.fx.Node) -> bool:
     )
 
 
+def _is_mul_node(node: torch.fx.Node) -> bool:
+    return node.op == "call_function" and (
+        node.target in (operator.mul, torch.mul) or "aten.mul" in _target_text(node.target)
+    )
+
+
+# "add" and "mul" are both plain elementwise binary ops where BOTH operands
+# vary per timestep (unlike conv/bn/linear/layer_norm, where only the single
+# tensor input varies and weight/bias/eps are timestep-invariant params) --
+# they share every candidate-extraction/grouping/rewrite code path below
+# (_extract_candidate's dual-tensor-input handling, group_spatial_batch_candidates'
+# add-specific grouping keys, rewrite_spatial_batch_group/_make_batched_call_with_inputs's
+# "add" branch), so DUAL_OPERAND_KINDS is the single switch controlling which
+# kinds take that path instead of the single-input path every other kind uses.
+DUAL_OPERAND_KINDS = ("add", "mul")
+
+
 def _is_relu_node(gm: torch.fx.GraphModule, node: torch.fx.Node) -> bool:
     if node.op == "call_module":
         try:
@@ -731,10 +763,10 @@ def _signature_without_input(node: torch.fx.Node, kind: str) -> Tuple[Any, ...]:
     if kind == "flatten":
         start_dim, end_dim = _flatten_dims(node)
         return (node.op, "flatten", kind, start_dim, end_dim)
-    if kind == "add":
+    if kind in DUAL_OPERAND_KINDS:
         args = tuple("<tensor>" if isinstance(arg, torch.fx.Node) else _node_ref(arg) for arg in node.args)
         kwargs = tuple(sorted((key, _node_ref(value)) for key, value in node.kwargs.items()))
-        return (node.op, "add", kind, args, kwargs)
+        return (node.op, kind, args, kwargs)
     args = tuple(_node_ref(arg) for arg in node.args[1:])
     kwargs = tuple(sorted((key, _node_ref(value)) for key, value in node.kwargs.items()))
     return (node.op, str(node.target), kind, args, kwargs)
@@ -765,6 +797,10 @@ def _candidate_kind(gm: torch.fx.GraphModule, node: torch.fx.Node, enabled_ops: 
         return "bn"
     if "add" in enabled and _is_add_node(node):
         return "add"
+    if "mul" in enabled and _is_mul_node(node):
+        return "mul"
+    if "layer_norm" in enabled and _is_layer_norm_node(node):
+        return "layer_norm"
     if "maxpool" in enabled and _is_maxpool_node(gm, node):
         return "maxpool"
     if "avgpool" in enabled and _is_avgpool_node(gm, node):
@@ -787,7 +823,7 @@ def _candidate_kind(gm: torch.fx.GraphModule, node: torch.fx.Node, enabled_ops: 
 def _candidate_input(node: torch.fx.Node) -> Optional[torch.fx.Node]:
     if not node.args:
         return None
-    if _is_add_node(node):
+    if _is_add_node(node) or _is_mul_node(node):
         lhs = node.args[0] if len(node.args) > 0 else None
         rhs = node.args[1] if len(node.args) > 1 else None
         if isinstance(lhs, torch.fx.Node):
@@ -800,7 +836,7 @@ def _candidate_input(node: torch.fx.Node) -> Optional[torch.fx.Node]:
 
 
 def _candidate_tensor_inputs(node: torch.fx.Node, kind: str) -> Tuple[torch.fx.Node, ...]:
-    if kind == "add":
+    if kind in DUAL_OPERAND_KINDS:
         return tuple(arg for arg in node.args[:2] if isinstance(arg, torch.fx.Node))
     input_node = _candidate_input(node)
     return (input_node,) if input_node is not None else ()
@@ -957,9 +993,11 @@ def _extract_candidate(
     previous_batched_inputs = tuple(
         item for item in (_match_batched_chunk_getitem(input_item) for input_item in tensor_inputs) if item is not None
     )
-    if kind == "add":
+    mixed_plain_operand_index = None
+    mixed_plain_input = None
+    if kind in DUAL_OPERAND_KINDS:
         if len(tensor_inputs) != 2:
-            stats.skip("add_requires_two_tensor_inputs", f"node={node.name} add must have two tensor inputs")
+            stats.skip(f"{kind}_requires_two_tensor_inputs", f"node={node.name} {kind} must have two tensor inputs")
             return None
         for input_item in tensor_inputs:
             if (
@@ -969,22 +1007,63 @@ def _extract_candidate(
                 and _match_external_sequence_getitem(input_item, temporal_window) is None
             ):
                 stats.skip(
-                    "add_direct_generated_batched_input",
-                    f"node={node.name} add input {input_item.name} is already batched but not chunk-indexed",
+                    f"{kind}_direct_generated_batched_input",
+                    f"node={node.name} {kind} input {input_item.name} is already batched but not chunk-indexed",
                 )
                 return None
         if temporal_stack_inputs and previous_batched_inputs:
-            stats.skip("add_mixed_batched_source_kinds", f"node={node.name} add mixes temporal stack and previous batched inputs")
+            stats.skip(f"{kind}_mixed_batched_source_kinds", f"node={node.name} {kind} mixes temporal stack and previous batched inputs")
             return None
         batchable_inputs = len(temporal_stack_inputs) + len(previous_batched_inputs)
         if batchable_inputs and batchable_inputs != len(tensor_inputs):
-            stats.skip("add_mixed_batchable_inputs", f"node={node.name} add has unsupported mixed temporal/plain inputs")
-            return None
+            if batchable_inputs != 1:
+                stats.skip(f"{kind}_mixed_batchable_inputs", f"node={node.name} {kind} has unsupported mixed temporal/plain inputs")
+                return None
+            # Exactly one operand is stack/chain-sourced (e.g. Mamba's
+            # `y * silu(z)`: y comes from the scan's per-window stack, z is
+            # freshly computed this timestep from this same layer's own
+            # in_proj). Find which operand index that is; the OTHER operand
+            # resolves at rewrite time by cat-ing all T candidates' own
+            # values for that operand instead of requiring it to itself be
+            # a recognized stack/chain source -- see
+            # _mixed_operand_inputs_for_group. Still requires the plain
+            # operand to be legally per-timestep (same-timestep-derived, not
+            # a genuine cross-iteration/state dependency).
+            stack_or_chain_index = None
+            for index, input_item in enumerate(tensor_inputs):
+                if (
+                    _match_temporal_stack_getitem(input_item)
+                    or _match_external_sequence_getitem(input_item, temporal_window)
+                    or _match_batched_chunk_getitem(input_item)
+                ):
+                    stack_or_chain_index = index
+                    break
+            if stack_or_chain_index is None:
+                stats.skip(f"{kind}_mixed_batchable_inputs", f"node={node.name} {kind} has unsupported mixed temporal/plain inputs")
+                return None
+            plain_index = 1 - stack_or_chain_index
+            plain_operand = tensor_inputs[plain_index]
+            node_timestep = _get_kairos_meta(node, "timestep")
+            if not isinstance(node_timestep, int):
+                stats.skip(
+                    f"{kind}_mixed_missing_timestep",
+                    f"node={node.name} {kind} plain operand {plain_operand.name} has no timestep to check legality against",
+                )
+                return None
+            if not _is_batching_source_legal(plain_operand, node_timestep):
+                stats.skip(
+                    "feedback_dependency",
+                    f"node={node.name} kind={kind} input={plain_operand.name} (mixed-resolution plain operand) depends "
+                    f"on a different timestep's block (cross-iteration recurrence)",
+                )
+                return None
+            mixed_plain_operand_index = plain_index
+            mixed_plain_input = plain_operand
         if len(temporal_stack_inputs) == 2 and temporal_stack_inputs[0].timestep != temporal_stack_inputs[1].timestep:
-            stats.skip("temporal_stack_add_timestep_mismatch", f"node={node.name} add temporal stack timesteps differ")
+            stats.skip(f"temporal_stack_{kind}_timestep_mismatch", f"node={node.name} {kind} temporal stack timesteps differ")
             return None
         if len(previous_batched_inputs) == 2 and previous_batched_inputs[0].timestep != previous_batched_inputs[1].timestep:
-            stats.skip("previous_batched_add_timestep_mismatch", f"node={node.name} add previous chunk timesteps differ")
+            stats.skip(f"previous_batched_{kind}_timestep_mismatch", f"node={node.name} {kind} previous chunk timesteps differ")
             return None
     primary_temporal_stack = _match_temporal_stack_getitem(input_node) or _match_external_sequence_getitem(input_node, temporal_window)
     primary_previous_batched = _match_batched_chunk_getitem(input_node)
@@ -1022,11 +1101,11 @@ def _extract_candidate(
     if node.op == "call_function" and "return_indices" in node.kwargs and node.kwargs["return_indices"]:
         stats.skip("tuple_output", f"node={node.name} kind={kind} returns indices")
         return None
-    if kind == "add" and (temporal_stack_inputs or previous_batched_inputs):
+    if kind in DUAL_OPERAND_KINDS and (temporal_stack_inputs or previous_batched_inputs):
         stack_refs = tuple((item.spike_stack.name, item.source_op) for item in temporal_stack_inputs)
         previous_refs = tuple(item.batched_node.name for item in previous_batched_inputs)
         kwargs = tuple(sorted((key, _node_ref(value)) for key, value in node.kwargs.items()))
-        signature = (node.op, "add", kind, stack_refs, previous_refs, kwargs)
+        signature = (node.op, kind, stack_refs, previous_refs, mixed_plain_operand_index, kwargs)
     else:
         signature = _signature_without_input(node, kind)
     occurrence = _get_kairos_meta(node, "occurrence")
@@ -1058,6 +1137,8 @@ def _extract_candidate(
         temporal_stack_inputs=temporal_stack_inputs,
         previous_batched_input=primary_previous_batched,
         previous_batched_inputs=previous_batched_inputs,
+        mixed_plain_operand_index=mixed_plain_operand_index,
+        mixed_plain_input=mixed_plain_input,
     )
 
 
@@ -1086,14 +1167,21 @@ def group_spatial_batch_candidates(
         temporal_stack_key = ()
         if candidate.temporal_stack_input is not None:
             temporal_stack_key = (candidate.temporal_stack_input.spike_stack.name,)
-        if candidate.kind == "add" and candidate.temporal_stack_inputs:
+        if candidate.kind in DUAL_OPERAND_KINDS and candidate.temporal_stack_inputs:
             temporal_stack_key = tuple(item.spike_stack.name for item in candidate.temporal_stack_inputs)
         previous_batched_key = ()
         if candidate.previous_batched_input is not None:
             previous_batched_key = (candidate.previous_batched_input.batched_node.name,)
-        if candidate.kind == "add" and candidate.previous_batched_inputs:
+        if candidate.kind in DUAL_OPERAND_KINDS and candidate.previous_batched_inputs:
             previous_batched_key = tuple(item.batched_node.name for item in candidate.previous_batched_inputs)
-        key = (candidate.window_id, candidate.occurrence, candidate.signature, temporal_stack_key, previous_batched_key)
+        key = (
+            candidate.window_id,
+            candidate.occurrence,
+            candidate.signature,
+            temporal_stack_key,
+            previous_batched_key,
+            candidate.mixed_plain_operand_index,
+        )
         grouped.setdefault(key, []).append(candidate)
 
     groups: List[SpatialBatchGroup] = []
@@ -1146,7 +1234,7 @@ def group_spatial_batch_candidates(
                     f"kind={first.kind} window={first.window_id} chunk_timesteps={chunk_timesteps}",
                 )
                 continue
-        if first.kind == "add" and first.temporal_stack_inputs:
+        if first.kind in DUAL_OPERAND_KINDS and first.temporal_stack_inputs:
             expected_num_inputs = len(first.temporal_stack_inputs)
             stack_nodes = tuple(item.spike_stack for item in first.temporal_stack_inputs)
             for item in items:
@@ -1168,7 +1256,7 @@ def group_spatial_batch_candidates(
                 for item in items
             ):
                 continue
-        if first.kind == "add" and first.previous_batched_inputs:
+        if first.kind in DUAL_OPERAND_KINDS and first.previous_batched_inputs:
             expected_num_inputs = len(first.previous_batched_inputs)
             batched_nodes = tuple(item.batched_node for item in first.previous_batched_inputs)
             if any(
@@ -1223,7 +1311,7 @@ def _make_batched_call_with_inputs(
     input_nodes: Sequence[torch.fx.Node],
 ) -> torch.fx.Node:
     first = group.candidates[0].node
-    if group.kind == "add":
+    if group.kind in DUAL_OPERAND_KINDS:
         args = list(first.args)
         replacement_iter = iter(input_nodes)
         for index, arg in enumerate(args):
@@ -1248,7 +1336,7 @@ def _group_input_tuple(group: SpatialBatchGroup) -> Tuple[torch.fx.Node, ...]:
 
 def _temporal_stack_nodes_for_group(group: SpatialBatchGroup) -> Tuple[torch.fx.Node, ...]:
     first = group.candidates[0]
-    if first.kind == "add" and first.temporal_stack_inputs:
+    if first.kind in DUAL_OPERAND_KINDS and first.temporal_stack_inputs:
         return tuple(item.spike_stack for item in first.temporal_stack_inputs)
     if first.temporal_stack_input is not None:
         return (first.temporal_stack_input.spike_stack,)
@@ -1257,7 +1345,7 @@ def _temporal_stack_nodes_for_group(group: SpatialBatchGroup) -> Tuple[torch.fx.
 
 def _previous_batched_nodes_for_group(group: SpatialBatchGroup) -> Tuple[torch.fx.Node, ...]:
     first = group.candidates[0]
-    if first.kind == "add" and first.previous_batched_inputs:
+    if first.kind in DUAL_OPERAND_KINDS and first.previous_batched_inputs:
         return tuple(item.batched_node for item in first.previous_batched_inputs)
     if first.previous_batched_input is not None:
         return (first.previous_batched_input.batched_node,)
@@ -1265,15 +1353,33 @@ def _previous_batched_nodes_for_group(group: SpatialBatchGroup) -> Tuple[torch.f
 
 
 def _plain_add_operand_inputs_for_group(group: SpatialBatchGroup) -> Tuple[Tuple[torch.fx.Node, ...], ...]:
-    if group.kind != "add":
+    if group.kind not in DUAL_OPERAND_KINDS:
         return ()
     first = group.candidates[0]
     if first.temporal_stack_inputs or first.previous_batched_inputs:
         return ()
-    per_candidate_inputs = [_candidate_tensor_inputs(candidate.node, "add") for candidate in group.candidates]
+    per_candidate_inputs = [_candidate_tensor_inputs(candidate.node, group.kind) for candidate in group.candidates]
     if any(len(inputs) != 2 for inputs in per_candidate_inputs):
         return ()
     return tuple(tuple(inputs[index] for inputs in per_candidate_inputs) for index in range(2))
+
+
+def _mixed_operand_inputs_for_group(group: SpatialBatchGroup) -> Optional[Tuple[torch.fx.Node, ...]]:
+    """For DUAL_OPERAND_KINDS groups (add/mul) where exactly one operand is
+    stack/chain-sourced and the other is a plain per-timestep value (see
+    SpatialBatchCandidate.mixed_plain_operand_index / _extract_candidate's
+    mixed-resolution branch, e.g. Mamba's `y * silu(z)`): returns the plain
+    operand's own per-candidate nodes, in the SAME timestep order as
+    group.candidates, ready to be cat'd at rewrite time. None if this isn't
+    a mixed-resolution group (the two existing all-batchable / all-plain
+    resolutions handle those; this is strictly the third case).
+    """
+    if group.kind not in DUAL_OPERAND_KINDS:
+        return None
+    first = group.candidates[0]
+    if first.mixed_plain_operand_index is None:
+        return None
+    return tuple(candidate.mixed_plain_input for candidate in group.candidates)
 
 
 def _group_uses_temporal_stack_getitems(group: SpatialBatchGroup) -> bool:
@@ -1326,7 +1432,15 @@ def rewrite_spatial_batch_group(
     temporal_stack_nodes = _temporal_stack_nodes_for_group(group)
     previous_batched_nodes = _previous_batched_nodes_for_group(group)
     plain_add_operand_inputs = _plain_add_operand_inputs_for_group(group)
-    if temporal_stack_nodes:
+    mixed_plain_inputs = _mixed_operand_inputs_for_group(group)
+    if mixed_plain_inputs is not None:
+        # The stack/chain-sourced operand is already a fully materialized
+        # window tensor (available by construction, same as the pure
+        # temporal_stack_nodes/previous_batched_nodes cases below) -- only
+        # the plain operand's own T per-candidate values need the
+        # availability check, since those get cat'd fresh at rewrite time.
+        input_nodes = list(mixed_plain_inputs)
+    elif temporal_stack_nodes:
         input_nodes = list(temporal_stack_nodes)
     elif previous_batched_nodes:
         input_nodes = list(previous_batched_nodes)
@@ -1342,7 +1456,32 @@ def rewrite_spatial_batch_group(
         return False, reason
 
     with gm.graph.inserting_before(first_node):
-        if temporal_stack_nodes:
+        if mixed_plain_inputs is not None:
+            plain_index = group.candidates[0].mixed_plain_operand_index
+            if temporal_stack_nodes:
+                window_start = group.window_id * len(group.candidates)
+                stack_side = _make_temporal_stack_batched_input(
+                    gm, temporal_stack_nodes[0], f"{first_node.name}_stack", window_start, len(group.candidates)
+                )
+                if stats is not None:
+                    stats.spatial_temporal_stack_groups += 1
+                    stats.spatial_temporal_stack_flatten_inputs += 1
+                    stats.spatial_cat_avoided_by_temporal_stack_flatten += 1
+            else:
+                stack_side = previous_batched_nodes[0]
+                if stats is not None:
+                    stats.spatial_previous_batched_groups += 1
+                    stats.spatial_reused_previous_batched_inputs += 1
+                    stats.spatial_chunk_cat_avoided += 1
+            plain_cat = gm.graph.call_function(torch.cat, args=(list(mixed_plain_inputs), 0))
+            plain_cat.name = f"{first_node.name}_spatial_batch_{group.kind}_mixed_plain_cat"
+            batched_inputs_list: List[Optional[torch.fx.Node]] = [None, None]
+            batched_inputs_list[plain_index] = plain_cat
+            batched_inputs_list[1 - plain_index] = stack_side
+            batched_inputs = tuple(batched_inputs_list)
+            if stats is not None:
+                stats.spatial_mixed_operand_groups += 1
+        elif temporal_stack_nodes:
             window_start = group.window_id * len(group.candidates)
             batched_inputs = tuple(
                 _make_temporal_stack_batched_input(
@@ -1356,7 +1495,7 @@ def rewrite_spatial_batch_group(
                 stats.spatial_cat_avoided_by_temporal_stack_flatten += 1
                 if group.kind == "bn":
                     stats.spatial_temporal_stack_bn_groups += 1
-                elif group.kind == "add":
+                elif group.kind in DUAL_OPERAND_KINDS:
                     stats.spatial_temporal_stack_add_groups += 1
                 elif group.kind in {"maxpool", "avg_pool", "adaptive_avg_pool"}:
                     stats.spatial_temporal_stack_pool_groups += 1
@@ -1610,10 +1749,10 @@ def _rewrite_layer_norm_stack(
     if any(_layer_norm_item_signature(item) != _layer_norm_item_signature(first) for item in items):
         stats.skip("layer_norm_signature", f"stack={stack_node.name} incompatible signatures")
         return False
+    window_id = first.timestep // temporal_window if temporal_window > 0 else 0
     x_seq = _sequence_source_for_items(gm, items, stack_node)
     if x_seq is None:
         return False
-    window_id = first.timestep // temporal_window if temporal_window > 0 else 0
     for occurrence, item in enumerate(items):
         item.output_node.meta["kairos_timestep"] = item.timestep
         item.output_node.meta["kairos_window_id"] = window_id
@@ -1721,6 +1860,7 @@ def apply_spatial_batching(
     dump_dir: Optional[Path] = None,
     strict: bool = False,
     enable_chain: bool = False,
+    max_iter: int = 8,
 ) -> SpatialBatchingStats:
     stats = SpatialBatchingStats()
     if temporal_window <= 1:
@@ -1732,7 +1872,6 @@ def apply_spatial_batching(
             stats.skip("chain_disabled", "chain-aware spatial batching is deprecated; using per-op batching")
         rewrite_transformer_spatial_batching(gm, temporal_window, stats)
         all_groups: List[SpatialBatchGroup] = []
-        max_iter = 8
         for _iteration in range(max_iter):
             before_rewrites = stats.spatial_batched_ops
             candidates = collect_spatial_batch_candidates(gm, temporal_window, enabled_ops, stats)
@@ -1753,6 +1892,8 @@ def apply_spatial_batching(
                     stats.spatial_batched_bn += count
                 elif group.kind == "add":
                     stats.spatial_batched_add += count
+                elif group.kind == "mul":
+                    stats.spatial_batched_mul += count
                 elif group.kind in {"maxpool", "avg_pool", "adaptive_avg_pool"}:
                     stats.spatial_batched_pool += count
                     if group.kind == "maxpool":
@@ -1765,6 +1906,8 @@ def apply_spatial_batching(
                     stats.spatial_batched_flatten += count
                 elif group.kind == "linear":
                     stats.spatial_batched_linear += count
+                elif group.kind == "layer_norm":
+                    stats.spatial_batched_layer_norm += count
                 else:
                     stats.spatial_batched_elementwise += count
                 message = (

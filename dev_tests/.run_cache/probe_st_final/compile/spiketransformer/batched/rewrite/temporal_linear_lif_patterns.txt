@@ -1,0 +1,474 @@
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_input_proj_parameters_weight_|bias=None|input=shape=(4, 256, 768)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear, lif=lif_forward_state_default, spike=spike, v=v_next, v_prev=zeros_like
+  pattern_1: linear=linear_34, lif=lif_forward_state_default_33, spike=spike_33, v=v_next_33, v_prev=v_next
+  pattern_2: linear=linear_68, lif=lif_forward_state_default_66, spike=spike_66, v=v_next_66, v_prev=v_next_33
+  pattern_3: linear=linear_102, lif=lif_forward_state_default_99, spike=spike_99, v=v_next_99, v_prev=v_next_66
+  pattern_4: linear=linear_136, lif=lif_forward_state_default_132, spike=spike_132, v=v_next_132, v_prev=v_next_99
+  pattern_5: linear=linear_170, lif=lif_forward_state_default_165, spike=spike_165, v=v_next_165, v_prev=v_next_132
+  pattern_6: linear=linear_204, lif=lif_forward_state_default_198, spike=spike_198, v=v_next_198, v_prev=v_next_165
+  pattern_7: linear=linear_238, lif=lif_forward_state_default_231, spike=spike_231, v=v_next_231, v_prev=v_next_198
+  pattern_8: linear=linear_272, lif=lif_forward_state_default_264, spike=spike_264, v=v_next_264, v_prev=v_next_231
+  pattern_9: linear=linear_306, lif=lif_forward_state_default_297, spike=spike_297, v=v_next_297, v_prev=v_next_264
+  pattern_10: linear=linear_340, lif=lif_forward_state_default_330, spike=spike_330, v=v_next_330, v_prev=v_next_297
+  pattern_11: linear=linear_374, lif=lif_forward_state_default_363, spike=spike_363, v=v_next_363, v_prev=v_next_330
+  pattern_12: linear=linear_408, lif=lif_forward_state_default_396, spike=spike_396, v=v_next_396, v_prev=v_next_363
+  pattern_13: linear=linear_442, lif=lif_forward_state_default_429, spike=spike_429, v=v_next_429, v_prev=v_next_396
+  pattern_14: linear=linear_476, lif=lif_forward_state_default_462, spike=spike_462, v=v_next_462, v_prev=v_next_429
+  pattern_15: linear=linear_510, lif=lif_forward_state_default_495, spike=spike_495, v=v_next_495, v_prev=v_next_462
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_3, lif=lif_forward_state_default_1, spike=spike_1, v=v_next_1, v_prev=zeros_like_1
+  pattern_1: linear=y_43, lif=lif_forward_state_default_34, spike=spike_34, v=v_next_34, v_prev=v_next_1
+  pattern_2: linear=y_83, lif=lif_forward_state_default_67, spike=spike_67, v=v_next_67, v_prev=v_next_34
+  pattern_3: linear=y_123, lif=lif_forward_state_default_100, spike=spike_100, v=v_next_100, v_prev=v_next_67
+  pattern_4: linear=y_163, lif=lif_forward_state_default_133, spike=spike_133, v=v_next_133, v_prev=v_next_100
+  pattern_5: linear=y_203, lif=lif_forward_state_default_166, spike=spike_166, v=v_next_166, v_prev=v_next_133
+  pattern_6: linear=y_243, lif=lif_forward_state_default_199, spike=spike_199, v=v_next_199, v_prev=v_next_166
+  pattern_7: linear=y_283, lif=lif_forward_state_default_232, spike=spike_232, v=v_next_232, v_prev=v_next_199
+  pattern_8: linear=y_323, lif=lif_forward_state_default_265, spike=spike_265, v=v_next_265, v_prev=v_next_232
+  pattern_9: linear=y_363, lif=lif_forward_state_default_298, spike=spike_298, v=v_next_298, v_prev=v_next_265
+  pattern_10: linear=y_403, lif=lif_forward_state_default_331, spike=spike_331, v=v_next_331, v_prev=v_next_298
+  pattern_11: linear=y_443, lif=lif_forward_state_default_364, spike=spike_364, v=v_next_364, v_prev=v_next_331
+  pattern_12: linear=y_483, lif=lif_forward_state_default_397, spike=spike_397, v=v_next_397, v_prev=v_next_364
+  pattern_13: linear=y_523, lif=lif_forward_state_default_430, spike=spike_430, v=v_next_430, v_prev=v_next_397
+  pattern_14: linear=y_563, lif=lif_forward_state_default_463, spike=spike_463, v=v_next_463, v_prev=v_next_430
+  pattern_15: linear=y_603, lif=lif_forward_state_default_496, spike=spike_496, v=v_next_496, v_prev=v_next_463
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_3, lif=lif_forward_state_default_2, spike=spike_2, v=v_next_2, v_prev=zeros_like_2
+  pattern_1: linear=linear_37, lif=lif_forward_state_default_35, spike=spike_35, v=v_next_35, v_prev=v_next_2
+  pattern_2: linear=linear_71, lif=lif_forward_state_default_68, spike=spike_68, v=v_next_68, v_prev=v_next_35
+  pattern_3: linear=linear_105, lif=lif_forward_state_default_101, spike=spike_101, v=v_next_101, v_prev=v_next_68
+  pattern_4: linear=linear_139, lif=lif_forward_state_default_134, spike=spike_134, v=v_next_134, v_prev=v_next_101
+  pattern_5: linear=linear_173, lif=lif_forward_state_default_167, spike=spike_167, v=v_next_167, v_prev=v_next_134
+  pattern_6: linear=linear_207, lif=lif_forward_state_default_200, spike=spike_200, v=v_next_200, v_prev=v_next_167
+  pattern_7: linear=linear_241, lif=lif_forward_state_default_233, spike=spike_233, v=v_next_233, v_prev=v_next_200
+  pattern_8: linear=linear_275, lif=lif_forward_state_default_266, spike=spike_266, v=v_next_266, v_prev=v_next_233
+  pattern_9: linear=linear_309, lif=lif_forward_state_default_299, spike=spike_299, v=v_next_299, v_prev=v_next_266
+  pattern_10: linear=linear_343, lif=lif_forward_state_default_332, spike=spike_332, v=v_next_332, v_prev=v_next_299
+  pattern_11: linear=linear_377, lif=lif_forward_state_default_365, spike=spike_365, v=v_next_365, v_prev=v_next_332
+  pattern_12: linear=linear_411, lif=lif_forward_state_default_398, spike=spike_398, v=v_next_398, v_prev=v_next_365
+  pattern_13: linear=linear_445, lif=lif_forward_state_default_431, spike=spike_431, v=v_next_431, v_prev=v_next_398
+  pattern_14: linear=linear_479, lif=lif_forward_state_default_464, spike=spike_464, v=v_next_464, v_prev=v_next_431
+  pattern_15: linear=linear_513, lif=lif_forward_state_default_497, spike=spike_497, v=v_next_497, v_prev=v_next_464
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_4, lif=lif_forward_state_default_3, spike=spike_3, v=v_next_3, v_prev=zeros_like_3
+  pattern_1: linear=linear_38, lif=lif_forward_state_default_36, spike=spike_36, v=v_next_36, v_prev=v_next_3
+  pattern_2: linear=linear_72, lif=lif_forward_state_default_69, spike=spike_69, v=v_next_69, v_prev=v_next_36
+  pattern_3: linear=linear_106, lif=lif_forward_state_default_102, spike=spike_102, v=v_next_102, v_prev=v_next_69
+  pattern_4: linear=linear_140, lif=lif_forward_state_default_135, spike=spike_135, v=v_next_135, v_prev=v_next_102
+  pattern_5: linear=linear_174, lif=lif_forward_state_default_168, spike=spike_168, v=v_next_168, v_prev=v_next_135
+  pattern_6: linear=linear_208, lif=lif_forward_state_default_201, spike=spike_201, v=v_next_201, v_prev=v_next_168
+  pattern_7: linear=linear_242, lif=lif_forward_state_default_234, spike=spike_234, v=v_next_234, v_prev=v_next_201
+  pattern_8: linear=linear_276, lif=lif_forward_state_default_267, spike=spike_267, v=v_next_267, v_prev=v_next_234
+  pattern_9: linear=linear_310, lif=lif_forward_state_default_300, spike=spike_300, v=v_next_300, v_prev=v_next_267
+  pattern_10: linear=linear_344, lif=lif_forward_state_default_333, spike=spike_333, v=v_next_333, v_prev=v_next_300
+  pattern_11: linear=linear_378, lif=lif_forward_state_default_366, spike=spike_366, v=v_next_366, v_prev=v_next_333
+  pattern_12: linear=linear_412, lif=lif_forward_state_default_399, spike=spike_399, v=v_next_399, v_prev=v_next_366
+  pattern_13: linear=linear_446, lif=lif_forward_state_default_432, spike=spike_432, v=v_next_432, v_prev=v_next_399
+  pattern_14: linear=linear_480, lif=lif_forward_state_default_465, spike=spike_465, v=v_next_465, v_prev=v_next_432
+  pattern_15: linear=linear_514, lif=lif_forward_state_default_498, spike=spike_498, v=v_next_498, v_prev=v_next_465
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_8, lif=lif_forward_state_default_5, spike=spike_5, v=v_next_5, v_prev=zeros_like_5
+  pattern_1: linear=y_48, lif=lif_forward_state_default_38, spike=spike_38, v=v_next_38, v_prev=v_next_5
+  pattern_2: linear=y_88, lif=lif_forward_state_default_71, spike=spike_71, v=v_next_71, v_prev=v_next_38
+  pattern_3: linear=y_128, lif=lif_forward_state_default_104, spike=spike_104, v=v_next_104, v_prev=v_next_71
+  pattern_4: linear=y_168, lif=lif_forward_state_default_137, spike=spike_137, v=v_next_137, v_prev=v_next_104
+  pattern_5: linear=y_208, lif=lif_forward_state_default_170, spike=spike_170, v=v_next_170, v_prev=v_next_137
+  pattern_6: linear=y_248, lif=lif_forward_state_default_203, spike=spike_203, v=v_next_203, v_prev=v_next_170
+  pattern_7: linear=y_288, lif=lif_forward_state_default_236, spike=spike_236, v=v_next_236, v_prev=v_next_203
+  pattern_8: linear=y_328, lif=lif_forward_state_default_269, spike=spike_269, v=v_next_269, v_prev=v_next_236
+  pattern_9: linear=y_368, lif=lif_forward_state_default_302, spike=spike_302, v=v_next_302, v_prev=v_next_269
+  pattern_10: linear=y_408, lif=lif_forward_state_default_335, spike=spike_335, v=v_next_335, v_prev=v_next_302
+  pattern_11: linear=y_448, lif=lif_forward_state_default_368, spike=spike_368, v=v_next_368, v_prev=v_next_335
+  pattern_12: linear=y_488, lif=lif_forward_state_default_401, spike=spike_401, v=v_next_401, v_prev=v_next_368
+  pattern_13: linear=y_528, lif=lif_forward_state_default_434, spike=spike_434, v=v_next_434, v_prev=v_next_401
+  pattern_14: linear=y_568, lif=lif_forward_state_default_467, spike=spike_467, v=v_next_467, v_prev=v_next_434
+  pattern_15: linear=y_608, lif=lif_forward_state_default_500, spike=spike_500, v=v_next_500, v_prev=v_next_467
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_7, lif=lif_forward_state_default_6, spike=spike_6, v=v_next_6, v_prev=zeros_like_6
+  pattern_1: linear=linear_41, lif=lif_forward_state_default_39, spike=spike_39, v=v_next_39, v_prev=v_next_6
+  pattern_2: linear=linear_75, lif=lif_forward_state_default_72, spike=spike_72, v=v_next_72, v_prev=v_next_39
+  pattern_3: linear=linear_109, lif=lif_forward_state_default_105, spike=spike_105, v=v_next_105, v_prev=v_next_72
+  pattern_4: linear=linear_143, lif=lif_forward_state_default_138, spike=spike_138, v=v_next_138, v_prev=v_next_105
+  pattern_5: linear=linear_177, lif=lif_forward_state_default_171, spike=spike_171, v=v_next_171, v_prev=v_next_138
+  pattern_6: linear=linear_211, lif=lif_forward_state_default_204, spike=spike_204, v=v_next_204, v_prev=v_next_171
+  pattern_7: linear=linear_245, lif=lif_forward_state_default_237, spike=spike_237, v=v_next_237, v_prev=v_next_204
+  pattern_8: linear=linear_279, lif=lif_forward_state_default_270, spike=spike_270, v=v_next_270, v_prev=v_next_237
+  pattern_9: linear=linear_313, lif=lif_forward_state_default_303, spike=spike_303, v=v_next_303, v_prev=v_next_270
+  pattern_10: linear=linear_347, lif=lif_forward_state_default_336, spike=spike_336, v=v_next_336, v_prev=v_next_303
+  pattern_11: linear=linear_381, lif=lif_forward_state_default_369, spike=spike_369, v=v_next_369, v_prev=v_next_336
+  pattern_12: linear=linear_415, lif=lif_forward_state_default_402, spike=spike_402, v=v_next_402, v_prev=v_next_369
+  pattern_13: linear=linear_449, lif=lif_forward_state_default_435, spike=spike_435, v=v_next_435, v_prev=v_next_402
+  pattern_14: linear=linear_483, lif=lif_forward_state_default_468, spike=spike_468, v=v_next_468, v_prev=v_next_435
+  pattern_15: linear=linear_517, lif=lif_forward_state_default_501, spike=spike_501, v=v_next_501, v_prev=v_next_468
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_8, lif=lif_forward_state_default_7, spike=spike_7, v=v_next_7, v_prev=zeros_like_7
+  pattern_1: linear=linear_42, lif=lif_forward_state_default_40, spike=spike_40, v=v_next_40, v_prev=v_next_7
+  pattern_2: linear=linear_76, lif=lif_forward_state_default_73, spike=spike_73, v=v_next_73, v_prev=v_next_40
+  pattern_3: linear=linear_110, lif=lif_forward_state_default_106, spike=spike_106, v=v_next_106, v_prev=v_next_73
+  pattern_4: linear=linear_144, lif=lif_forward_state_default_139, spike=spike_139, v=v_next_139, v_prev=v_next_106
+  pattern_5: linear=linear_178, lif=lif_forward_state_default_172, spike=spike_172, v=v_next_172, v_prev=v_next_139
+  pattern_6: linear=linear_212, lif=lif_forward_state_default_205, spike=spike_205, v=v_next_205, v_prev=v_next_172
+  pattern_7: linear=linear_246, lif=lif_forward_state_default_238, spike=spike_238, v=v_next_238, v_prev=v_next_205
+  pattern_8: linear=linear_280, lif=lif_forward_state_default_271, spike=spike_271, v=v_next_271, v_prev=v_next_238
+  pattern_9: linear=linear_314, lif=lif_forward_state_default_304, spike=spike_304, v=v_next_304, v_prev=v_next_271
+  pattern_10: linear=linear_348, lif=lif_forward_state_default_337, spike=spike_337, v=v_next_337, v_prev=v_next_304
+  pattern_11: linear=linear_382, lif=lif_forward_state_default_370, spike=spike_370, v=v_next_370, v_prev=v_next_337
+  pattern_12: linear=linear_416, lif=lif_forward_state_default_403, spike=spike_403, v=v_next_403, v_prev=v_next_370
+  pattern_13: linear=linear_450, lif=lif_forward_state_default_436, spike=spike_436, v=v_next_436, v_prev=v_next_403
+  pattern_14: linear=linear_484, lif=lif_forward_state_default_469, spike=spike_469, v=v_next_469, v_prev=v_next_436
+  pattern_15: linear=linear_518, lif=lif_forward_state_default_502, spike=spike_502, v=v_next_502, v_prev=v_next_469
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_13, lif=lif_forward_state_default_9, spike=spike_9, v=v_next_9, v_prev=zeros_like_9
+  pattern_1: linear=y_53, lif=lif_forward_state_default_42, spike=spike_42, v=v_next_42, v_prev=v_next_9
+  pattern_2: linear=y_93, lif=lif_forward_state_default_75, spike=spike_75, v=v_next_75, v_prev=v_next_42
+  pattern_3: linear=y_133, lif=lif_forward_state_default_108, spike=spike_108, v=v_next_108, v_prev=v_next_75
+  pattern_4: linear=y_173, lif=lif_forward_state_default_141, spike=spike_141, v=v_next_141, v_prev=v_next_108
+  pattern_5: linear=y_213, lif=lif_forward_state_default_174, spike=spike_174, v=v_next_174, v_prev=v_next_141
+  pattern_6: linear=y_253, lif=lif_forward_state_default_207, spike=spike_207, v=v_next_207, v_prev=v_next_174
+  pattern_7: linear=y_293, lif=lif_forward_state_default_240, spike=spike_240, v=v_next_240, v_prev=v_next_207
+  pattern_8: linear=y_333, lif=lif_forward_state_default_273, spike=spike_273, v=v_next_273, v_prev=v_next_240
+  pattern_9: linear=y_373, lif=lif_forward_state_default_306, spike=spike_306, v=v_next_306, v_prev=v_next_273
+  pattern_10: linear=y_413, lif=lif_forward_state_default_339, spike=spike_339, v=v_next_339, v_prev=v_next_306
+  pattern_11: linear=y_453, lif=lif_forward_state_default_372, spike=spike_372, v=v_next_372, v_prev=v_next_339
+  pattern_12: linear=y_493, lif=lif_forward_state_default_405, spike=spike_405, v=v_next_405, v_prev=v_next_372
+  pattern_13: linear=y_533, lif=lif_forward_state_default_438, spike=spike_438, v=v_next_438, v_prev=v_next_405
+  pattern_14: linear=y_573, lif=lif_forward_state_default_471, spike=spike_471, v=v_next_471, v_prev=v_next_438
+  pattern_15: linear=y_613, lif=lif_forward_state_default_504, spike=spike_504, v=v_next_504, v_prev=v_next_471
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_11, lif=lif_forward_state_default_10, spike=spike_10, v=v_next_10, v_prev=zeros_like_10
+  pattern_1: linear=linear_45, lif=lif_forward_state_default_43, spike=spike_43, v=v_next_43, v_prev=v_next_10
+  pattern_2: linear=linear_79, lif=lif_forward_state_default_76, spike=spike_76, v=v_next_76, v_prev=v_next_43
+  pattern_3: linear=linear_113, lif=lif_forward_state_default_109, spike=spike_109, v=v_next_109, v_prev=v_next_76
+  pattern_4: linear=linear_147, lif=lif_forward_state_default_142, spike=spike_142, v=v_next_142, v_prev=v_next_109
+  pattern_5: linear=linear_181, lif=lif_forward_state_default_175, spike=spike_175, v=v_next_175, v_prev=v_next_142
+  pattern_6: linear=linear_215, lif=lif_forward_state_default_208, spike=spike_208, v=v_next_208, v_prev=v_next_175
+  pattern_7: linear=linear_249, lif=lif_forward_state_default_241, spike=spike_241, v=v_next_241, v_prev=v_next_208
+  pattern_8: linear=linear_283, lif=lif_forward_state_default_274, spike=spike_274, v=v_next_274, v_prev=v_next_241
+  pattern_9: linear=linear_317, lif=lif_forward_state_default_307, spike=spike_307, v=v_next_307, v_prev=v_next_274
+  pattern_10: linear=linear_351, lif=lif_forward_state_default_340, spike=spike_340, v=v_next_340, v_prev=v_next_307
+  pattern_11: linear=linear_385, lif=lif_forward_state_default_373, spike=spike_373, v=v_next_373, v_prev=v_next_340
+  pattern_12: linear=linear_419, lif=lif_forward_state_default_406, spike=spike_406, v=v_next_406, v_prev=v_next_373
+  pattern_13: linear=linear_453, lif=lif_forward_state_default_439, spike=spike_439, v=v_next_439, v_prev=v_next_406
+  pattern_14: linear=linear_487, lif=lif_forward_state_default_472, spike=spike_472, v=v_next_472, v_prev=v_next_439
+  pattern_15: linear=linear_521, lif=lif_forward_state_default_505, spike=spike_505, v=v_next_505, v_prev=v_next_472
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_12, lif=lif_forward_state_default_11, spike=spike_11, v=v_next_11, v_prev=zeros_like_11
+  pattern_1: linear=linear_46, lif=lif_forward_state_default_44, spike=spike_44, v=v_next_44, v_prev=v_next_11
+  pattern_2: linear=linear_80, lif=lif_forward_state_default_77, spike=spike_77, v=v_next_77, v_prev=v_next_44
+  pattern_3: linear=linear_114, lif=lif_forward_state_default_110, spike=spike_110, v=v_next_110, v_prev=v_next_77
+  pattern_4: linear=linear_148, lif=lif_forward_state_default_143, spike=spike_143, v=v_next_143, v_prev=v_next_110
+  pattern_5: linear=linear_182, lif=lif_forward_state_default_176, spike=spike_176, v=v_next_176, v_prev=v_next_143
+  pattern_6: linear=linear_216, lif=lif_forward_state_default_209, spike=spike_209, v=v_next_209, v_prev=v_next_176
+  pattern_7: linear=linear_250, lif=lif_forward_state_default_242, spike=spike_242, v=v_next_242, v_prev=v_next_209
+  pattern_8: linear=linear_284, lif=lif_forward_state_default_275, spike=spike_275, v=v_next_275, v_prev=v_next_242
+  pattern_9: linear=linear_318, lif=lif_forward_state_default_308, spike=spike_308, v=v_next_308, v_prev=v_next_275
+  pattern_10: linear=linear_352, lif=lif_forward_state_default_341, spike=spike_341, v=v_next_341, v_prev=v_next_308
+  pattern_11: linear=linear_386, lif=lif_forward_state_default_374, spike=spike_374, v=v_next_374, v_prev=v_next_341
+  pattern_12: linear=linear_420, lif=lif_forward_state_default_407, spike=spike_407, v=v_next_407, v_prev=v_next_374
+  pattern_13: linear=linear_454, lif=lif_forward_state_default_440, spike=spike_440, v=v_next_440, v_prev=v_next_407
+  pattern_14: linear=linear_488, lif=lif_forward_state_default_473, spike=spike_473, v=v_next_473, v_prev=v_next_440
+  pattern_15: linear=linear_522, lif=lif_forward_state_default_506, spike=spike_506, v=v_next_506, v_prev=v_next_473
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_18, lif=lif_forward_state_default_13, spike=spike_13, v=v_next_13, v_prev=zeros_like_13
+  pattern_1: linear=y_58, lif=lif_forward_state_default_46, spike=spike_46, v=v_next_46, v_prev=v_next_13
+  pattern_2: linear=y_98, lif=lif_forward_state_default_79, spike=spike_79, v=v_next_79, v_prev=v_next_46
+  pattern_3: linear=y_138, lif=lif_forward_state_default_112, spike=spike_112, v=v_next_112, v_prev=v_next_79
+  pattern_4: linear=y_178, lif=lif_forward_state_default_145, spike=spike_145, v=v_next_145, v_prev=v_next_112
+  pattern_5: linear=y_218, lif=lif_forward_state_default_178, spike=spike_178, v=v_next_178, v_prev=v_next_145
+  pattern_6: linear=y_258, lif=lif_forward_state_default_211, spike=spike_211, v=v_next_211, v_prev=v_next_178
+  pattern_7: linear=y_298, lif=lif_forward_state_default_244, spike=spike_244, v=v_next_244, v_prev=v_next_211
+  pattern_8: linear=y_338, lif=lif_forward_state_default_277, spike=spike_277, v=v_next_277, v_prev=v_next_244
+  pattern_9: linear=y_378, lif=lif_forward_state_default_310, spike=spike_310, v=v_next_310, v_prev=v_next_277
+  pattern_10: linear=y_418, lif=lif_forward_state_default_343, spike=spike_343, v=v_next_343, v_prev=v_next_310
+  pattern_11: linear=y_458, lif=lif_forward_state_default_376, spike=spike_376, v=v_next_376, v_prev=v_next_343
+  pattern_12: linear=y_498, lif=lif_forward_state_default_409, spike=spike_409, v=v_next_409, v_prev=v_next_376
+  pattern_13: linear=y_538, lif=lif_forward_state_default_442, spike=spike_442, v=v_next_442, v_prev=v_next_409
+  pattern_14: linear=y_578, lif=lif_forward_state_default_475, spike=spike_475, v=v_next_475, v_prev=v_next_442
+  pattern_15: linear=y_618, lif=lif_forward_state_default_508, spike=spike_508, v=v_next_508, v_prev=v_next_475
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_15, lif=lif_forward_state_default_14, spike=spike_14, v=v_next_14, v_prev=zeros_like_14
+  pattern_1: linear=linear_49, lif=lif_forward_state_default_47, spike=spike_47, v=v_next_47, v_prev=v_next_14
+  pattern_2: linear=linear_83, lif=lif_forward_state_default_80, spike=spike_80, v=v_next_80, v_prev=v_next_47
+  pattern_3: linear=linear_117, lif=lif_forward_state_default_113, spike=spike_113, v=v_next_113, v_prev=v_next_80
+  pattern_4: linear=linear_151, lif=lif_forward_state_default_146, spike=spike_146, v=v_next_146, v_prev=v_next_113
+  pattern_5: linear=linear_185, lif=lif_forward_state_default_179, spike=spike_179, v=v_next_179, v_prev=v_next_146
+  pattern_6: linear=linear_219, lif=lif_forward_state_default_212, spike=spike_212, v=v_next_212, v_prev=v_next_179
+  pattern_7: linear=linear_253, lif=lif_forward_state_default_245, spike=spike_245, v=v_next_245, v_prev=v_next_212
+  pattern_8: linear=linear_287, lif=lif_forward_state_default_278, spike=spike_278, v=v_next_278, v_prev=v_next_245
+  pattern_9: linear=linear_321, lif=lif_forward_state_default_311, spike=spike_311, v=v_next_311, v_prev=v_next_278
+  pattern_10: linear=linear_355, lif=lif_forward_state_default_344, spike=spike_344, v=v_next_344, v_prev=v_next_311
+  pattern_11: linear=linear_389, lif=lif_forward_state_default_377, spike=spike_377, v=v_next_377, v_prev=v_next_344
+  pattern_12: linear=linear_423, lif=lif_forward_state_default_410, spike=spike_410, v=v_next_410, v_prev=v_next_377
+  pattern_13: linear=linear_457, lif=lif_forward_state_default_443, spike=spike_443, v=v_next_443, v_prev=v_next_410
+  pattern_14: linear=linear_491, lif=lif_forward_state_default_476, spike=spike_476, v=v_next_476, v_prev=v_next_443
+  pattern_15: linear=linear_525, lif=lif_forward_state_default_509, spike=spike_509, v=v_next_509, v_prev=v_next_476
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_16, lif=lif_forward_state_default_15, spike=spike_15, v=v_next_15, v_prev=zeros_like_15
+  pattern_1: linear=linear_50, lif=lif_forward_state_default_48, spike=spike_48, v=v_next_48, v_prev=v_next_15
+  pattern_2: linear=linear_84, lif=lif_forward_state_default_81, spike=spike_81, v=v_next_81, v_prev=v_next_48
+  pattern_3: linear=linear_118, lif=lif_forward_state_default_114, spike=spike_114, v=v_next_114, v_prev=v_next_81
+  pattern_4: linear=linear_152, lif=lif_forward_state_default_147, spike=spike_147, v=v_next_147, v_prev=v_next_114
+  pattern_5: linear=linear_186, lif=lif_forward_state_default_180, spike=spike_180, v=v_next_180, v_prev=v_next_147
+  pattern_6: linear=linear_220, lif=lif_forward_state_default_213, spike=spike_213, v=v_next_213, v_prev=v_next_180
+  pattern_7: linear=linear_254, lif=lif_forward_state_default_246, spike=spike_246, v=v_next_246, v_prev=v_next_213
+  pattern_8: linear=linear_288, lif=lif_forward_state_default_279, spike=spike_279, v=v_next_279, v_prev=v_next_246
+  pattern_9: linear=linear_322, lif=lif_forward_state_default_312, spike=spike_312, v=v_next_312, v_prev=v_next_279
+  pattern_10: linear=linear_356, lif=lif_forward_state_default_345, spike=spike_345, v=v_next_345, v_prev=v_next_312
+  pattern_11: linear=linear_390, lif=lif_forward_state_default_378, spike=spike_378, v=v_next_378, v_prev=v_next_345
+  pattern_12: linear=linear_424, lif=lif_forward_state_default_411, spike=spike_411, v=v_next_411, v_prev=v_next_378
+  pattern_13: linear=linear_458, lif=lif_forward_state_default_444, spike=spike_444, v=v_next_444, v_prev=v_next_411
+  pattern_14: linear=linear_492, lif=lif_forward_state_default_477, spike=spike_477, v=v_next_477, v_prev=v_next_444
+  pattern_15: linear=linear_526, lif=lif_forward_state_default_510, spike=spike_510, v=v_next_510, v_prev=v_next_477
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_23, lif=lif_forward_state_default_17, spike=spike_17, v=v_next_17, v_prev=zeros_like_17
+  pattern_1: linear=y_63, lif=lif_forward_state_default_50, spike=spike_50, v=v_next_50, v_prev=v_next_17
+  pattern_2: linear=y_103, lif=lif_forward_state_default_83, spike=spike_83, v=v_next_83, v_prev=v_next_50
+  pattern_3: linear=y_143, lif=lif_forward_state_default_116, spike=spike_116, v=v_next_116, v_prev=v_next_83
+  pattern_4: linear=y_183, lif=lif_forward_state_default_149, spike=spike_149, v=v_next_149, v_prev=v_next_116
+  pattern_5: linear=y_223, lif=lif_forward_state_default_182, spike=spike_182, v=v_next_182, v_prev=v_next_149
+  pattern_6: linear=y_263, lif=lif_forward_state_default_215, spike=spike_215, v=v_next_215, v_prev=v_next_182
+  pattern_7: linear=y_303, lif=lif_forward_state_default_248, spike=spike_248, v=v_next_248, v_prev=v_next_215
+  pattern_8: linear=y_343, lif=lif_forward_state_default_281, spike=spike_281, v=v_next_281, v_prev=v_next_248
+  pattern_9: linear=y_383, lif=lif_forward_state_default_314, spike=spike_314, v=v_next_314, v_prev=v_next_281
+  pattern_10: linear=y_423, lif=lif_forward_state_default_347, spike=spike_347, v=v_next_347, v_prev=v_next_314
+  pattern_11: linear=y_463, lif=lif_forward_state_default_380, spike=spike_380, v=v_next_380, v_prev=v_next_347
+  pattern_12: linear=y_503, lif=lif_forward_state_default_413, spike=spike_413, v=v_next_413, v_prev=v_next_380
+  pattern_13: linear=y_543, lif=lif_forward_state_default_446, spike=spike_446, v=v_next_446, v_prev=v_next_413
+  pattern_14: linear=y_583, lif=lif_forward_state_default_479, spike=spike_479, v=v_next_479, v_prev=v_next_446
+  pattern_15: linear=y_623, lif=lif_forward_state_default_512, spike=spike_512, v=v_next_512, v_prev=v_next_479
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_19, lif=lif_forward_state_default_18, spike=spike_18, v=v_next_18, v_prev=zeros_like_18
+  pattern_1: linear=linear_53, lif=lif_forward_state_default_51, spike=spike_51, v=v_next_51, v_prev=v_next_18
+  pattern_2: linear=linear_87, lif=lif_forward_state_default_84, spike=spike_84, v=v_next_84, v_prev=v_next_51
+  pattern_3: linear=linear_121, lif=lif_forward_state_default_117, spike=spike_117, v=v_next_117, v_prev=v_next_84
+  pattern_4: linear=linear_155, lif=lif_forward_state_default_150, spike=spike_150, v=v_next_150, v_prev=v_next_117
+  pattern_5: linear=linear_189, lif=lif_forward_state_default_183, spike=spike_183, v=v_next_183, v_prev=v_next_150
+  pattern_6: linear=linear_223, lif=lif_forward_state_default_216, spike=spike_216, v=v_next_216, v_prev=v_next_183
+  pattern_7: linear=linear_257, lif=lif_forward_state_default_249, spike=spike_249, v=v_next_249, v_prev=v_next_216
+  pattern_8: linear=linear_291, lif=lif_forward_state_default_282, spike=spike_282, v=v_next_282, v_prev=v_next_249
+  pattern_9: linear=linear_325, lif=lif_forward_state_default_315, spike=spike_315, v=v_next_315, v_prev=v_next_282
+  pattern_10: linear=linear_359, lif=lif_forward_state_default_348, spike=spike_348, v=v_next_348, v_prev=v_next_315
+  pattern_11: linear=linear_393, lif=lif_forward_state_default_381, spike=spike_381, v=v_next_381, v_prev=v_next_348
+  pattern_12: linear=linear_427, lif=lif_forward_state_default_414, spike=spike_414, v=v_next_414, v_prev=v_next_381
+  pattern_13: linear=linear_461, lif=lif_forward_state_default_447, spike=spike_447, v=v_next_447, v_prev=v_next_414
+  pattern_14: linear=linear_495, lif=lif_forward_state_default_480, spike=spike_480, v=v_next_480, v_prev=v_next_447
+  pattern_15: linear=linear_529, lif=lif_forward_state_default_513, spike=spike_513, v=v_next_513, v_prev=v_next_480
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_20, lif=lif_forward_state_default_19, spike=spike_19, v=v_next_19, v_prev=zeros_like_19
+  pattern_1: linear=linear_54, lif=lif_forward_state_default_52, spike=spike_52, v=v_next_52, v_prev=v_next_19
+  pattern_2: linear=linear_88, lif=lif_forward_state_default_85, spike=spike_85, v=v_next_85, v_prev=v_next_52
+  pattern_3: linear=linear_122, lif=lif_forward_state_default_118, spike=spike_118, v=v_next_118, v_prev=v_next_85
+  pattern_4: linear=linear_156, lif=lif_forward_state_default_151, spike=spike_151, v=v_next_151, v_prev=v_next_118
+  pattern_5: linear=linear_190, lif=lif_forward_state_default_184, spike=spike_184, v=v_next_184, v_prev=v_next_151
+  pattern_6: linear=linear_224, lif=lif_forward_state_default_217, spike=spike_217, v=v_next_217, v_prev=v_next_184
+  pattern_7: linear=linear_258, lif=lif_forward_state_default_250, spike=spike_250, v=v_next_250, v_prev=v_next_217
+  pattern_8: linear=linear_292, lif=lif_forward_state_default_283, spike=spike_283, v=v_next_283, v_prev=v_next_250
+  pattern_9: linear=linear_326, lif=lif_forward_state_default_316, spike=spike_316, v=v_next_316, v_prev=v_next_283
+  pattern_10: linear=linear_360, lif=lif_forward_state_default_349, spike=spike_349, v=v_next_349, v_prev=v_next_316
+  pattern_11: linear=linear_394, lif=lif_forward_state_default_382, spike=spike_382, v=v_next_382, v_prev=v_next_349
+  pattern_12: linear=linear_428, lif=lif_forward_state_default_415, spike=spike_415, v=v_next_415, v_prev=v_next_382
+  pattern_13: linear=linear_462, lif=lif_forward_state_default_448, spike=spike_448, v=v_next_448, v_prev=v_next_415
+  pattern_14: linear=linear_496, lif=lif_forward_state_default_481, spike=spike_481, v=v_next_481, v_prev=v_next_448
+  pattern_15: linear=linear_530, lif=lif_forward_state_default_514, spike=spike_514, v=v_next_514, v_prev=v_next_481
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_28, lif=lif_forward_state_default_21, spike=spike_21, v=v_next_21, v_prev=zeros_like_21
+  pattern_1: linear=y_68, lif=lif_forward_state_default_54, spike=spike_54, v=v_next_54, v_prev=v_next_21
+  pattern_2: linear=y_108, lif=lif_forward_state_default_87, spike=spike_87, v=v_next_87, v_prev=v_next_54
+  pattern_3: linear=y_148, lif=lif_forward_state_default_120, spike=spike_120, v=v_next_120, v_prev=v_next_87
+  pattern_4: linear=y_188, lif=lif_forward_state_default_153, spike=spike_153, v=v_next_153, v_prev=v_next_120
+  pattern_5: linear=y_228, lif=lif_forward_state_default_186, spike=spike_186, v=v_next_186, v_prev=v_next_153
+  pattern_6: linear=y_268, lif=lif_forward_state_default_219, spike=spike_219, v=v_next_219, v_prev=v_next_186
+  pattern_7: linear=y_308, lif=lif_forward_state_default_252, spike=spike_252, v=v_next_252, v_prev=v_next_219
+  pattern_8: linear=y_348, lif=lif_forward_state_default_285, spike=spike_285, v=v_next_285, v_prev=v_next_252
+  pattern_9: linear=y_388, lif=lif_forward_state_default_318, spike=spike_318, v=v_next_318, v_prev=v_next_285
+  pattern_10: linear=y_428, lif=lif_forward_state_default_351, spike=spike_351, v=v_next_351, v_prev=v_next_318
+  pattern_11: linear=y_468, lif=lif_forward_state_default_384, spike=spike_384, v=v_next_384, v_prev=v_next_351
+  pattern_12: linear=y_508, lif=lif_forward_state_default_417, spike=spike_417, v=v_next_417, v_prev=v_next_384
+  pattern_13: linear=y_548, lif=lif_forward_state_default_450, spike=spike_450, v=v_next_450, v_prev=v_next_417
+  pattern_14: linear=y_588, lif=lif_forward_state_default_483, spike=spike_483, v=v_next_483, v_prev=v_next_450
+  pattern_15: linear=y_628, lif=lif_forward_state_default_516, spike=spike_516, v=v_next_516, v_prev=v_next_483
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_23, lif=lif_forward_state_default_22, spike=spike_22, v=v_next_22, v_prev=zeros_like_22
+  pattern_1: linear=linear_57, lif=lif_forward_state_default_55, spike=spike_55, v=v_next_55, v_prev=v_next_22
+  pattern_2: linear=linear_91, lif=lif_forward_state_default_88, spike=spike_88, v=v_next_88, v_prev=v_next_55
+  pattern_3: linear=linear_125, lif=lif_forward_state_default_121, spike=spike_121, v=v_next_121, v_prev=v_next_88
+  pattern_4: linear=linear_159, lif=lif_forward_state_default_154, spike=spike_154, v=v_next_154, v_prev=v_next_121
+  pattern_5: linear=linear_193, lif=lif_forward_state_default_187, spike=spike_187, v=v_next_187, v_prev=v_next_154
+  pattern_6: linear=linear_227, lif=lif_forward_state_default_220, spike=spike_220, v=v_next_220, v_prev=v_next_187
+  pattern_7: linear=linear_261, lif=lif_forward_state_default_253, spike=spike_253, v=v_next_253, v_prev=v_next_220
+  pattern_8: linear=linear_295, lif=lif_forward_state_default_286, spike=spike_286, v=v_next_286, v_prev=v_next_253
+  pattern_9: linear=linear_329, lif=lif_forward_state_default_319, spike=spike_319, v=v_next_319, v_prev=v_next_286
+  pattern_10: linear=linear_363, lif=lif_forward_state_default_352, spike=spike_352, v=v_next_352, v_prev=v_next_319
+  pattern_11: linear=linear_397, lif=lif_forward_state_default_385, spike=spike_385, v=v_next_385, v_prev=v_next_352
+  pattern_12: linear=linear_431, lif=lif_forward_state_default_418, spike=spike_418, v=v_next_418, v_prev=v_next_385
+  pattern_13: linear=linear_465, lif=lif_forward_state_default_451, spike=spike_451, v=v_next_451, v_prev=v_next_418
+  pattern_14: linear=linear_499, lif=lif_forward_state_default_484, spike=spike_484, v=v_next_484, v_prev=v_next_451
+  pattern_15: linear=linear_533, lif=lif_forward_state_default_517, spike=spike_517, v=v_next_517, v_prev=v_next_484
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_24, lif=lif_forward_state_default_23, spike=spike_23, v=v_next_23, v_prev=zeros_like_23
+  pattern_1: linear=linear_58, lif=lif_forward_state_default_56, spike=spike_56, v=v_next_56, v_prev=v_next_23
+  pattern_2: linear=linear_92, lif=lif_forward_state_default_89, spike=spike_89, v=v_next_89, v_prev=v_next_56
+  pattern_3: linear=linear_126, lif=lif_forward_state_default_122, spike=spike_122, v=v_next_122, v_prev=v_next_89
+  pattern_4: linear=linear_160, lif=lif_forward_state_default_155, spike=spike_155, v=v_next_155, v_prev=v_next_122
+  pattern_5: linear=linear_194, lif=lif_forward_state_default_188, spike=spike_188, v=v_next_188, v_prev=v_next_155
+  pattern_6: linear=linear_228, lif=lif_forward_state_default_221, spike=spike_221, v=v_next_221, v_prev=v_next_188
+  pattern_7: linear=linear_262, lif=lif_forward_state_default_254, spike=spike_254, v=v_next_254, v_prev=v_next_221
+  pattern_8: linear=linear_296, lif=lif_forward_state_default_287, spike=spike_287, v=v_next_287, v_prev=v_next_254
+  pattern_9: linear=linear_330, lif=lif_forward_state_default_320, spike=spike_320, v=v_next_320, v_prev=v_next_287
+  pattern_10: linear=linear_364, lif=lif_forward_state_default_353, spike=spike_353, v=v_next_353, v_prev=v_next_320
+  pattern_11: linear=linear_398, lif=lif_forward_state_default_386, spike=spike_386, v=v_next_386, v_prev=v_next_353
+  pattern_12: linear=linear_432, lif=lif_forward_state_default_419, spike=spike_419, v=v_next_419, v_prev=v_next_386
+  pattern_13: linear=linear_466, lif=lif_forward_state_default_452, spike=spike_452, v=v_next_452, v_prev=v_next_419
+  pattern_14: linear=linear_500, lif=lif_forward_state_default_485, spike=spike_485, v=v_next_485, v_prev=v_next_452
+  pattern_15: linear=linear_534, lif=lif_forward_state_default_518, spike=spike_518, v=v_next_518, v_prev=v_next_485
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_33, lif=lif_forward_state_default_25, spike=spike_25, v=v_next_25, v_prev=zeros_like_25
+  pattern_1: linear=y_73, lif=lif_forward_state_default_58, spike=spike_58, v=v_next_58, v_prev=v_next_25
+  pattern_2: linear=y_113, lif=lif_forward_state_default_91, spike=spike_91, v=v_next_91, v_prev=v_next_58
+  pattern_3: linear=y_153, lif=lif_forward_state_default_124, spike=spike_124, v=v_next_124, v_prev=v_next_91
+  pattern_4: linear=y_193, lif=lif_forward_state_default_157, spike=spike_157, v=v_next_157, v_prev=v_next_124
+  pattern_5: linear=y_233, lif=lif_forward_state_default_190, spike=spike_190, v=v_next_190, v_prev=v_next_157
+  pattern_6: linear=y_273, lif=lif_forward_state_default_223, spike=spike_223, v=v_next_223, v_prev=v_next_190
+  pattern_7: linear=y_313, lif=lif_forward_state_default_256, spike=spike_256, v=v_next_256, v_prev=v_next_223
+  pattern_8: linear=y_353, lif=lif_forward_state_default_289, spike=spike_289, v=v_next_289, v_prev=v_next_256
+  pattern_9: linear=y_393, lif=lif_forward_state_default_322, spike=spike_322, v=v_next_322, v_prev=v_next_289
+  pattern_10: linear=y_433, lif=lif_forward_state_default_355, spike=spike_355, v=v_next_355, v_prev=v_next_322
+  pattern_11: linear=y_473, lif=lif_forward_state_default_388, spike=spike_388, v=v_next_388, v_prev=v_next_355
+  pattern_12: linear=y_513, lif=lif_forward_state_default_421, spike=spike_421, v=v_next_421, v_prev=v_next_388
+  pattern_13: linear=y_553, lif=lif_forward_state_default_454, spike=spike_454, v=v_next_454, v_prev=v_next_421
+  pattern_14: linear=y_593, lif=lif_forward_state_default_487, spike=spike_487, v=v_next_487, v_prev=v_next_454
+  pattern_15: linear=y_633, lif=lif_forward_state_default_520, spike=spike_520, v=v_next_520, v_prev=v_next_487
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_27, lif=lif_forward_state_default_26, spike=spike_26, v=v_next_26, v_prev=zeros_like_26
+  pattern_1: linear=linear_61, lif=lif_forward_state_default_59, spike=spike_59, v=v_next_59, v_prev=v_next_26
+  pattern_2: linear=linear_95, lif=lif_forward_state_default_92, spike=spike_92, v=v_next_92, v_prev=v_next_59
+  pattern_3: linear=linear_129, lif=lif_forward_state_default_125, spike=spike_125, v=v_next_125, v_prev=v_next_92
+  pattern_4: linear=linear_163, lif=lif_forward_state_default_158, spike=spike_158, v=v_next_158, v_prev=v_next_125
+  pattern_5: linear=linear_197, lif=lif_forward_state_default_191, spike=spike_191, v=v_next_191, v_prev=v_next_158
+  pattern_6: linear=linear_231, lif=lif_forward_state_default_224, spike=spike_224, v=v_next_224, v_prev=v_next_191
+  pattern_7: linear=linear_265, lif=lif_forward_state_default_257, spike=spike_257, v=v_next_257, v_prev=v_next_224
+  pattern_8: linear=linear_299, lif=lif_forward_state_default_290, spike=spike_290, v=v_next_290, v_prev=v_next_257
+  pattern_9: linear=linear_333, lif=lif_forward_state_default_323, spike=spike_323, v=v_next_323, v_prev=v_next_290
+  pattern_10: linear=linear_367, lif=lif_forward_state_default_356, spike=spike_356, v=v_next_356, v_prev=v_next_323
+  pattern_11: linear=linear_401, lif=lif_forward_state_default_389, spike=spike_389, v=v_next_389, v_prev=v_next_356
+  pattern_12: linear=linear_435, lif=lif_forward_state_default_422, spike=spike_422, v=v_next_422, v_prev=v_next_389
+  pattern_13: linear=linear_469, lif=lif_forward_state_default_455, spike=spike_455, v=v_next_455, v_prev=v_next_422
+  pattern_14: linear=linear_503, lif=lif_forward_state_default_488, spike=spike_488, v=v_next_488, v_prev=v_next_455
+  pattern_15: linear=linear_537, lif=lif_forward_state_default_521, spike=spike_521, v=v_next_521, v_prev=v_next_488
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_28, lif=lif_forward_state_default_27, spike=spike_27, v=v_next_27, v_prev=zeros_like_27
+  pattern_1: linear=linear_62, lif=lif_forward_state_default_60, spike=spike_60, v=v_next_60, v_prev=v_next_27
+  pattern_2: linear=linear_96, lif=lif_forward_state_default_93, spike=spike_93, v=v_next_93, v_prev=v_next_60
+  pattern_3: linear=linear_130, lif=lif_forward_state_default_126, spike=spike_126, v=v_next_126, v_prev=v_next_93
+  pattern_4: linear=linear_164, lif=lif_forward_state_default_159, spike=spike_159, v=v_next_159, v_prev=v_next_126
+  pattern_5: linear=linear_198, lif=lif_forward_state_default_192, spike=spike_192, v=v_next_192, v_prev=v_next_159
+  pattern_6: linear=linear_232, lif=lif_forward_state_default_225, spike=spike_225, v=v_next_225, v_prev=v_next_192
+  pattern_7: linear=linear_266, lif=lif_forward_state_default_258, spike=spike_258, v=v_next_258, v_prev=v_next_225
+  pattern_8: linear=linear_300, lif=lif_forward_state_default_291, spike=spike_291, v=v_next_291, v_prev=v_next_258
+  pattern_9: linear=linear_334, lif=lif_forward_state_default_324, spike=spike_324, v=v_next_324, v_prev=v_next_291
+  pattern_10: linear=linear_368, lif=lif_forward_state_default_357, spike=spike_357, v=v_next_357, v_prev=v_next_324
+  pattern_11: linear=linear_402, lif=lif_forward_state_default_390, spike=spike_390, v=v_next_390, v_prev=v_next_357
+  pattern_12: linear=linear_436, lif=lif_forward_state_default_423, spike=spike_423, v=v_next_423, v_prev=v_next_390
+  pattern_13: linear=linear_470, lif=lif_forward_state_default_456, spike=spike_456, v=v_next_456, v_prev=v_next_423
+  pattern_14: linear=linear_504, lif=lif_forward_state_default_489, spike=spike_489, v=v_next_489, v_prev=v_next_456
+  pattern_15: linear=linear_538, lif=lif_forward_state_default_522, spike=spike_522, v=v_next_522, v_prev=v_next_489
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=y_38, lif=lif_forward_state_default_29, spike=spike_29, v=v_next_29, v_prev=zeros_like_29
+  pattern_1: linear=y_78, lif=lif_forward_state_default_62, spike=spike_62, v=v_next_62, v_prev=v_next_29
+  pattern_2: linear=y_118, lif=lif_forward_state_default_95, spike=spike_95, v=v_next_95, v_prev=v_next_62
+  pattern_3: linear=y_158, lif=lif_forward_state_default_128, spike=spike_128, v=v_next_128, v_prev=v_next_95
+  pattern_4: linear=y_198, lif=lif_forward_state_default_161, spike=spike_161, v=v_next_161, v_prev=v_next_128
+  pattern_5: linear=y_238, lif=lif_forward_state_default_194, spike=spike_194, v=v_next_194, v_prev=v_next_161
+  pattern_6: linear=y_278, lif=lif_forward_state_default_227, spike=spike_227, v=v_next_227, v_prev=v_next_194
+  pattern_7: linear=y_318, lif=lif_forward_state_default_260, spike=spike_260, v=v_next_260, v_prev=v_next_227
+  pattern_8: linear=y_358, lif=lif_forward_state_default_293, spike=spike_293, v=v_next_293, v_prev=v_next_260
+  pattern_9: linear=y_398, lif=lif_forward_state_default_326, spike=spike_326, v=v_next_326, v_prev=v_next_293
+  pattern_10: linear=y_438, lif=lif_forward_state_default_359, spike=spike_359, v=v_next_359, v_prev=v_next_326
+  pattern_11: linear=y_478, lif=lif_forward_state_default_392, spike=spike_392, v=v_next_392, v_prev=v_next_359
+  pattern_12: linear=y_518, lif=lif_forward_state_default_425, spike=spike_425, v=v_next_425, v_prev=v_next_392
+  pattern_13: linear=y_558, lif=lif_forward_state_default_458, spike=spike_458, v=v_next_458, v_prev=v_next_425
+  pattern_14: linear=y_598, lif=lif_forward_state_default_491, spike=spike_491, v=v_next_491, v_prev=v_next_458
+  pattern_15: linear=y_638, lif=lif_forward_state_default_524, spike=spike_524, v=v_next_524, v_prev=v_next_491
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_|bias=None|input=shape=(4, 256, 256)|dtype=torch.float32|output=shape=(4, 256, 1024)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_31, lif=lif_forward_state_default_30, spike=spike_30, v=v_next_30, v_prev=zeros_like_30
+  pattern_1: linear=linear_65, lif=lif_forward_state_default_63, spike=spike_63, v=v_next_63, v_prev=v_next_30
+  pattern_2: linear=linear_99, lif=lif_forward_state_default_96, spike=spike_96, v=v_next_96, v_prev=v_next_63
+  pattern_3: linear=linear_133, lif=lif_forward_state_default_129, spike=spike_129, v=v_next_129, v_prev=v_next_96
+  pattern_4: linear=linear_167, lif=lif_forward_state_default_162, spike=spike_162, v=v_next_162, v_prev=v_next_129
+  pattern_5: linear=linear_201, lif=lif_forward_state_default_195, spike=spike_195, v=v_next_195, v_prev=v_next_162
+  pattern_6: linear=linear_235, lif=lif_forward_state_default_228, spike=spike_228, v=v_next_228, v_prev=v_next_195
+  pattern_7: linear=linear_269, lif=lif_forward_state_default_261, spike=spike_261, v=v_next_261, v_prev=v_next_228
+  pattern_8: linear=linear_303, lif=lif_forward_state_default_294, spike=spike_294, v=v_next_294, v_prev=v_next_261
+  pattern_9: linear=linear_337, lif=lif_forward_state_default_327, spike=spike_327, v=v_next_327, v_prev=v_next_294
+  pattern_10: linear=linear_371, lif=lif_forward_state_default_360, spike=spike_360, v=v_next_360, v_prev=v_next_327
+  pattern_11: linear=linear_405, lif=lif_forward_state_default_393, spike=spike_393, v=v_next_393, v_prev=v_next_360
+  pattern_12: linear=linear_439, lif=lif_forward_state_default_426, spike=spike_426, v=v_next_426, v_prev=v_next_393
+  pattern_13: linear=linear_473, lif=lif_forward_state_default_459, spike=spike_459, v=v_next_459, v_prev=v_next_426
+  pattern_14: linear=linear_507, lif=lif_forward_state_default_492, spike=spike_492, v=v_next_492, v_prev=v_next_459
+  pattern_15: linear=linear_541, lif=lif_forward_state_default_525, spike=spike_525, v=v_next_525, v_prev=v_next_492
+
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_|bias=None|input=shape=(4, 256, 1024)|dtype=torch.float32|output=shape=(4, 256, 256)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=linear_32, lif=lif_forward_state_default_31, spike=spike_31, v=v_next_31, v_prev=zeros_like_31
+  pattern_1: linear=linear_66, lif=lif_forward_state_default_64, spike=spike_64, v=v_next_64, v_prev=v_next_31
+  pattern_2: linear=linear_100, lif=lif_forward_state_default_97, spike=spike_97, v=v_next_97, v_prev=v_next_64
+  pattern_3: linear=linear_134, lif=lif_forward_state_default_130, spike=spike_130, v=v_next_130, v_prev=v_next_97
+  pattern_4: linear=linear_168, lif=lif_forward_state_default_163, spike=spike_163, v=v_next_163, v_prev=v_next_130
+  pattern_5: linear=linear_202, lif=lif_forward_state_default_196, spike=spike_196, v=v_next_196, v_prev=v_next_163
+  pattern_6: linear=linear_236, lif=lif_forward_state_default_229, spike=spike_229, v=v_next_229, v_prev=v_next_196
+  pattern_7: linear=linear_270, lif=lif_forward_state_default_262, spike=spike_262, v=v_next_262, v_prev=v_next_229
+  pattern_8: linear=linear_304, lif=lif_forward_state_default_295, spike=spike_295, v=v_next_295, v_prev=v_next_262
+  pattern_9: linear=linear_338, lif=lif_forward_state_default_328, spike=spike_328, v=v_next_328, v_prev=v_next_295
+  pattern_10: linear=linear_372, lif=lif_forward_state_default_361, spike=spike_361, v=v_next_361, v_prev=v_next_328
+  pattern_11: linear=linear_406, lif=lif_forward_state_default_394, spike=spike_394, v=v_next_394, v_prev=v_next_361
+  pattern_12: linear=linear_440, lif=lif_forward_state_default_427, spike=spike_427, v=v_next_427, v_prev=v_next_394
+  pattern_13: linear=linear_474, lif=lif_forward_state_default_460, spike=spike_460, v=v_next_460, v_prev=v_next_427
+  pattern_14: linear=linear_508, lif=lif_forward_state_default_493, spike=spike_493, v=v_next_493, v_prev=v_next_460
+  pattern_15: linear=linear_542, lif=lif_forward_state_default_526, spike=spike_526, v=v_next_526, v_prev=v_next_493

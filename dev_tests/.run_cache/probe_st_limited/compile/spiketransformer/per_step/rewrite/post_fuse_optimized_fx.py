@@ -1,0 +1,3965 @@
+
+
+
+def forward(self, L_x_seq_ : torch.Tensor, L_self_modules_layer_modules_input_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_norm_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_norm_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_classifier_parameters_weight_ : torch.nn.parameter.Parameter):
+    l_x_seq_ = L_x_seq_
+    l_self_modules_layer_modules_input_proj_parameters_weight_ = L_self_modules_layer_modules_input_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_ = L_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_
+    l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_
+    l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_ = L_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_
+    l_self_modules_layer_modules_norm_parameters_weight_ = L_self_modules_layer_modules_norm_parameters_weight_
+    l_self_modules_layer_modules_norm_parameters_bias_ = L_self_modules_layer_modules_norm_parameters_bias_
+    l_self_modules_layer_modules_classifier_parameters_weight_ = L_self_modules_layer_modules_classifier_parameters_weight_
+    getitem = l_x_seq_[0]
+    linear = torch._C._nn.linear(getitem, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem = None
+    zeros_like = torch.zeros_like(linear)
+    lif_forward_state_default = torch.ops.snn_custom.lif_forward_state.default(linear, zeros_like, 1.0, 0.0, 2.0, False);  linear = zeros_like = None
+    spike = lif_forward_state_default[0]
+    v_next = lif_forward_state_default[1];  lif_forward_state_default = None
+    y = torch.nn.functional.layer_norm(spike, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv = torch._C._nn.linear(y, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y = None
+    qkv_1 = qkv.reshape(4, 256, 3, 8, 32);  qkv = None
+    movedim = qkv_1.movedim(-3, 0);  qkv_1 = None
+    qkv_2 = movedim.transpose(-3, -2);  movedim = None
+    q = qkv_2[0]
+    k = qkv_2[1]
+    v = qkv_2[2];  qkv_2 = None
+    _sdpa_capture_safe = compiler_passes_pass_sdpa__sdpa_capture_safe(q, k, v, scale = 0.1767766952966369);  q = k = v = None
+    transpose_2 = _sdpa_capture_safe.transpose(-3, -2);  _sdpa_capture_safe = None
+    y_2 = transpose_2.reshape(4, 256, 256);  transpose_2 = None
+    y_3 = torch._C._nn.linear(y_2, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_2 = None
+    add = spike + y_3;  spike = y_3 = None
+    zeros_like_1 = torch.zeros_like(add)
+    lif_forward_state_default_1 = torch.ops.snn_custom.lif_forward_state.default(add, zeros_like_1, 1.0, 0.0, 2.0, False);  add = zeros_like_1 = None
+    spike_1 = lif_forward_state_default_1[0]
+    v_next_1 = lif_forward_state_default_1[1];  lif_forward_state_default_1 = None
+    y_4 = torch.nn.functional.layer_norm(spike_1, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_3 = torch._C._nn.linear(y_4, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_4 = None
+    zeros_like_2 = torch.zeros_like(linear_3)
+    lif_forward_state_default_2 = torch.ops.snn_custom.lif_forward_state.default(linear_3, zeros_like_2, 1.0, 0.0, 2.0, False);  linear_3 = zeros_like_2 = None
+    spike_2 = lif_forward_state_default_2[0]
+    v_next_2 = lif_forward_state_default_2[1];  lif_forward_state_default_2 = None
+    linear_4 = torch._C._nn.linear(spike_2, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_2 = None
+    zeros_like_3 = torch.zeros_like(linear_4)
+    lif_forward_state_default_3 = torch.ops.snn_custom.lif_forward_state.default(linear_4, zeros_like_3, 1.0, 0.0, 2.0, False);  linear_4 = zeros_like_3 = None
+    spike_3 = lif_forward_state_default_3[0]
+    v_next_3 = lif_forward_state_default_3[1];  lif_forward_state_default_3 = None
+    add_1 = spike_1 + spike_3;  spike_1 = spike_3 = None
+    zeros_like_4 = torch.zeros_like(add_1)
+    lif_forward_state_default_4 = torch.ops.snn_custom.lif_forward_state.default(add_1, zeros_like_4, 1.0, 0.0, 2.0, False);  add_1 = zeros_like_4 = None
+    spike_4 = lif_forward_state_default_4[0]
+    v_next_4 = lif_forward_state_default_4[1];  lif_forward_state_default_4 = None
+    y_5 = torch.nn.functional.layer_norm(spike_4, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_3 = torch._C._nn.linear(y_5, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_5 = None
+    qkv_4 = qkv_3.reshape(4, 256, 3, 8, 32);  qkv_3 = None
+    movedim_1 = qkv_4.movedim(-3, 0);  qkv_4 = None
+    qkv_5 = movedim_1.transpose(-3, -2);  movedim_1 = None
+    q_1 = qkv_5[0]
+    k_1 = qkv_5[1]
+    v_1 = qkv_5[2];  qkv_5 = None
+    _sdpa_capture_safe_1 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_1, k_1, v_1, scale = 0.1767766952966369);  q_1 = k_1 = v_1 = None
+    transpose_5 = _sdpa_capture_safe_1.transpose(-3, -2);  _sdpa_capture_safe_1 = None
+    y_7 = transpose_5.reshape(4, 256, 256);  transpose_5 = None
+    y_8 = torch._C._nn.linear(y_7, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_7 = None
+    add_2 = spike_4 + y_8;  spike_4 = y_8 = None
+    zeros_like_5 = torch.zeros_like(add_2)
+    lif_forward_state_default_5 = torch.ops.snn_custom.lif_forward_state.default(add_2, zeros_like_5, 1.0, 0.0, 2.0, False);  add_2 = zeros_like_5 = None
+    spike_5 = lif_forward_state_default_5[0]
+    v_next_5 = lif_forward_state_default_5[1];  lif_forward_state_default_5 = None
+    y_9 = torch.nn.functional.layer_norm(spike_5, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_7 = torch._C._nn.linear(y_9, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_9 = None
+    zeros_like_6 = torch.zeros_like(linear_7)
+    lif_forward_state_default_6 = torch.ops.snn_custom.lif_forward_state.default(linear_7, zeros_like_6, 1.0, 0.0, 2.0, False);  linear_7 = zeros_like_6 = None
+    spike_6 = lif_forward_state_default_6[0]
+    v_next_6 = lif_forward_state_default_6[1];  lif_forward_state_default_6 = None
+    linear_8 = torch._C._nn.linear(spike_6, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_6 = None
+    zeros_like_7 = torch.zeros_like(linear_8)
+    lif_forward_state_default_7 = torch.ops.snn_custom.lif_forward_state.default(linear_8, zeros_like_7, 1.0, 0.0, 2.0, False);  linear_8 = zeros_like_7 = None
+    spike_7 = lif_forward_state_default_7[0]
+    v_next_7 = lif_forward_state_default_7[1];  lif_forward_state_default_7 = None
+    add_3 = spike_5 + spike_7;  spike_5 = spike_7 = None
+    zeros_like_8 = torch.zeros_like(add_3)
+    lif_forward_state_default_8 = torch.ops.snn_custom.lif_forward_state.default(add_3, zeros_like_8, 1.0, 0.0, 2.0, False);  add_3 = zeros_like_8 = None
+    spike_8 = lif_forward_state_default_8[0]
+    v_next_8 = lif_forward_state_default_8[1];  lif_forward_state_default_8 = None
+    y_10 = torch.nn.functional.layer_norm(spike_8, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_6 = torch._C._nn.linear(y_10, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_10 = None
+    qkv_7 = qkv_6.reshape(4, 256, 3, 8, 32);  qkv_6 = None
+    movedim_2 = qkv_7.movedim(-3, 0);  qkv_7 = None
+    qkv_8 = movedim_2.transpose(-3, -2);  movedim_2 = None
+    q_2 = qkv_8[0]
+    k_2 = qkv_8[1]
+    v_2 = qkv_8[2];  qkv_8 = None
+    _sdpa_capture_safe_2 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_2, k_2, v_2, scale = 0.1767766952966369);  q_2 = k_2 = v_2 = None
+    transpose_8 = _sdpa_capture_safe_2.transpose(-3, -2);  _sdpa_capture_safe_2 = None
+    y_12 = transpose_8.reshape(4, 256, 256);  transpose_8 = None
+    y_13 = torch._C._nn.linear(y_12, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_12 = None
+    add_4 = spike_8 + y_13;  spike_8 = y_13 = None
+    zeros_like_9 = torch.zeros_like(add_4)
+    lif_forward_state_default_9 = torch.ops.snn_custom.lif_forward_state.default(add_4, zeros_like_9, 1.0, 0.0, 2.0, False);  add_4 = zeros_like_9 = None
+    spike_9 = lif_forward_state_default_9[0]
+    v_next_9 = lif_forward_state_default_9[1];  lif_forward_state_default_9 = None
+    y_14 = torch.nn.functional.layer_norm(spike_9, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_11 = torch._C._nn.linear(y_14, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_14 = None
+    zeros_like_10 = torch.zeros_like(linear_11)
+    lif_forward_state_default_10 = torch.ops.snn_custom.lif_forward_state.default(linear_11, zeros_like_10, 1.0, 0.0, 2.0, False);  linear_11 = zeros_like_10 = None
+    spike_10 = lif_forward_state_default_10[0]
+    v_next_10 = lif_forward_state_default_10[1];  lif_forward_state_default_10 = None
+    linear_12 = torch._C._nn.linear(spike_10, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_10 = None
+    zeros_like_11 = torch.zeros_like(linear_12)
+    lif_forward_state_default_11 = torch.ops.snn_custom.lif_forward_state.default(linear_12, zeros_like_11, 1.0, 0.0, 2.0, False);  linear_12 = zeros_like_11 = None
+    spike_11 = lif_forward_state_default_11[0]
+    v_next_11 = lif_forward_state_default_11[1];  lif_forward_state_default_11 = None
+    add_5 = spike_9 + spike_11;  spike_9 = spike_11 = None
+    zeros_like_12 = torch.zeros_like(add_5)
+    lif_forward_state_default_12 = torch.ops.snn_custom.lif_forward_state.default(add_5, zeros_like_12, 1.0, 0.0, 2.0, False);  add_5 = zeros_like_12 = None
+    spike_12 = lif_forward_state_default_12[0]
+    v_next_12 = lif_forward_state_default_12[1];  lif_forward_state_default_12 = None
+    y_15 = torch.nn.functional.layer_norm(spike_12, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_9 = torch._C._nn.linear(y_15, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_15 = None
+    qkv_10 = qkv_9.reshape(4, 256, 3, 8, 32);  qkv_9 = None
+    movedim_3 = qkv_10.movedim(-3, 0);  qkv_10 = None
+    qkv_11 = movedim_3.transpose(-3, -2);  movedim_3 = None
+    q_3 = qkv_11[0]
+    k_3 = qkv_11[1]
+    v_3 = qkv_11[2];  qkv_11 = None
+    _sdpa_capture_safe_3 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_3, k_3, v_3, scale = 0.1767766952966369);  q_3 = k_3 = v_3 = None
+    transpose_11 = _sdpa_capture_safe_3.transpose(-3, -2);  _sdpa_capture_safe_3 = None
+    y_17 = transpose_11.reshape(4, 256, 256);  transpose_11 = None
+    y_18 = torch._C._nn.linear(y_17, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_17 = None
+    add_6 = spike_12 + y_18;  spike_12 = y_18 = None
+    zeros_like_13 = torch.zeros_like(add_6)
+    lif_forward_state_default_13 = torch.ops.snn_custom.lif_forward_state.default(add_6, zeros_like_13, 1.0, 0.0, 2.0, False);  add_6 = zeros_like_13 = None
+    spike_13 = lif_forward_state_default_13[0]
+    v_next_13 = lif_forward_state_default_13[1];  lif_forward_state_default_13 = None
+    y_19 = torch.nn.functional.layer_norm(spike_13, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_15 = torch._C._nn.linear(y_19, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_19 = None
+    zeros_like_14 = torch.zeros_like(linear_15)
+    lif_forward_state_default_14 = torch.ops.snn_custom.lif_forward_state.default(linear_15, zeros_like_14, 1.0, 0.0, 2.0, False);  linear_15 = zeros_like_14 = None
+    spike_14 = lif_forward_state_default_14[0]
+    v_next_14 = lif_forward_state_default_14[1];  lif_forward_state_default_14 = None
+    linear_16 = torch._C._nn.linear(spike_14, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_14 = None
+    zeros_like_15 = torch.zeros_like(linear_16)
+    lif_forward_state_default_15 = torch.ops.snn_custom.lif_forward_state.default(linear_16, zeros_like_15, 1.0, 0.0, 2.0, False);  linear_16 = zeros_like_15 = None
+    spike_15 = lif_forward_state_default_15[0]
+    v_next_15 = lif_forward_state_default_15[1];  lif_forward_state_default_15 = None
+    add_7 = spike_13 + spike_15;  spike_13 = spike_15 = None
+    zeros_like_16 = torch.zeros_like(add_7)
+    lif_forward_state_default_16 = torch.ops.snn_custom.lif_forward_state.default(add_7, zeros_like_16, 1.0, 0.0, 2.0, False);  add_7 = zeros_like_16 = None
+    spike_16 = lif_forward_state_default_16[0]
+    v_next_16 = lif_forward_state_default_16[1];  lif_forward_state_default_16 = None
+    y_20 = torch.nn.functional.layer_norm(spike_16, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_12 = torch._C._nn.linear(y_20, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_20 = None
+    qkv_13 = qkv_12.reshape(4, 256, 3, 8, 32);  qkv_12 = None
+    movedim_4 = qkv_13.movedim(-3, 0);  qkv_13 = None
+    qkv_14 = movedim_4.transpose(-3, -2);  movedim_4 = None
+    q_4 = qkv_14[0]
+    k_4 = qkv_14[1]
+    v_4 = qkv_14[2];  qkv_14 = None
+    _sdpa_capture_safe_4 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_4, k_4, v_4, scale = 0.1767766952966369);  q_4 = k_4 = v_4 = None
+    transpose_14 = _sdpa_capture_safe_4.transpose(-3, -2);  _sdpa_capture_safe_4 = None
+    y_22 = transpose_14.reshape(4, 256, 256);  transpose_14 = None
+    y_23 = torch._C._nn.linear(y_22, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_22 = None
+    add_8 = spike_16 + y_23;  spike_16 = y_23 = None
+    zeros_like_17 = torch.zeros_like(add_8)
+    lif_forward_state_default_17 = torch.ops.snn_custom.lif_forward_state.default(add_8, zeros_like_17, 1.0, 0.0, 2.0, False);  add_8 = zeros_like_17 = None
+    spike_17 = lif_forward_state_default_17[0]
+    v_next_17 = lif_forward_state_default_17[1];  lif_forward_state_default_17 = None
+    y_24 = torch.nn.functional.layer_norm(spike_17, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_19 = torch._C._nn.linear(y_24, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_24 = None
+    zeros_like_18 = torch.zeros_like(linear_19)
+    lif_forward_state_default_18 = torch.ops.snn_custom.lif_forward_state.default(linear_19, zeros_like_18, 1.0, 0.0, 2.0, False);  linear_19 = zeros_like_18 = None
+    spike_18 = lif_forward_state_default_18[0]
+    v_next_18 = lif_forward_state_default_18[1];  lif_forward_state_default_18 = None
+    linear_20 = torch._C._nn.linear(spike_18, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_18 = None
+    zeros_like_19 = torch.zeros_like(linear_20)
+    lif_forward_state_default_19 = torch.ops.snn_custom.lif_forward_state.default(linear_20, zeros_like_19, 1.0, 0.0, 2.0, False);  linear_20 = zeros_like_19 = None
+    spike_19 = lif_forward_state_default_19[0]
+    v_next_19 = lif_forward_state_default_19[1];  lif_forward_state_default_19 = None
+    add_9 = spike_17 + spike_19;  spike_17 = spike_19 = None
+    zeros_like_20 = torch.zeros_like(add_9)
+    lif_forward_state_default_20 = torch.ops.snn_custom.lif_forward_state.default(add_9, zeros_like_20, 1.0, 0.0, 2.0, False);  add_9 = zeros_like_20 = None
+    spike_20 = lif_forward_state_default_20[0]
+    v_next_20 = lif_forward_state_default_20[1];  lif_forward_state_default_20 = None
+    y_25 = torch.nn.functional.layer_norm(spike_20, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_15 = torch._C._nn.linear(y_25, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_25 = None
+    qkv_16 = qkv_15.reshape(4, 256, 3, 8, 32);  qkv_15 = None
+    movedim_5 = qkv_16.movedim(-3, 0);  qkv_16 = None
+    qkv_17 = movedim_5.transpose(-3, -2);  movedim_5 = None
+    q_5 = qkv_17[0]
+    k_5 = qkv_17[1]
+    v_5 = qkv_17[2];  qkv_17 = None
+    _sdpa_capture_safe_5 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_5, k_5, v_5, scale = 0.1767766952966369);  q_5 = k_5 = v_5 = None
+    transpose_17 = _sdpa_capture_safe_5.transpose(-3, -2);  _sdpa_capture_safe_5 = None
+    y_27 = transpose_17.reshape(4, 256, 256);  transpose_17 = None
+    y_28 = torch._C._nn.linear(y_27, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_27 = None
+    add_10 = spike_20 + y_28;  spike_20 = y_28 = None
+    zeros_like_21 = torch.zeros_like(add_10)
+    lif_forward_state_default_21 = torch.ops.snn_custom.lif_forward_state.default(add_10, zeros_like_21, 1.0, 0.0, 2.0, False);  add_10 = zeros_like_21 = None
+    spike_21 = lif_forward_state_default_21[0]
+    v_next_21 = lif_forward_state_default_21[1];  lif_forward_state_default_21 = None
+    y_29 = torch.nn.functional.layer_norm(spike_21, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_23 = torch._C._nn.linear(y_29, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_29 = None
+    zeros_like_22 = torch.zeros_like(linear_23)
+    lif_forward_state_default_22 = torch.ops.snn_custom.lif_forward_state.default(linear_23, zeros_like_22, 1.0, 0.0, 2.0, False);  linear_23 = zeros_like_22 = None
+    spike_22 = lif_forward_state_default_22[0]
+    v_next_22 = lif_forward_state_default_22[1];  lif_forward_state_default_22 = None
+    linear_24 = torch._C._nn.linear(spike_22, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_22 = None
+    zeros_like_23 = torch.zeros_like(linear_24)
+    lif_forward_state_default_23 = torch.ops.snn_custom.lif_forward_state.default(linear_24, zeros_like_23, 1.0, 0.0, 2.0, False);  linear_24 = zeros_like_23 = None
+    spike_23 = lif_forward_state_default_23[0]
+    v_next_23 = lif_forward_state_default_23[1];  lif_forward_state_default_23 = None
+    add_11 = spike_21 + spike_23;  spike_21 = spike_23 = None
+    zeros_like_24 = torch.zeros_like(add_11)
+    lif_forward_state_default_24 = torch.ops.snn_custom.lif_forward_state.default(add_11, zeros_like_24, 1.0, 0.0, 2.0, False);  add_11 = zeros_like_24 = None
+    spike_24 = lif_forward_state_default_24[0]
+    v_next_24 = lif_forward_state_default_24[1];  lif_forward_state_default_24 = None
+    y_30 = torch.nn.functional.layer_norm(spike_24, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_18 = torch._C._nn.linear(y_30, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_30 = None
+    qkv_19 = qkv_18.reshape(4, 256, 3, 8, 32);  qkv_18 = None
+    movedim_6 = qkv_19.movedim(-3, 0);  qkv_19 = None
+    qkv_20 = movedim_6.transpose(-3, -2);  movedim_6 = None
+    q_6 = qkv_20[0]
+    k_6 = qkv_20[1]
+    v_6 = qkv_20[2];  qkv_20 = None
+    _sdpa_capture_safe_6 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_6, k_6, v_6, scale = 0.1767766952966369);  q_6 = k_6 = v_6 = None
+    transpose_20 = _sdpa_capture_safe_6.transpose(-3, -2);  _sdpa_capture_safe_6 = None
+    y_32 = transpose_20.reshape(4, 256, 256);  transpose_20 = None
+    y_33 = torch._C._nn.linear(y_32, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_32 = None
+    add_12 = spike_24 + y_33;  spike_24 = y_33 = None
+    zeros_like_25 = torch.zeros_like(add_12)
+    lif_forward_state_default_25 = torch.ops.snn_custom.lif_forward_state.default(add_12, zeros_like_25, 1.0, 0.0, 2.0, False);  add_12 = zeros_like_25 = None
+    spike_25 = lif_forward_state_default_25[0]
+    v_next_25 = lif_forward_state_default_25[1];  lif_forward_state_default_25 = None
+    y_34 = torch.nn.functional.layer_norm(spike_25, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_27 = torch._C._nn.linear(y_34, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_34 = None
+    zeros_like_26 = torch.zeros_like(linear_27)
+    lif_forward_state_default_26 = torch.ops.snn_custom.lif_forward_state.default(linear_27, zeros_like_26, 1.0, 0.0, 2.0, False);  linear_27 = zeros_like_26 = None
+    spike_26 = lif_forward_state_default_26[0]
+    v_next_26 = lif_forward_state_default_26[1];  lif_forward_state_default_26 = None
+    linear_28 = torch._C._nn.linear(spike_26, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_26 = None
+    zeros_like_27 = torch.zeros_like(linear_28)
+    lif_forward_state_default_27 = torch.ops.snn_custom.lif_forward_state.default(linear_28, zeros_like_27, 1.0, 0.0, 2.0, False);  linear_28 = zeros_like_27 = None
+    spike_27 = lif_forward_state_default_27[0]
+    v_next_27 = lif_forward_state_default_27[1];  lif_forward_state_default_27 = None
+    add_13 = spike_25 + spike_27;  spike_25 = spike_27 = None
+    zeros_like_28 = torch.zeros_like(add_13)
+    lif_forward_state_default_28 = torch.ops.snn_custom.lif_forward_state.default(add_13, zeros_like_28, 1.0, 0.0, 2.0, False);  add_13 = zeros_like_28 = None
+    spike_28 = lif_forward_state_default_28[0]
+    v_next_28 = lif_forward_state_default_28[1];  lif_forward_state_default_28 = None
+    y_35 = torch.nn.functional.layer_norm(spike_28, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_21 = torch._C._nn.linear(y_35, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_35 = None
+    qkv_22 = qkv_21.reshape(4, 256, 3, 8, 32);  qkv_21 = None
+    movedim_7 = qkv_22.movedim(-3, 0);  qkv_22 = None
+    qkv_23 = movedim_7.transpose(-3, -2);  movedim_7 = None
+    q_7 = qkv_23[0]
+    k_7 = qkv_23[1]
+    v_7 = qkv_23[2];  qkv_23 = None
+    _sdpa_capture_safe_7 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_7, k_7, v_7, scale = 0.1767766952966369);  q_7 = k_7 = v_7 = None
+    transpose_23 = _sdpa_capture_safe_7.transpose(-3, -2);  _sdpa_capture_safe_7 = None
+    y_37 = transpose_23.reshape(4, 256, 256);  transpose_23 = None
+    y_38 = torch._C._nn.linear(y_37, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_37 = None
+    add_14 = spike_28 + y_38;  spike_28 = y_38 = None
+    zeros_like_29 = torch.zeros_like(add_14)
+    lif_forward_state_default_29 = torch.ops.snn_custom.lif_forward_state.default(add_14, zeros_like_29, 1.0, 0.0, 2.0, False);  add_14 = zeros_like_29 = None
+    spike_29 = lif_forward_state_default_29[0]
+    v_next_29 = lif_forward_state_default_29[1];  lif_forward_state_default_29 = None
+    y_39 = torch.nn.functional.layer_norm(spike_29, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_31 = torch._C._nn.linear(y_39, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_39 = None
+    zeros_like_30 = torch.zeros_like(linear_31)
+    lif_forward_state_default_30 = torch.ops.snn_custom.lif_forward_state.default(linear_31, zeros_like_30, 1.0, 0.0, 2.0, False);  linear_31 = zeros_like_30 = None
+    spike_30 = lif_forward_state_default_30[0]
+    v_next_30 = lif_forward_state_default_30[1];  lif_forward_state_default_30 = None
+    linear_32 = torch._C._nn.linear(spike_30, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_30 = None
+    zeros_like_31 = torch.zeros_like(linear_32)
+    lif_forward_state_default_31 = torch.ops.snn_custom.lif_forward_state.default(linear_32, zeros_like_31, 1.0, 0.0, 2.0, False);  linear_32 = zeros_like_31 = None
+    spike_31 = lif_forward_state_default_31[0]
+    v_next_31 = lif_forward_state_default_31[1];  lif_forward_state_default_31 = None
+    add_15 = spike_29 + spike_31;  spike_29 = spike_31 = None
+    zeros_like_32 = torch.zeros_like(add_15)
+    lif_forward_state_default_32 = torch.ops.snn_custom.lif_forward_state.default(add_15, zeros_like_32, 1.0, 0.0, 2.0, False);  add_15 = zeros_like_32 = None
+    spike_32 = lif_forward_state_default_32[0]
+    v_next_32 = lif_forward_state_default_32[1];  lif_forward_state_default_32 = None
+    x = torch.nn.functional.layer_norm(spike_32, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_32 = None
+    x_1 = x.mean(dim = -2);  x = None
+    linear_33 = torch._C._nn.linear(x_1, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_1 = None
+    out_spikes_counter = 0 + linear_33;  linear_33 = None
+    getitem_91 = l_x_seq_[1]
+    linear_34 = torch._C._nn.linear(getitem_91, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_91 = None
+    lif_forward_state_default_33 = torch.ops.snn_custom.lif_forward_state.default(linear_34, v_next, 1.0, 0.0, 2.0, False);  linear_34 = v_next = None
+    spike_33 = lif_forward_state_default_33[0]
+    v_next_33 = lif_forward_state_default_33[1];  lif_forward_state_default_33 = None
+    y_40 = torch.nn.functional.layer_norm(spike_33, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_24 = torch._C._nn.linear(y_40, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_40 = None
+    qkv_25 = qkv_24.reshape(4, 256, 3, 8, 32);  qkv_24 = None
+    movedim_8 = qkv_25.movedim(-3, 0);  qkv_25 = None
+    qkv_26 = movedim_8.transpose(-3, -2);  movedim_8 = None
+    q_8 = qkv_26[0]
+    k_8 = qkv_26[1]
+    v_8 = qkv_26[2];  qkv_26 = None
+    _sdpa_capture_safe_8 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_8, k_8, v_8, scale = 0.1767766952966369);  q_8 = k_8 = v_8 = None
+    transpose_26 = _sdpa_capture_safe_8.transpose(-3, -2);  _sdpa_capture_safe_8 = None
+    y_42 = transpose_26.reshape(4, 256, 256);  transpose_26 = None
+    y_43 = torch._C._nn.linear(y_42, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_42 = None
+    add_17 = spike_33 + y_43;  spike_33 = y_43 = None
+    lif_forward_state_default_34 = torch.ops.snn_custom.lif_forward_state.default(add_17, v_next_1, 1.0, 0.0, 2.0, False);  add_17 = v_next_1 = None
+    spike_34 = lif_forward_state_default_34[0]
+    v_next_34 = lif_forward_state_default_34[1];  lif_forward_state_default_34 = None
+    y_44 = torch.nn.functional.layer_norm(spike_34, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_37 = torch._C._nn.linear(y_44, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_44 = None
+    lif_forward_state_default_35 = torch.ops.snn_custom.lif_forward_state.default(linear_37, v_next_2, 1.0, 0.0, 2.0, False);  linear_37 = v_next_2 = None
+    spike_35 = lif_forward_state_default_35[0]
+    v_next_35 = lif_forward_state_default_35[1];  lif_forward_state_default_35 = None
+    linear_38 = torch._C._nn.linear(spike_35, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_35 = None
+    lif_forward_state_default_36 = torch.ops.snn_custom.lif_forward_state.default(linear_38, v_next_3, 1.0, 0.0, 2.0, False);  linear_38 = v_next_3 = None
+    spike_36 = lif_forward_state_default_36[0]
+    v_next_36 = lif_forward_state_default_36[1];  lif_forward_state_default_36 = None
+    add_18 = spike_34 + spike_36;  spike_34 = spike_36 = None
+    lif_forward_state_default_37 = torch.ops.snn_custom.lif_forward_state.default(add_18, v_next_4, 1.0, 0.0, 2.0, False);  add_18 = v_next_4 = None
+    spike_37 = lif_forward_state_default_37[0]
+    v_next_37 = lif_forward_state_default_37[1];  lif_forward_state_default_37 = None
+    y_45 = torch.nn.functional.layer_norm(spike_37, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_27 = torch._C._nn.linear(y_45, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_45 = None
+    qkv_28 = qkv_27.reshape(4, 256, 3, 8, 32);  qkv_27 = None
+    movedim_9 = qkv_28.movedim(-3, 0);  qkv_28 = None
+    qkv_29 = movedim_9.transpose(-3, -2);  movedim_9 = None
+    q_9 = qkv_29[0]
+    k_9 = qkv_29[1]
+    v_9 = qkv_29[2];  qkv_29 = None
+    _sdpa_capture_safe_9 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_9, k_9, v_9, scale = 0.1767766952966369);  q_9 = k_9 = v_9 = None
+    transpose_29 = _sdpa_capture_safe_9.transpose(-3, -2);  _sdpa_capture_safe_9 = None
+    y_47 = transpose_29.reshape(4, 256, 256);  transpose_29 = None
+    y_48 = torch._C._nn.linear(y_47, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_47 = None
+    add_19 = spike_37 + y_48;  spike_37 = y_48 = None
+    lif_forward_state_default_38 = torch.ops.snn_custom.lif_forward_state.default(add_19, v_next_5, 1.0, 0.0, 2.0, False);  add_19 = v_next_5 = None
+    spike_38 = lif_forward_state_default_38[0]
+    v_next_38 = lif_forward_state_default_38[1];  lif_forward_state_default_38 = None
+    y_49 = torch.nn.functional.layer_norm(spike_38, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_41 = torch._C._nn.linear(y_49, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_49 = None
+    lif_forward_state_default_39 = torch.ops.snn_custom.lif_forward_state.default(linear_41, v_next_6, 1.0, 0.0, 2.0, False);  linear_41 = v_next_6 = None
+    spike_39 = lif_forward_state_default_39[0]
+    v_next_39 = lif_forward_state_default_39[1];  lif_forward_state_default_39 = None
+    linear_42 = torch._C._nn.linear(spike_39, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_39 = None
+    lif_forward_state_default_40 = torch.ops.snn_custom.lif_forward_state.default(linear_42, v_next_7, 1.0, 0.0, 2.0, False);  linear_42 = v_next_7 = None
+    spike_40 = lif_forward_state_default_40[0]
+    v_next_40 = lif_forward_state_default_40[1];  lif_forward_state_default_40 = None
+    add_20 = spike_38 + spike_40;  spike_38 = spike_40 = None
+    lif_forward_state_default_41 = torch.ops.snn_custom.lif_forward_state.default(add_20, v_next_8, 1.0, 0.0, 2.0, False);  add_20 = v_next_8 = None
+    spike_41 = lif_forward_state_default_41[0]
+    v_next_41 = lif_forward_state_default_41[1];  lif_forward_state_default_41 = None
+    y_50 = torch.nn.functional.layer_norm(spike_41, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_30 = torch._C._nn.linear(y_50, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_50 = None
+    qkv_31 = qkv_30.reshape(4, 256, 3, 8, 32);  qkv_30 = None
+    movedim_10 = qkv_31.movedim(-3, 0);  qkv_31 = None
+    qkv_32 = movedim_10.transpose(-3, -2);  movedim_10 = None
+    q_10 = qkv_32[0]
+    k_10 = qkv_32[1]
+    v_10 = qkv_32[2];  qkv_32 = None
+    _sdpa_capture_safe_10 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_10, k_10, v_10, scale = 0.1767766952966369);  q_10 = k_10 = v_10 = None
+    transpose_32 = _sdpa_capture_safe_10.transpose(-3, -2);  _sdpa_capture_safe_10 = None
+    y_52 = transpose_32.reshape(4, 256, 256);  transpose_32 = None
+    y_53 = torch._C._nn.linear(y_52, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_52 = None
+    add_21 = spike_41 + y_53;  spike_41 = y_53 = None
+    lif_forward_state_default_42 = torch.ops.snn_custom.lif_forward_state.default(add_21, v_next_9, 1.0, 0.0, 2.0, False);  add_21 = v_next_9 = None
+    spike_42 = lif_forward_state_default_42[0]
+    v_next_42 = lif_forward_state_default_42[1];  lif_forward_state_default_42 = None
+    y_54 = torch.nn.functional.layer_norm(spike_42, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_45 = torch._C._nn.linear(y_54, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_54 = None
+    lif_forward_state_default_43 = torch.ops.snn_custom.lif_forward_state.default(linear_45, v_next_10, 1.0, 0.0, 2.0, False);  linear_45 = v_next_10 = None
+    spike_43 = lif_forward_state_default_43[0]
+    v_next_43 = lif_forward_state_default_43[1];  lif_forward_state_default_43 = None
+    linear_46 = torch._C._nn.linear(spike_43, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_43 = None
+    lif_forward_state_default_44 = torch.ops.snn_custom.lif_forward_state.default(linear_46, v_next_11, 1.0, 0.0, 2.0, False);  linear_46 = v_next_11 = None
+    spike_44 = lif_forward_state_default_44[0]
+    v_next_44 = lif_forward_state_default_44[1];  lif_forward_state_default_44 = None
+    add_22 = spike_42 + spike_44;  spike_42 = spike_44 = None
+    lif_forward_state_default_45 = torch.ops.snn_custom.lif_forward_state.default(add_22, v_next_12, 1.0, 0.0, 2.0, False);  add_22 = v_next_12 = None
+    spike_45 = lif_forward_state_default_45[0]
+    v_next_45 = lif_forward_state_default_45[1];  lif_forward_state_default_45 = None
+    y_55 = torch.nn.functional.layer_norm(spike_45, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_33 = torch._C._nn.linear(y_55, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_55 = None
+    qkv_34 = qkv_33.reshape(4, 256, 3, 8, 32);  qkv_33 = None
+    movedim_11 = qkv_34.movedim(-3, 0);  qkv_34 = None
+    qkv_35 = movedim_11.transpose(-3, -2);  movedim_11 = None
+    q_11 = qkv_35[0]
+    k_11 = qkv_35[1]
+    v_11 = qkv_35[2];  qkv_35 = None
+    _sdpa_capture_safe_11 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_11, k_11, v_11, scale = 0.1767766952966369);  q_11 = k_11 = v_11 = None
+    transpose_35 = _sdpa_capture_safe_11.transpose(-3, -2);  _sdpa_capture_safe_11 = None
+    y_57 = transpose_35.reshape(4, 256, 256);  transpose_35 = None
+    y_58 = torch._C._nn.linear(y_57, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_57 = None
+    add_23 = spike_45 + y_58;  spike_45 = y_58 = None
+    lif_forward_state_default_46 = torch.ops.snn_custom.lif_forward_state.default(add_23, v_next_13, 1.0, 0.0, 2.0, False);  add_23 = v_next_13 = None
+    spike_46 = lif_forward_state_default_46[0]
+    v_next_46 = lif_forward_state_default_46[1];  lif_forward_state_default_46 = None
+    y_59 = torch.nn.functional.layer_norm(spike_46, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_49 = torch._C._nn.linear(y_59, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_59 = None
+    lif_forward_state_default_47 = torch.ops.snn_custom.lif_forward_state.default(linear_49, v_next_14, 1.0, 0.0, 2.0, False);  linear_49 = v_next_14 = None
+    spike_47 = lif_forward_state_default_47[0]
+    v_next_47 = lif_forward_state_default_47[1];  lif_forward_state_default_47 = None
+    linear_50 = torch._C._nn.linear(spike_47, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_47 = None
+    lif_forward_state_default_48 = torch.ops.snn_custom.lif_forward_state.default(linear_50, v_next_15, 1.0, 0.0, 2.0, False);  linear_50 = v_next_15 = None
+    spike_48 = lif_forward_state_default_48[0]
+    v_next_48 = lif_forward_state_default_48[1];  lif_forward_state_default_48 = None
+    add_24 = spike_46 + spike_48;  spike_46 = spike_48 = None
+    lif_forward_state_default_49 = torch.ops.snn_custom.lif_forward_state.default(add_24, v_next_16, 1.0, 0.0, 2.0, False);  add_24 = v_next_16 = None
+    spike_49 = lif_forward_state_default_49[0]
+    v_next_49 = lif_forward_state_default_49[1];  lif_forward_state_default_49 = None
+    y_60 = torch.nn.functional.layer_norm(spike_49, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_36 = torch._C._nn.linear(y_60, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_60 = None
+    qkv_37 = qkv_36.reshape(4, 256, 3, 8, 32);  qkv_36 = None
+    movedim_12 = qkv_37.movedim(-3, 0);  qkv_37 = None
+    qkv_38 = movedim_12.transpose(-3, -2);  movedim_12 = None
+    q_12 = qkv_38[0]
+    k_12 = qkv_38[1]
+    v_12 = qkv_38[2];  qkv_38 = None
+    _sdpa_capture_safe_12 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_12, k_12, v_12, scale = 0.1767766952966369);  q_12 = k_12 = v_12 = None
+    transpose_38 = _sdpa_capture_safe_12.transpose(-3, -2);  _sdpa_capture_safe_12 = None
+    y_62 = transpose_38.reshape(4, 256, 256);  transpose_38 = None
+    y_63 = torch._C._nn.linear(y_62, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_62 = None
+    add_25 = spike_49 + y_63;  spike_49 = y_63 = None
+    lif_forward_state_default_50 = torch.ops.snn_custom.lif_forward_state.default(add_25, v_next_17, 1.0, 0.0, 2.0, False);  add_25 = v_next_17 = None
+    spike_50 = lif_forward_state_default_50[0]
+    v_next_50 = lif_forward_state_default_50[1];  lif_forward_state_default_50 = None
+    y_64 = torch.nn.functional.layer_norm(spike_50, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_53 = torch._C._nn.linear(y_64, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_64 = None
+    lif_forward_state_default_51 = torch.ops.snn_custom.lif_forward_state.default(linear_53, v_next_18, 1.0, 0.0, 2.0, False);  linear_53 = v_next_18 = None
+    spike_51 = lif_forward_state_default_51[0]
+    v_next_51 = lif_forward_state_default_51[1];  lif_forward_state_default_51 = None
+    linear_54 = torch._C._nn.linear(spike_51, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_51 = None
+    lif_forward_state_default_52 = torch.ops.snn_custom.lif_forward_state.default(linear_54, v_next_19, 1.0, 0.0, 2.0, False);  linear_54 = v_next_19 = None
+    spike_52 = lif_forward_state_default_52[0]
+    v_next_52 = lif_forward_state_default_52[1];  lif_forward_state_default_52 = None
+    add_26 = spike_50 + spike_52;  spike_50 = spike_52 = None
+    lif_forward_state_default_53 = torch.ops.snn_custom.lif_forward_state.default(add_26, v_next_20, 1.0, 0.0, 2.0, False);  add_26 = v_next_20 = None
+    spike_53 = lif_forward_state_default_53[0]
+    v_next_53 = lif_forward_state_default_53[1];  lif_forward_state_default_53 = None
+    y_65 = torch.nn.functional.layer_norm(spike_53, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_39 = torch._C._nn.linear(y_65, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_65 = None
+    qkv_40 = qkv_39.reshape(4, 256, 3, 8, 32);  qkv_39 = None
+    movedim_13 = qkv_40.movedim(-3, 0);  qkv_40 = None
+    qkv_41 = movedim_13.transpose(-3, -2);  movedim_13 = None
+    q_13 = qkv_41[0]
+    k_13 = qkv_41[1]
+    v_13 = qkv_41[2];  qkv_41 = None
+    _sdpa_capture_safe_13 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_13, k_13, v_13, scale = 0.1767766952966369);  q_13 = k_13 = v_13 = None
+    transpose_41 = _sdpa_capture_safe_13.transpose(-3, -2);  _sdpa_capture_safe_13 = None
+    y_67 = transpose_41.reshape(4, 256, 256);  transpose_41 = None
+    y_68 = torch._C._nn.linear(y_67, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_67 = None
+    add_27 = spike_53 + y_68;  spike_53 = y_68 = None
+    lif_forward_state_default_54 = torch.ops.snn_custom.lif_forward_state.default(add_27, v_next_21, 1.0, 0.0, 2.0, False);  add_27 = v_next_21 = None
+    spike_54 = lif_forward_state_default_54[0]
+    v_next_54 = lif_forward_state_default_54[1];  lif_forward_state_default_54 = None
+    y_69 = torch.nn.functional.layer_norm(spike_54, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_57 = torch._C._nn.linear(y_69, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_69 = None
+    lif_forward_state_default_55 = torch.ops.snn_custom.lif_forward_state.default(linear_57, v_next_22, 1.0, 0.0, 2.0, False);  linear_57 = v_next_22 = None
+    spike_55 = lif_forward_state_default_55[0]
+    v_next_55 = lif_forward_state_default_55[1];  lif_forward_state_default_55 = None
+    linear_58 = torch._C._nn.linear(spike_55, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_55 = None
+    lif_forward_state_default_56 = torch.ops.snn_custom.lif_forward_state.default(linear_58, v_next_23, 1.0, 0.0, 2.0, False);  linear_58 = v_next_23 = None
+    spike_56 = lif_forward_state_default_56[0]
+    v_next_56 = lif_forward_state_default_56[1];  lif_forward_state_default_56 = None
+    add_28 = spike_54 + spike_56;  spike_54 = spike_56 = None
+    lif_forward_state_default_57 = torch.ops.snn_custom.lif_forward_state.default(add_28, v_next_24, 1.0, 0.0, 2.0, False);  add_28 = v_next_24 = None
+    spike_57 = lif_forward_state_default_57[0]
+    v_next_57 = lif_forward_state_default_57[1];  lif_forward_state_default_57 = None
+    y_70 = torch.nn.functional.layer_norm(spike_57, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_42 = torch._C._nn.linear(y_70, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_70 = None
+    qkv_43 = qkv_42.reshape(4, 256, 3, 8, 32);  qkv_42 = None
+    movedim_14 = qkv_43.movedim(-3, 0);  qkv_43 = None
+    qkv_44 = movedim_14.transpose(-3, -2);  movedim_14 = None
+    q_14 = qkv_44[0]
+    k_14 = qkv_44[1]
+    v_14 = qkv_44[2];  qkv_44 = None
+    _sdpa_capture_safe_14 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_14, k_14, v_14, scale = 0.1767766952966369);  q_14 = k_14 = v_14 = None
+    transpose_44 = _sdpa_capture_safe_14.transpose(-3, -2);  _sdpa_capture_safe_14 = None
+    y_72 = transpose_44.reshape(4, 256, 256);  transpose_44 = None
+    y_73 = torch._C._nn.linear(y_72, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_72 = None
+    add_29 = spike_57 + y_73;  spike_57 = y_73 = None
+    lif_forward_state_default_58 = torch.ops.snn_custom.lif_forward_state.default(add_29, v_next_25, 1.0, 0.0, 2.0, False);  add_29 = v_next_25 = None
+    spike_58 = lif_forward_state_default_58[0]
+    v_next_58 = lif_forward_state_default_58[1];  lif_forward_state_default_58 = None
+    y_74 = torch.nn.functional.layer_norm(spike_58, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_61 = torch._C._nn.linear(y_74, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_74 = None
+    lif_forward_state_default_59 = torch.ops.snn_custom.lif_forward_state.default(linear_61, v_next_26, 1.0, 0.0, 2.0, False);  linear_61 = v_next_26 = None
+    spike_59 = lif_forward_state_default_59[0]
+    v_next_59 = lif_forward_state_default_59[1];  lif_forward_state_default_59 = None
+    linear_62 = torch._C._nn.linear(spike_59, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_59 = None
+    lif_forward_state_default_60 = torch.ops.snn_custom.lif_forward_state.default(linear_62, v_next_27, 1.0, 0.0, 2.0, False);  linear_62 = v_next_27 = None
+    spike_60 = lif_forward_state_default_60[0]
+    v_next_60 = lif_forward_state_default_60[1];  lif_forward_state_default_60 = None
+    add_30 = spike_58 + spike_60;  spike_58 = spike_60 = None
+    lif_forward_state_default_61 = torch.ops.snn_custom.lif_forward_state.default(add_30, v_next_28, 1.0, 0.0, 2.0, False);  add_30 = v_next_28 = None
+    spike_61 = lif_forward_state_default_61[0]
+    v_next_61 = lif_forward_state_default_61[1];  lif_forward_state_default_61 = None
+    y_75 = torch.nn.functional.layer_norm(spike_61, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_45 = torch._C._nn.linear(y_75, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_75 = None
+    qkv_46 = qkv_45.reshape(4, 256, 3, 8, 32);  qkv_45 = None
+    movedim_15 = qkv_46.movedim(-3, 0);  qkv_46 = None
+    qkv_47 = movedim_15.transpose(-3, -2);  movedim_15 = None
+    q_15 = qkv_47[0]
+    k_15 = qkv_47[1]
+    v_15 = qkv_47[2];  qkv_47 = None
+    _sdpa_capture_safe_15 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_15, k_15, v_15, scale = 0.1767766952966369);  q_15 = k_15 = v_15 = None
+    transpose_47 = _sdpa_capture_safe_15.transpose(-3, -2);  _sdpa_capture_safe_15 = None
+    y_77 = transpose_47.reshape(4, 256, 256);  transpose_47 = None
+    y_78 = torch._C._nn.linear(y_77, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_77 = None
+    add_31 = spike_61 + y_78;  spike_61 = y_78 = None
+    lif_forward_state_default_62 = torch.ops.snn_custom.lif_forward_state.default(add_31, v_next_29, 1.0, 0.0, 2.0, False);  add_31 = v_next_29 = None
+    spike_62 = lif_forward_state_default_62[0]
+    v_next_62 = lif_forward_state_default_62[1];  lif_forward_state_default_62 = None
+    y_79 = torch.nn.functional.layer_norm(spike_62, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_65 = torch._C._nn.linear(y_79, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_79 = None
+    lif_forward_state_default_63 = torch.ops.snn_custom.lif_forward_state.default(linear_65, v_next_30, 1.0, 0.0, 2.0, False);  linear_65 = v_next_30 = None
+    spike_63 = lif_forward_state_default_63[0]
+    v_next_63 = lif_forward_state_default_63[1];  lif_forward_state_default_63 = None
+    linear_66 = torch._C._nn.linear(spike_63, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_63 = None
+    lif_forward_state_default_64 = torch.ops.snn_custom.lif_forward_state.default(linear_66, v_next_31, 1.0, 0.0, 2.0, False);  linear_66 = v_next_31 = None
+    spike_64 = lif_forward_state_default_64[0]
+    v_next_64 = lif_forward_state_default_64[1];  lif_forward_state_default_64 = None
+    add_32 = spike_62 + spike_64;  spike_62 = spike_64 = None
+    lif_forward_state_default_65 = torch.ops.snn_custom.lif_forward_state.default(add_32, v_next_32, 1.0, 0.0, 2.0, False);  add_32 = v_next_32 = None
+    spike_65 = lif_forward_state_default_65[0]
+    v_next_65 = lif_forward_state_default_65[1];  lif_forward_state_default_65 = None
+    x_2 = torch.nn.functional.layer_norm(spike_65, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_65 = None
+    x_3 = x_2.mean(dim = -2);  x_2 = None
+    linear_67 = torch._C._nn.linear(x_3, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_3 = None
+    out_spikes_counter_1 = out_spikes_counter + linear_67;  out_spikes_counter = linear_67 = None
+    getitem_182 = l_x_seq_[2]
+    linear_68 = torch._C._nn.linear(getitem_182, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_182 = None
+    lif_forward_state_default_66 = torch.ops.snn_custom.lif_forward_state.default(linear_68, v_next_33, 1.0, 0.0, 2.0, False);  linear_68 = v_next_33 = None
+    spike_66 = lif_forward_state_default_66[0]
+    v_next_66 = lif_forward_state_default_66[1];  lif_forward_state_default_66 = None
+    y_80 = torch.nn.functional.layer_norm(spike_66, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_48 = torch._C._nn.linear(y_80, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_80 = None
+    qkv_49 = qkv_48.reshape(4, 256, 3, 8, 32);  qkv_48 = None
+    movedim_16 = qkv_49.movedim(-3, 0);  qkv_49 = None
+    qkv_50 = movedim_16.transpose(-3, -2);  movedim_16 = None
+    q_16 = qkv_50[0]
+    k_16 = qkv_50[1]
+    v_16 = qkv_50[2];  qkv_50 = None
+    _sdpa_capture_safe_16 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_16, k_16, v_16, scale = 0.1767766952966369);  q_16 = k_16 = v_16 = None
+    transpose_50 = _sdpa_capture_safe_16.transpose(-3, -2);  _sdpa_capture_safe_16 = None
+    y_82 = transpose_50.reshape(4, 256, 256);  transpose_50 = None
+    y_83 = torch._C._nn.linear(y_82, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_82 = None
+    add_34 = spike_66 + y_83;  spike_66 = y_83 = None
+    lif_forward_state_default_67 = torch.ops.snn_custom.lif_forward_state.default(add_34, v_next_34, 1.0, 0.0, 2.0, False);  add_34 = v_next_34 = None
+    spike_67 = lif_forward_state_default_67[0]
+    v_next_67 = lif_forward_state_default_67[1];  lif_forward_state_default_67 = None
+    y_84 = torch.nn.functional.layer_norm(spike_67, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_71 = torch._C._nn.linear(y_84, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_84 = None
+    lif_forward_state_default_68 = torch.ops.snn_custom.lif_forward_state.default(linear_71, v_next_35, 1.0, 0.0, 2.0, False);  linear_71 = v_next_35 = None
+    spike_68 = lif_forward_state_default_68[0]
+    v_next_68 = lif_forward_state_default_68[1];  lif_forward_state_default_68 = None
+    linear_72 = torch._C._nn.linear(spike_68, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_68 = None
+    lif_forward_state_default_69 = torch.ops.snn_custom.lif_forward_state.default(linear_72, v_next_36, 1.0, 0.0, 2.0, False);  linear_72 = v_next_36 = None
+    spike_69 = lif_forward_state_default_69[0]
+    v_next_69 = lif_forward_state_default_69[1];  lif_forward_state_default_69 = None
+    add_35 = spike_67 + spike_69;  spike_67 = spike_69 = None
+    lif_forward_state_default_70 = torch.ops.snn_custom.lif_forward_state.default(add_35, v_next_37, 1.0, 0.0, 2.0, False);  add_35 = v_next_37 = None
+    spike_70 = lif_forward_state_default_70[0]
+    v_next_70 = lif_forward_state_default_70[1];  lif_forward_state_default_70 = None
+    y_85 = torch.nn.functional.layer_norm(spike_70, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_51 = torch._C._nn.linear(y_85, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_85 = None
+    qkv_52 = qkv_51.reshape(4, 256, 3, 8, 32);  qkv_51 = None
+    movedim_17 = qkv_52.movedim(-3, 0);  qkv_52 = None
+    qkv_53 = movedim_17.transpose(-3, -2);  movedim_17 = None
+    q_17 = qkv_53[0]
+    k_17 = qkv_53[1]
+    v_17 = qkv_53[2];  qkv_53 = None
+    _sdpa_capture_safe_17 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_17, k_17, v_17, scale = 0.1767766952966369);  q_17 = k_17 = v_17 = None
+    transpose_53 = _sdpa_capture_safe_17.transpose(-3, -2);  _sdpa_capture_safe_17 = None
+    y_87 = transpose_53.reshape(4, 256, 256);  transpose_53 = None
+    y_88 = torch._C._nn.linear(y_87, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_87 = None
+    add_36 = spike_70 + y_88;  spike_70 = y_88 = None
+    lif_forward_state_default_71 = torch.ops.snn_custom.lif_forward_state.default(add_36, v_next_38, 1.0, 0.0, 2.0, False);  add_36 = v_next_38 = None
+    spike_71 = lif_forward_state_default_71[0]
+    v_next_71 = lif_forward_state_default_71[1];  lif_forward_state_default_71 = None
+    y_89 = torch.nn.functional.layer_norm(spike_71, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_75 = torch._C._nn.linear(y_89, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_89 = None
+    lif_forward_state_default_72 = torch.ops.snn_custom.lif_forward_state.default(linear_75, v_next_39, 1.0, 0.0, 2.0, False);  linear_75 = v_next_39 = None
+    spike_72 = lif_forward_state_default_72[0]
+    v_next_72 = lif_forward_state_default_72[1];  lif_forward_state_default_72 = None
+    linear_76 = torch._C._nn.linear(spike_72, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_72 = None
+    lif_forward_state_default_73 = torch.ops.snn_custom.lif_forward_state.default(linear_76, v_next_40, 1.0, 0.0, 2.0, False);  linear_76 = v_next_40 = None
+    spike_73 = lif_forward_state_default_73[0]
+    v_next_73 = lif_forward_state_default_73[1];  lif_forward_state_default_73 = None
+    add_37 = spike_71 + spike_73;  spike_71 = spike_73 = None
+    lif_forward_state_default_74 = torch.ops.snn_custom.lif_forward_state.default(add_37, v_next_41, 1.0, 0.0, 2.0, False);  add_37 = v_next_41 = None
+    spike_74 = lif_forward_state_default_74[0]
+    v_next_74 = lif_forward_state_default_74[1];  lif_forward_state_default_74 = None
+    y_90 = torch.nn.functional.layer_norm(spike_74, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_54 = torch._C._nn.linear(y_90, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_90 = None
+    qkv_55 = qkv_54.reshape(4, 256, 3, 8, 32);  qkv_54 = None
+    movedim_18 = qkv_55.movedim(-3, 0);  qkv_55 = None
+    qkv_56 = movedim_18.transpose(-3, -2);  movedim_18 = None
+    q_18 = qkv_56[0]
+    k_18 = qkv_56[1]
+    v_18 = qkv_56[2];  qkv_56 = None
+    _sdpa_capture_safe_18 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_18, k_18, v_18, scale = 0.1767766952966369);  q_18 = k_18 = v_18 = None
+    transpose_56 = _sdpa_capture_safe_18.transpose(-3, -2);  _sdpa_capture_safe_18 = None
+    y_92 = transpose_56.reshape(4, 256, 256);  transpose_56 = None
+    y_93 = torch._C._nn.linear(y_92, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_92 = None
+    add_38 = spike_74 + y_93;  spike_74 = y_93 = None
+    lif_forward_state_default_75 = torch.ops.snn_custom.lif_forward_state.default(add_38, v_next_42, 1.0, 0.0, 2.0, False);  add_38 = v_next_42 = None
+    spike_75 = lif_forward_state_default_75[0]
+    v_next_75 = lif_forward_state_default_75[1];  lif_forward_state_default_75 = None
+    y_94 = torch.nn.functional.layer_norm(spike_75, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_79 = torch._C._nn.linear(y_94, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_94 = None
+    lif_forward_state_default_76 = torch.ops.snn_custom.lif_forward_state.default(linear_79, v_next_43, 1.0, 0.0, 2.0, False);  linear_79 = v_next_43 = None
+    spike_76 = lif_forward_state_default_76[0]
+    v_next_76 = lif_forward_state_default_76[1];  lif_forward_state_default_76 = None
+    linear_80 = torch._C._nn.linear(spike_76, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_76 = None
+    lif_forward_state_default_77 = torch.ops.snn_custom.lif_forward_state.default(linear_80, v_next_44, 1.0, 0.0, 2.0, False);  linear_80 = v_next_44 = None
+    spike_77 = lif_forward_state_default_77[0]
+    v_next_77 = lif_forward_state_default_77[1];  lif_forward_state_default_77 = None
+    add_39 = spike_75 + spike_77;  spike_75 = spike_77 = None
+    lif_forward_state_default_78 = torch.ops.snn_custom.lif_forward_state.default(add_39, v_next_45, 1.0, 0.0, 2.0, False);  add_39 = v_next_45 = None
+    spike_78 = lif_forward_state_default_78[0]
+    v_next_78 = lif_forward_state_default_78[1];  lif_forward_state_default_78 = None
+    y_95 = torch.nn.functional.layer_norm(spike_78, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_57 = torch._C._nn.linear(y_95, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_95 = None
+    qkv_58 = qkv_57.reshape(4, 256, 3, 8, 32);  qkv_57 = None
+    movedim_19 = qkv_58.movedim(-3, 0);  qkv_58 = None
+    qkv_59 = movedim_19.transpose(-3, -2);  movedim_19 = None
+    q_19 = qkv_59[0]
+    k_19 = qkv_59[1]
+    v_19 = qkv_59[2];  qkv_59 = None
+    _sdpa_capture_safe_19 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_19, k_19, v_19, scale = 0.1767766952966369);  q_19 = k_19 = v_19 = None
+    transpose_59 = _sdpa_capture_safe_19.transpose(-3, -2);  _sdpa_capture_safe_19 = None
+    y_97 = transpose_59.reshape(4, 256, 256);  transpose_59 = None
+    y_98 = torch._C._nn.linear(y_97, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_97 = None
+    add_40 = spike_78 + y_98;  spike_78 = y_98 = None
+    lif_forward_state_default_79 = torch.ops.snn_custom.lif_forward_state.default(add_40, v_next_46, 1.0, 0.0, 2.0, False);  add_40 = v_next_46 = None
+    spike_79 = lif_forward_state_default_79[0]
+    v_next_79 = lif_forward_state_default_79[1];  lif_forward_state_default_79 = None
+    y_99 = torch.nn.functional.layer_norm(spike_79, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_83 = torch._C._nn.linear(y_99, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_99 = None
+    lif_forward_state_default_80 = torch.ops.snn_custom.lif_forward_state.default(linear_83, v_next_47, 1.0, 0.0, 2.0, False);  linear_83 = v_next_47 = None
+    spike_80 = lif_forward_state_default_80[0]
+    v_next_80 = lif_forward_state_default_80[1];  lif_forward_state_default_80 = None
+    linear_84 = torch._C._nn.linear(spike_80, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_80 = None
+    lif_forward_state_default_81 = torch.ops.snn_custom.lif_forward_state.default(linear_84, v_next_48, 1.0, 0.0, 2.0, False);  linear_84 = v_next_48 = None
+    spike_81 = lif_forward_state_default_81[0]
+    v_next_81 = lif_forward_state_default_81[1];  lif_forward_state_default_81 = None
+    add_41 = spike_79 + spike_81;  spike_79 = spike_81 = None
+    lif_forward_state_default_82 = torch.ops.snn_custom.lif_forward_state.default(add_41, v_next_49, 1.0, 0.0, 2.0, False);  add_41 = v_next_49 = None
+    spike_82 = lif_forward_state_default_82[0]
+    v_next_82 = lif_forward_state_default_82[1];  lif_forward_state_default_82 = None
+    y_100 = torch.nn.functional.layer_norm(spike_82, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_60 = torch._C._nn.linear(y_100, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_100 = None
+    qkv_61 = qkv_60.reshape(4, 256, 3, 8, 32);  qkv_60 = None
+    movedim_20 = qkv_61.movedim(-3, 0);  qkv_61 = None
+    qkv_62 = movedim_20.transpose(-3, -2);  movedim_20 = None
+    q_20 = qkv_62[0]
+    k_20 = qkv_62[1]
+    v_20 = qkv_62[2];  qkv_62 = None
+    _sdpa_capture_safe_20 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_20, k_20, v_20, scale = 0.1767766952966369);  q_20 = k_20 = v_20 = None
+    transpose_62 = _sdpa_capture_safe_20.transpose(-3, -2);  _sdpa_capture_safe_20 = None
+    y_102 = transpose_62.reshape(4, 256, 256);  transpose_62 = None
+    y_103 = torch._C._nn.linear(y_102, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_102 = None
+    add_42 = spike_82 + y_103;  spike_82 = y_103 = None
+    lif_forward_state_default_83 = torch.ops.snn_custom.lif_forward_state.default(add_42, v_next_50, 1.0, 0.0, 2.0, False);  add_42 = v_next_50 = None
+    spike_83 = lif_forward_state_default_83[0]
+    v_next_83 = lif_forward_state_default_83[1];  lif_forward_state_default_83 = None
+    y_104 = torch.nn.functional.layer_norm(spike_83, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_87 = torch._C._nn.linear(y_104, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_104 = None
+    lif_forward_state_default_84 = torch.ops.snn_custom.lif_forward_state.default(linear_87, v_next_51, 1.0, 0.0, 2.0, False);  linear_87 = v_next_51 = None
+    spike_84 = lif_forward_state_default_84[0]
+    v_next_84 = lif_forward_state_default_84[1];  lif_forward_state_default_84 = None
+    linear_88 = torch._C._nn.linear(spike_84, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_84 = None
+    lif_forward_state_default_85 = torch.ops.snn_custom.lif_forward_state.default(linear_88, v_next_52, 1.0, 0.0, 2.0, False);  linear_88 = v_next_52 = None
+    spike_85 = lif_forward_state_default_85[0]
+    v_next_85 = lif_forward_state_default_85[1];  lif_forward_state_default_85 = None
+    add_43 = spike_83 + spike_85;  spike_83 = spike_85 = None
+    lif_forward_state_default_86 = torch.ops.snn_custom.lif_forward_state.default(add_43, v_next_53, 1.0, 0.0, 2.0, False);  add_43 = v_next_53 = None
+    spike_86 = lif_forward_state_default_86[0]
+    v_next_86 = lif_forward_state_default_86[1];  lif_forward_state_default_86 = None
+    y_105 = torch.nn.functional.layer_norm(spike_86, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_63 = torch._C._nn.linear(y_105, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_105 = None
+    qkv_64 = qkv_63.reshape(4, 256, 3, 8, 32);  qkv_63 = None
+    movedim_21 = qkv_64.movedim(-3, 0);  qkv_64 = None
+    qkv_65 = movedim_21.transpose(-3, -2);  movedim_21 = None
+    q_21 = qkv_65[0]
+    k_21 = qkv_65[1]
+    v_21 = qkv_65[2];  qkv_65 = None
+    _sdpa_capture_safe_21 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_21, k_21, v_21, scale = 0.1767766952966369);  q_21 = k_21 = v_21 = None
+    transpose_65 = _sdpa_capture_safe_21.transpose(-3, -2);  _sdpa_capture_safe_21 = None
+    y_107 = transpose_65.reshape(4, 256, 256);  transpose_65 = None
+    y_108 = torch._C._nn.linear(y_107, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_107 = None
+    add_44 = spike_86 + y_108;  spike_86 = y_108 = None
+    lif_forward_state_default_87 = torch.ops.snn_custom.lif_forward_state.default(add_44, v_next_54, 1.0, 0.0, 2.0, False);  add_44 = v_next_54 = None
+    spike_87 = lif_forward_state_default_87[0]
+    v_next_87 = lif_forward_state_default_87[1];  lif_forward_state_default_87 = None
+    y_109 = torch.nn.functional.layer_norm(spike_87, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_91 = torch._C._nn.linear(y_109, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_109 = None
+    lif_forward_state_default_88 = torch.ops.snn_custom.lif_forward_state.default(linear_91, v_next_55, 1.0, 0.0, 2.0, False);  linear_91 = v_next_55 = None
+    spike_88 = lif_forward_state_default_88[0]
+    v_next_88 = lif_forward_state_default_88[1];  lif_forward_state_default_88 = None
+    linear_92 = torch._C._nn.linear(spike_88, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_88 = None
+    lif_forward_state_default_89 = torch.ops.snn_custom.lif_forward_state.default(linear_92, v_next_56, 1.0, 0.0, 2.0, False);  linear_92 = v_next_56 = None
+    spike_89 = lif_forward_state_default_89[0]
+    v_next_89 = lif_forward_state_default_89[1];  lif_forward_state_default_89 = None
+    add_45 = spike_87 + spike_89;  spike_87 = spike_89 = None
+    lif_forward_state_default_90 = torch.ops.snn_custom.lif_forward_state.default(add_45, v_next_57, 1.0, 0.0, 2.0, False);  add_45 = v_next_57 = None
+    spike_90 = lif_forward_state_default_90[0]
+    v_next_90 = lif_forward_state_default_90[1];  lif_forward_state_default_90 = None
+    y_110 = torch.nn.functional.layer_norm(spike_90, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_66 = torch._C._nn.linear(y_110, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_110 = None
+    qkv_67 = qkv_66.reshape(4, 256, 3, 8, 32);  qkv_66 = None
+    movedim_22 = qkv_67.movedim(-3, 0);  qkv_67 = None
+    qkv_68 = movedim_22.transpose(-3, -2);  movedim_22 = None
+    q_22 = qkv_68[0]
+    k_22 = qkv_68[1]
+    v_22 = qkv_68[2];  qkv_68 = None
+    _sdpa_capture_safe_22 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_22, k_22, v_22, scale = 0.1767766952966369);  q_22 = k_22 = v_22 = None
+    transpose_68 = _sdpa_capture_safe_22.transpose(-3, -2);  _sdpa_capture_safe_22 = None
+    y_112 = transpose_68.reshape(4, 256, 256);  transpose_68 = None
+    y_113 = torch._C._nn.linear(y_112, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_112 = None
+    add_46 = spike_90 + y_113;  spike_90 = y_113 = None
+    lif_forward_state_default_91 = torch.ops.snn_custom.lif_forward_state.default(add_46, v_next_58, 1.0, 0.0, 2.0, False);  add_46 = v_next_58 = None
+    spike_91 = lif_forward_state_default_91[0]
+    v_next_91 = lif_forward_state_default_91[1];  lif_forward_state_default_91 = None
+    y_114 = torch.nn.functional.layer_norm(spike_91, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_95 = torch._C._nn.linear(y_114, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_114 = None
+    lif_forward_state_default_92 = torch.ops.snn_custom.lif_forward_state.default(linear_95, v_next_59, 1.0, 0.0, 2.0, False);  linear_95 = v_next_59 = None
+    spike_92 = lif_forward_state_default_92[0]
+    v_next_92 = lif_forward_state_default_92[1];  lif_forward_state_default_92 = None
+    linear_96 = torch._C._nn.linear(spike_92, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_92 = None
+    lif_forward_state_default_93 = torch.ops.snn_custom.lif_forward_state.default(linear_96, v_next_60, 1.0, 0.0, 2.0, False);  linear_96 = v_next_60 = None
+    spike_93 = lif_forward_state_default_93[0]
+    v_next_93 = lif_forward_state_default_93[1];  lif_forward_state_default_93 = None
+    add_47 = spike_91 + spike_93;  spike_91 = spike_93 = None
+    lif_forward_state_default_94 = torch.ops.snn_custom.lif_forward_state.default(add_47, v_next_61, 1.0, 0.0, 2.0, False);  add_47 = v_next_61 = None
+    spike_94 = lif_forward_state_default_94[0]
+    v_next_94 = lif_forward_state_default_94[1];  lif_forward_state_default_94 = None
+    y_115 = torch.nn.functional.layer_norm(spike_94, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_69 = torch._C._nn.linear(y_115, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_115 = None
+    qkv_70 = qkv_69.reshape(4, 256, 3, 8, 32);  qkv_69 = None
+    movedim_23 = qkv_70.movedim(-3, 0);  qkv_70 = None
+    qkv_71 = movedim_23.transpose(-3, -2);  movedim_23 = None
+    q_23 = qkv_71[0]
+    k_23 = qkv_71[1]
+    v_23 = qkv_71[2];  qkv_71 = None
+    _sdpa_capture_safe_23 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_23, k_23, v_23, scale = 0.1767766952966369);  q_23 = k_23 = v_23 = None
+    transpose_71 = _sdpa_capture_safe_23.transpose(-3, -2);  _sdpa_capture_safe_23 = None
+    y_117 = transpose_71.reshape(4, 256, 256);  transpose_71 = None
+    y_118 = torch._C._nn.linear(y_117, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_117 = None
+    add_48 = spike_94 + y_118;  spike_94 = y_118 = None
+    lif_forward_state_default_95 = torch.ops.snn_custom.lif_forward_state.default(add_48, v_next_62, 1.0, 0.0, 2.0, False);  add_48 = v_next_62 = None
+    spike_95 = lif_forward_state_default_95[0]
+    v_next_95 = lif_forward_state_default_95[1];  lif_forward_state_default_95 = None
+    y_119 = torch.nn.functional.layer_norm(spike_95, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_99 = torch._C._nn.linear(y_119, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_119 = None
+    lif_forward_state_default_96 = torch.ops.snn_custom.lif_forward_state.default(linear_99, v_next_63, 1.0, 0.0, 2.0, False);  linear_99 = v_next_63 = None
+    spike_96 = lif_forward_state_default_96[0]
+    v_next_96 = lif_forward_state_default_96[1];  lif_forward_state_default_96 = None
+    linear_100 = torch._C._nn.linear(spike_96, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_96 = None
+    lif_forward_state_default_97 = torch.ops.snn_custom.lif_forward_state.default(linear_100, v_next_64, 1.0, 0.0, 2.0, False);  linear_100 = v_next_64 = None
+    spike_97 = lif_forward_state_default_97[0]
+    v_next_97 = lif_forward_state_default_97[1];  lif_forward_state_default_97 = None
+    add_49 = spike_95 + spike_97;  spike_95 = spike_97 = None
+    lif_forward_state_default_98 = torch.ops.snn_custom.lif_forward_state.default(add_49, v_next_65, 1.0, 0.0, 2.0, False);  add_49 = v_next_65 = None
+    spike_98 = lif_forward_state_default_98[0]
+    v_next_98 = lif_forward_state_default_98[1];  lif_forward_state_default_98 = None
+    x_4 = torch.nn.functional.layer_norm(spike_98, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_98 = None
+    x_5 = x_4.mean(dim = -2);  x_4 = None
+    linear_101 = torch._C._nn.linear(x_5, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_5 = None
+    out_spikes_counter_2 = out_spikes_counter_1 + linear_101;  out_spikes_counter_1 = linear_101 = None
+    getitem_273 = l_x_seq_[3]
+    linear_102 = torch._C._nn.linear(getitem_273, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_273 = None
+    lif_forward_state_default_99 = torch.ops.snn_custom.lif_forward_state.default(linear_102, v_next_66, 1.0, 0.0, 2.0, False);  linear_102 = v_next_66 = None
+    spike_99 = lif_forward_state_default_99[0]
+    v_next_99 = lif_forward_state_default_99[1];  lif_forward_state_default_99 = None
+    y_120 = torch.nn.functional.layer_norm(spike_99, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_72 = torch._C._nn.linear(y_120, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_120 = None
+    qkv_73 = qkv_72.reshape(4, 256, 3, 8, 32);  qkv_72 = None
+    movedim_24 = qkv_73.movedim(-3, 0);  qkv_73 = None
+    qkv_74 = movedim_24.transpose(-3, -2);  movedim_24 = None
+    q_24 = qkv_74[0]
+    k_24 = qkv_74[1]
+    v_24 = qkv_74[2];  qkv_74 = None
+    _sdpa_capture_safe_24 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_24, k_24, v_24, scale = 0.1767766952966369);  q_24 = k_24 = v_24 = None
+    transpose_74 = _sdpa_capture_safe_24.transpose(-3, -2);  _sdpa_capture_safe_24 = None
+    y_122 = transpose_74.reshape(4, 256, 256);  transpose_74 = None
+    y_123 = torch._C._nn.linear(y_122, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_122 = None
+    add_51 = spike_99 + y_123;  spike_99 = y_123 = None
+    lif_forward_state_default_100 = torch.ops.snn_custom.lif_forward_state.default(add_51, v_next_67, 1.0, 0.0, 2.0, False);  add_51 = v_next_67 = None
+    spike_100 = lif_forward_state_default_100[0]
+    v_next_100 = lif_forward_state_default_100[1];  lif_forward_state_default_100 = None
+    y_124 = torch.nn.functional.layer_norm(spike_100, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_105 = torch._C._nn.linear(y_124, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_124 = None
+    lif_forward_state_default_101 = torch.ops.snn_custom.lif_forward_state.default(linear_105, v_next_68, 1.0, 0.0, 2.0, False);  linear_105 = v_next_68 = None
+    spike_101 = lif_forward_state_default_101[0]
+    v_next_101 = lif_forward_state_default_101[1];  lif_forward_state_default_101 = None
+    linear_106 = torch._C._nn.linear(spike_101, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_101 = None
+    lif_forward_state_default_102 = torch.ops.snn_custom.lif_forward_state.default(linear_106, v_next_69, 1.0, 0.0, 2.0, False);  linear_106 = v_next_69 = None
+    spike_102 = lif_forward_state_default_102[0]
+    v_next_102 = lif_forward_state_default_102[1];  lif_forward_state_default_102 = None
+    add_52 = spike_100 + spike_102;  spike_100 = spike_102 = None
+    lif_forward_state_default_103 = torch.ops.snn_custom.lif_forward_state.default(add_52, v_next_70, 1.0, 0.0, 2.0, False);  add_52 = v_next_70 = None
+    spike_103 = lif_forward_state_default_103[0]
+    v_next_103 = lif_forward_state_default_103[1];  lif_forward_state_default_103 = None
+    y_125 = torch.nn.functional.layer_norm(spike_103, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_75 = torch._C._nn.linear(y_125, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_125 = None
+    qkv_76 = qkv_75.reshape(4, 256, 3, 8, 32);  qkv_75 = None
+    movedim_25 = qkv_76.movedim(-3, 0);  qkv_76 = None
+    qkv_77 = movedim_25.transpose(-3, -2);  movedim_25 = None
+    q_25 = qkv_77[0]
+    k_25 = qkv_77[1]
+    v_25 = qkv_77[2];  qkv_77 = None
+    _sdpa_capture_safe_25 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_25, k_25, v_25, scale = 0.1767766952966369);  q_25 = k_25 = v_25 = None
+    transpose_77 = _sdpa_capture_safe_25.transpose(-3, -2);  _sdpa_capture_safe_25 = None
+    y_127 = transpose_77.reshape(4, 256, 256);  transpose_77 = None
+    y_128 = torch._C._nn.linear(y_127, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_127 = None
+    add_53 = spike_103 + y_128;  spike_103 = y_128 = None
+    lif_forward_state_default_104 = torch.ops.snn_custom.lif_forward_state.default(add_53, v_next_71, 1.0, 0.0, 2.0, False);  add_53 = v_next_71 = None
+    spike_104 = lif_forward_state_default_104[0]
+    v_next_104 = lif_forward_state_default_104[1];  lif_forward_state_default_104 = None
+    y_129 = torch.nn.functional.layer_norm(spike_104, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_109 = torch._C._nn.linear(y_129, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_129 = None
+    lif_forward_state_default_105 = torch.ops.snn_custom.lif_forward_state.default(linear_109, v_next_72, 1.0, 0.0, 2.0, False);  linear_109 = v_next_72 = None
+    spike_105 = lif_forward_state_default_105[0]
+    v_next_105 = lif_forward_state_default_105[1];  lif_forward_state_default_105 = None
+    linear_110 = torch._C._nn.linear(spike_105, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_105 = None
+    lif_forward_state_default_106 = torch.ops.snn_custom.lif_forward_state.default(linear_110, v_next_73, 1.0, 0.0, 2.0, False);  linear_110 = v_next_73 = None
+    spike_106 = lif_forward_state_default_106[0]
+    v_next_106 = lif_forward_state_default_106[1];  lif_forward_state_default_106 = None
+    add_54 = spike_104 + spike_106;  spike_104 = spike_106 = None
+    lif_forward_state_default_107 = torch.ops.snn_custom.lif_forward_state.default(add_54, v_next_74, 1.0, 0.0, 2.0, False);  add_54 = v_next_74 = None
+    spike_107 = lif_forward_state_default_107[0]
+    v_next_107 = lif_forward_state_default_107[1];  lif_forward_state_default_107 = None
+    y_130 = torch.nn.functional.layer_norm(spike_107, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_78 = torch._C._nn.linear(y_130, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_130 = None
+    qkv_79 = qkv_78.reshape(4, 256, 3, 8, 32);  qkv_78 = None
+    movedim_26 = qkv_79.movedim(-3, 0);  qkv_79 = None
+    qkv_80 = movedim_26.transpose(-3, -2);  movedim_26 = None
+    q_26 = qkv_80[0]
+    k_26 = qkv_80[1]
+    v_26 = qkv_80[2];  qkv_80 = None
+    _sdpa_capture_safe_26 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_26, k_26, v_26, scale = 0.1767766952966369);  q_26 = k_26 = v_26 = None
+    transpose_80 = _sdpa_capture_safe_26.transpose(-3, -2);  _sdpa_capture_safe_26 = None
+    y_132 = transpose_80.reshape(4, 256, 256);  transpose_80 = None
+    y_133 = torch._C._nn.linear(y_132, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_132 = None
+    add_55 = spike_107 + y_133;  spike_107 = y_133 = None
+    lif_forward_state_default_108 = torch.ops.snn_custom.lif_forward_state.default(add_55, v_next_75, 1.0, 0.0, 2.0, False);  add_55 = v_next_75 = None
+    spike_108 = lif_forward_state_default_108[0]
+    v_next_108 = lif_forward_state_default_108[1];  lif_forward_state_default_108 = None
+    y_134 = torch.nn.functional.layer_norm(spike_108, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_113 = torch._C._nn.linear(y_134, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_134 = None
+    lif_forward_state_default_109 = torch.ops.snn_custom.lif_forward_state.default(linear_113, v_next_76, 1.0, 0.0, 2.0, False);  linear_113 = v_next_76 = None
+    spike_109 = lif_forward_state_default_109[0]
+    v_next_109 = lif_forward_state_default_109[1];  lif_forward_state_default_109 = None
+    linear_114 = torch._C._nn.linear(spike_109, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_109 = None
+    lif_forward_state_default_110 = torch.ops.snn_custom.lif_forward_state.default(linear_114, v_next_77, 1.0, 0.0, 2.0, False);  linear_114 = v_next_77 = None
+    spike_110 = lif_forward_state_default_110[0]
+    v_next_110 = lif_forward_state_default_110[1];  lif_forward_state_default_110 = None
+    add_56 = spike_108 + spike_110;  spike_108 = spike_110 = None
+    lif_forward_state_default_111 = torch.ops.snn_custom.lif_forward_state.default(add_56, v_next_78, 1.0, 0.0, 2.0, False);  add_56 = v_next_78 = None
+    spike_111 = lif_forward_state_default_111[0]
+    v_next_111 = lif_forward_state_default_111[1];  lif_forward_state_default_111 = None
+    y_135 = torch.nn.functional.layer_norm(spike_111, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_81 = torch._C._nn.linear(y_135, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_135 = None
+    qkv_82 = qkv_81.reshape(4, 256, 3, 8, 32);  qkv_81 = None
+    movedim_27 = qkv_82.movedim(-3, 0);  qkv_82 = None
+    qkv_83 = movedim_27.transpose(-3, -2);  movedim_27 = None
+    q_27 = qkv_83[0]
+    k_27 = qkv_83[1]
+    v_27 = qkv_83[2];  qkv_83 = None
+    _sdpa_capture_safe_27 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_27, k_27, v_27, scale = 0.1767766952966369);  q_27 = k_27 = v_27 = None
+    transpose_83 = _sdpa_capture_safe_27.transpose(-3, -2);  _sdpa_capture_safe_27 = None
+    y_137 = transpose_83.reshape(4, 256, 256);  transpose_83 = None
+    y_138 = torch._C._nn.linear(y_137, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_137 = None
+    add_57 = spike_111 + y_138;  spike_111 = y_138 = None
+    lif_forward_state_default_112 = torch.ops.snn_custom.lif_forward_state.default(add_57, v_next_79, 1.0, 0.0, 2.0, False);  add_57 = v_next_79 = None
+    spike_112 = lif_forward_state_default_112[0]
+    v_next_112 = lif_forward_state_default_112[1];  lif_forward_state_default_112 = None
+    y_139 = torch.nn.functional.layer_norm(spike_112, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_117 = torch._C._nn.linear(y_139, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_139 = None
+    lif_forward_state_default_113 = torch.ops.snn_custom.lif_forward_state.default(linear_117, v_next_80, 1.0, 0.0, 2.0, False);  linear_117 = v_next_80 = None
+    spike_113 = lif_forward_state_default_113[0]
+    v_next_113 = lif_forward_state_default_113[1];  lif_forward_state_default_113 = None
+    linear_118 = torch._C._nn.linear(spike_113, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_113 = None
+    lif_forward_state_default_114 = torch.ops.snn_custom.lif_forward_state.default(linear_118, v_next_81, 1.0, 0.0, 2.0, False);  linear_118 = v_next_81 = None
+    spike_114 = lif_forward_state_default_114[0]
+    v_next_114 = lif_forward_state_default_114[1];  lif_forward_state_default_114 = None
+    add_58 = spike_112 + spike_114;  spike_112 = spike_114 = None
+    lif_forward_state_default_115 = torch.ops.snn_custom.lif_forward_state.default(add_58, v_next_82, 1.0, 0.0, 2.0, False);  add_58 = v_next_82 = None
+    spike_115 = lif_forward_state_default_115[0]
+    v_next_115 = lif_forward_state_default_115[1];  lif_forward_state_default_115 = None
+    y_140 = torch.nn.functional.layer_norm(spike_115, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_84 = torch._C._nn.linear(y_140, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_140 = None
+    qkv_85 = qkv_84.reshape(4, 256, 3, 8, 32);  qkv_84 = None
+    movedim_28 = qkv_85.movedim(-3, 0);  qkv_85 = None
+    qkv_86 = movedim_28.transpose(-3, -2);  movedim_28 = None
+    q_28 = qkv_86[0]
+    k_28 = qkv_86[1]
+    v_28 = qkv_86[2];  qkv_86 = None
+    _sdpa_capture_safe_28 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_28, k_28, v_28, scale = 0.1767766952966369);  q_28 = k_28 = v_28 = None
+    transpose_86 = _sdpa_capture_safe_28.transpose(-3, -2);  _sdpa_capture_safe_28 = None
+    y_142 = transpose_86.reshape(4, 256, 256);  transpose_86 = None
+    y_143 = torch._C._nn.linear(y_142, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_142 = None
+    add_59 = spike_115 + y_143;  spike_115 = y_143 = None
+    lif_forward_state_default_116 = torch.ops.snn_custom.lif_forward_state.default(add_59, v_next_83, 1.0, 0.0, 2.0, False);  add_59 = v_next_83 = None
+    spike_116 = lif_forward_state_default_116[0]
+    v_next_116 = lif_forward_state_default_116[1];  lif_forward_state_default_116 = None
+    y_144 = torch.nn.functional.layer_norm(spike_116, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_121 = torch._C._nn.linear(y_144, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_144 = None
+    lif_forward_state_default_117 = torch.ops.snn_custom.lif_forward_state.default(linear_121, v_next_84, 1.0, 0.0, 2.0, False);  linear_121 = v_next_84 = None
+    spike_117 = lif_forward_state_default_117[0]
+    v_next_117 = lif_forward_state_default_117[1];  lif_forward_state_default_117 = None
+    linear_122 = torch._C._nn.linear(spike_117, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_117 = None
+    lif_forward_state_default_118 = torch.ops.snn_custom.lif_forward_state.default(linear_122, v_next_85, 1.0, 0.0, 2.0, False);  linear_122 = v_next_85 = None
+    spike_118 = lif_forward_state_default_118[0]
+    v_next_118 = lif_forward_state_default_118[1];  lif_forward_state_default_118 = None
+    add_60 = spike_116 + spike_118;  spike_116 = spike_118 = None
+    lif_forward_state_default_119 = torch.ops.snn_custom.lif_forward_state.default(add_60, v_next_86, 1.0, 0.0, 2.0, False);  add_60 = v_next_86 = None
+    spike_119 = lif_forward_state_default_119[0]
+    v_next_119 = lif_forward_state_default_119[1];  lif_forward_state_default_119 = None
+    y_145 = torch.nn.functional.layer_norm(spike_119, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_87 = torch._C._nn.linear(y_145, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_145 = None
+    qkv_88 = qkv_87.reshape(4, 256, 3, 8, 32);  qkv_87 = None
+    movedim_29 = qkv_88.movedim(-3, 0);  qkv_88 = None
+    qkv_89 = movedim_29.transpose(-3, -2);  movedim_29 = None
+    q_29 = qkv_89[0]
+    k_29 = qkv_89[1]
+    v_29 = qkv_89[2];  qkv_89 = None
+    _sdpa_capture_safe_29 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_29, k_29, v_29, scale = 0.1767766952966369);  q_29 = k_29 = v_29 = None
+    transpose_89 = _sdpa_capture_safe_29.transpose(-3, -2);  _sdpa_capture_safe_29 = None
+    y_147 = transpose_89.reshape(4, 256, 256);  transpose_89 = None
+    y_148 = torch._C._nn.linear(y_147, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_147 = None
+    add_61 = spike_119 + y_148;  spike_119 = y_148 = None
+    lif_forward_state_default_120 = torch.ops.snn_custom.lif_forward_state.default(add_61, v_next_87, 1.0, 0.0, 2.0, False);  add_61 = v_next_87 = None
+    spike_120 = lif_forward_state_default_120[0]
+    v_next_120 = lif_forward_state_default_120[1];  lif_forward_state_default_120 = None
+    y_149 = torch.nn.functional.layer_norm(spike_120, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_125 = torch._C._nn.linear(y_149, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_149 = None
+    lif_forward_state_default_121 = torch.ops.snn_custom.lif_forward_state.default(linear_125, v_next_88, 1.0, 0.0, 2.0, False);  linear_125 = v_next_88 = None
+    spike_121 = lif_forward_state_default_121[0]
+    v_next_121 = lif_forward_state_default_121[1];  lif_forward_state_default_121 = None
+    linear_126 = torch._C._nn.linear(spike_121, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_121 = None
+    lif_forward_state_default_122 = torch.ops.snn_custom.lif_forward_state.default(linear_126, v_next_89, 1.0, 0.0, 2.0, False);  linear_126 = v_next_89 = None
+    spike_122 = lif_forward_state_default_122[0]
+    v_next_122 = lif_forward_state_default_122[1];  lif_forward_state_default_122 = None
+    add_62 = spike_120 + spike_122;  spike_120 = spike_122 = None
+    lif_forward_state_default_123 = torch.ops.snn_custom.lif_forward_state.default(add_62, v_next_90, 1.0, 0.0, 2.0, False);  add_62 = v_next_90 = None
+    spike_123 = lif_forward_state_default_123[0]
+    v_next_123 = lif_forward_state_default_123[1];  lif_forward_state_default_123 = None
+    y_150 = torch.nn.functional.layer_norm(spike_123, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_90 = torch._C._nn.linear(y_150, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_150 = None
+    qkv_91 = qkv_90.reshape(4, 256, 3, 8, 32);  qkv_90 = None
+    movedim_30 = qkv_91.movedim(-3, 0);  qkv_91 = None
+    qkv_92 = movedim_30.transpose(-3, -2);  movedim_30 = None
+    q_30 = qkv_92[0]
+    k_30 = qkv_92[1]
+    v_30 = qkv_92[2];  qkv_92 = None
+    _sdpa_capture_safe_30 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_30, k_30, v_30, scale = 0.1767766952966369);  q_30 = k_30 = v_30 = None
+    transpose_92 = _sdpa_capture_safe_30.transpose(-3, -2);  _sdpa_capture_safe_30 = None
+    y_152 = transpose_92.reshape(4, 256, 256);  transpose_92 = None
+    y_153 = torch._C._nn.linear(y_152, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_152 = None
+    add_63 = spike_123 + y_153;  spike_123 = y_153 = None
+    lif_forward_state_default_124 = torch.ops.snn_custom.lif_forward_state.default(add_63, v_next_91, 1.0, 0.0, 2.0, False);  add_63 = v_next_91 = None
+    spike_124 = lif_forward_state_default_124[0]
+    v_next_124 = lif_forward_state_default_124[1];  lif_forward_state_default_124 = None
+    y_154 = torch.nn.functional.layer_norm(spike_124, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_129 = torch._C._nn.linear(y_154, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_154 = None
+    lif_forward_state_default_125 = torch.ops.snn_custom.lif_forward_state.default(linear_129, v_next_92, 1.0, 0.0, 2.0, False);  linear_129 = v_next_92 = None
+    spike_125 = lif_forward_state_default_125[0]
+    v_next_125 = lif_forward_state_default_125[1];  lif_forward_state_default_125 = None
+    linear_130 = torch._C._nn.linear(spike_125, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_125 = None
+    lif_forward_state_default_126 = torch.ops.snn_custom.lif_forward_state.default(linear_130, v_next_93, 1.0, 0.0, 2.0, False);  linear_130 = v_next_93 = None
+    spike_126 = lif_forward_state_default_126[0]
+    v_next_126 = lif_forward_state_default_126[1];  lif_forward_state_default_126 = None
+    add_64 = spike_124 + spike_126;  spike_124 = spike_126 = None
+    lif_forward_state_default_127 = torch.ops.snn_custom.lif_forward_state.default(add_64, v_next_94, 1.0, 0.0, 2.0, False);  add_64 = v_next_94 = None
+    spike_127 = lif_forward_state_default_127[0]
+    v_next_127 = lif_forward_state_default_127[1];  lif_forward_state_default_127 = None
+    y_155 = torch.nn.functional.layer_norm(spike_127, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_93 = torch._C._nn.linear(y_155, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_155 = None
+    qkv_94 = qkv_93.reshape(4, 256, 3, 8, 32);  qkv_93 = None
+    movedim_31 = qkv_94.movedim(-3, 0);  qkv_94 = None
+    qkv_95 = movedim_31.transpose(-3, -2);  movedim_31 = None
+    q_31 = qkv_95[0]
+    k_31 = qkv_95[1]
+    v_31 = qkv_95[2];  qkv_95 = None
+    _sdpa_capture_safe_31 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_31, k_31, v_31, scale = 0.1767766952966369);  q_31 = k_31 = v_31 = None
+    transpose_95 = _sdpa_capture_safe_31.transpose(-3, -2);  _sdpa_capture_safe_31 = None
+    y_157 = transpose_95.reshape(4, 256, 256);  transpose_95 = None
+    y_158 = torch._C._nn.linear(y_157, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_157 = None
+    add_65 = spike_127 + y_158;  spike_127 = y_158 = None
+    lif_forward_state_default_128 = torch.ops.snn_custom.lif_forward_state.default(add_65, v_next_95, 1.0, 0.0, 2.0, False);  add_65 = v_next_95 = None
+    spike_128 = lif_forward_state_default_128[0]
+    v_next_128 = lif_forward_state_default_128[1];  lif_forward_state_default_128 = None
+    y_159 = torch.nn.functional.layer_norm(spike_128, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_133 = torch._C._nn.linear(y_159, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_159 = None
+    lif_forward_state_default_129 = torch.ops.snn_custom.lif_forward_state.default(linear_133, v_next_96, 1.0, 0.0, 2.0, False);  linear_133 = v_next_96 = None
+    spike_129 = lif_forward_state_default_129[0]
+    v_next_129 = lif_forward_state_default_129[1];  lif_forward_state_default_129 = None
+    linear_134 = torch._C._nn.linear(spike_129, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_129 = None
+    lif_forward_state_default_130 = torch.ops.snn_custom.lif_forward_state.default(linear_134, v_next_97, 1.0, 0.0, 2.0, False);  linear_134 = v_next_97 = None
+    spike_130 = lif_forward_state_default_130[0]
+    v_next_130 = lif_forward_state_default_130[1];  lif_forward_state_default_130 = None
+    add_66 = spike_128 + spike_130;  spike_128 = spike_130 = None
+    lif_forward_state_default_131 = torch.ops.snn_custom.lif_forward_state.default(add_66, v_next_98, 1.0, 0.0, 2.0, False);  add_66 = v_next_98 = None
+    spike_131 = lif_forward_state_default_131[0]
+    v_next_131 = lif_forward_state_default_131[1];  lif_forward_state_default_131 = None
+    x_6 = torch.nn.functional.layer_norm(spike_131, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_131 = None
+    x_7 = x_6.mean(dim = -2);  x_6 = None
+    linear_135 = torch._C._nn.linear(x_7, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_7 = None
+    out_spikes_counter_3 = out_spikes_counter_2 + linear_135;  out_spikes_counter_2 = linear_135 = None
+    getitem_364 = l_x_seq_[4]
+    linear_136 = torch._C._nn.linear(getitem_364, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_364 = None
+    lif_forward_state_default_132 = torch.ops.snn_custom.lif_forward_state.default(linear_136, v_next_99, 1.0, 0.0, 2.0, False);  linear_136 = v_next_99 = None
+    spike_132 = lif_forward_state_default_132[0]
+    v_next_132 = lif_forward_state_default_132[1];  lif_forward_state_default_132 = None
+    y_160 = torch.nn.functional.layer_norm(spike_132, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_96 = torch._C._nn.linear(y_160, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_160 = None
+    qkv_97 = qkv_96.reshape(4, 256, 3, 8, 32);  qkv_96 = None
+    movedim_32 = qkv_97.movedim(-3, 0);  qkv_97 = None
+    qkv_98 = movedim_32.transpose(-3, -2);  movedim_32 = None
+    q_32 = qkv_98[0]
+    k_32 = qkv_98[1]
+    v_32 = qkv_98[2];  qkv_98 = None
+    _sdpa_capture_safe_32 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_32, k_32, v_32, scale = 0.1767766952966369);  q_32 = k_32 = v_32 = None
+    transpose_98 = _sdpa_capture_safe_32.transpose(-3, -2);  _sdpa_capture_safe_32 = None
+    y_162 = transpose_98.reshape(4, 256, 256);  transpose_98 = None
+    y_163 = torch._C._nn.linear(y_162, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_162 = None
+    add_68 = spike_132 + y_163;  spike_132 = y_163 = None
+    lif_forward_state_default_133 = torch.ops.snn_custom.lif_forward_state.default(add_68, v_next_100, 1.0, 0.0, 2.0, False);  add_68 = v_next_100 = None
+    spike_133 = lif_forward_state_default_133[0]
+    v_next_133 = lif_forward_state_default_133[1];  lif_forward_state_default_133 = None
+    y_164 = torch.nn.functional.layer_norm(spike_133, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_139 = torch._C._nn.linear(y_164, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_164 = None
+    lif_forward_state_default_134 = torch.ops.snn_custom.lif_forward_state.default(linear_139, v_next_101, 1.0, 0.0, 2.0, False);  linear_139 = v_next_101 = None
+    spike_134 = lif_forward_state_default_134[0]
+    v_next_134 = lif_forward_state_default_134[1];  lif_forward_state_default_134 = None
+    linear_140 = torch._C._nn.linear(spike_134, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_134 = None
+    lif_forward_state_default_135 = torch.ops.snn_custom.lif_forward_state.default(linear_140, v_next_102, 1.0, 0.0, 2.0, False);  linear_140 = v_next_102 = None
+    spike_135 = lif_forward_state_default_135[0]
+    v_next_135 = lif_forward_state_default_135[1];  lif_forward_state_default_135 = None
+    add_69 = spike_133 + spike_135;  spike_133 = spike_135 = None
+    lif_forward_state_default_136 = torch.ops.snn_custom.lif_forward_state.default(add_69, v_next_103, 1.0, 0.0, 2.0, False);  add_69 = v_next_103 = None
+    spike_136 = lif_forward_state_default_136[0]
+    v_next_136 = lif_forward_state_default_136[1];  lif_forward_state_default_136 = None
+    y_165 = torch.nn.functional.layer_norm(spike_136, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_99 = torch._C._nn.linear(y_165, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_165 = None
+    qkv_100 = qkv_99.reshape(4, 256, 3, 8, 32);  qkv_99 = None
+    movedim_33 = qkv_100.movedim(-3, 0);  qkv_100 = None
+    qkv_101 = movedim_33.transpose(-3, -2);  movedim_33 = None
+    q_33 = qkv_101[0]
+    k_33 = qkv_101[1]
+    v_33 = qkv_101[2];  qkv_101 = None
+    _sdpa_capture_safe_33 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_33, k_33, v_33, scale = 0.1767766952966369);  q_33 = k_33 = v_33 = None
+    transpose_101 = _sdpa_capture_safe_33.transpose(-3, -2);  _sdpa_capture_safe_33 = None
+    y_167 = transpose_101.reshape(4, 256, 256);  transpose_101 = None
+    y_168 = torch._C._nn.linear(y_167, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_167 = None
+    add_70 = spike_136 + y_168;  spike_136 = y_168 = None
+    lif_forward_state_default_137 = torch.ops.snn_custom.lif_forward_state.default(add_70, v_next_104, 1.0, 0.0, 2.0, False);  add_70 = v_next_104 = None
+    spike_137 = lif_forward_state_default_137[0]
+    v_next_137 = lif_forward_state_default_137[1];  lif_forward_state_default_137 = None
+    y_169 = torch.nn.functional.layer_norm(spike_137, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_143 = torch._C._nn.linear(y_169, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_169 = None
+    lif_forward_state_default_138 = torch.ops.snn_custom.lif_forward_state.default(linear_143, v_next_105, 1.0, 0.0, 2.0, False);  linear_143 = v_next_105 = None
+    spike_138 = lif_forward_state_default_138[0]
+    v_next_138 = lif_forward_state_default_138[1];  lif_forward_state_default_138 = None
+    linear_144 = torch._C._nn.linear(spike_138, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_138 = None
+    lif_forward_state_default_139 = torch.ops.snn_custom.lif_forward_state.default(linear_144, v_next_106, 1.0, 0.0, 2.0, False);  linear_144 = v_next_106 = None
+    spike_139 = lif_forward_state_default_139[0]
+    v_next_139 = lif_forward_state_default_139[1];  lif_forward_state_default_139 = None
+    add_71 = spike_137 + spike_139;  spike_137 = spike_139 = None
+    lif_forward_state_default_140 = torch.ops.snn_custom.lif_forward_state.default(add_71, v_next_107, 1.0, 0.0, 2.0, False);  add_71 = v_next_107 = None
+    spike_140 = lif_forward_state_default_140[0]
+    v_next_140 = lif_forward_state_default_140[1];  lif_forward_state_default_140 = None
+    y_170 = torch.nn.functional.layer_norm(spike_140, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_102 = torch._C._nn.linear(y_170, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_170 = None
+    qkv_103 = qkv_102.reshape(4, 256, 3, 8, 32);  qkv_102 = None
+    movedim_34 = qkv_103.movedim(-3, 0);  qkv_103 = None
+    qkv_104 = movedim_34.transpose(-3, -2);  movedim_34 = None
+    q_34 = qkv_104[0]
+    k_34 = qkv_104[1]
+    v_34 = qkv_104[2];  qkv_104 = None
+    _sdpa_capture_safe_34 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_34, k_34, v_34, scale = 0.1767766952966369);  q_34 = k_34 = v_34 = None
+    transpose_104 = _sdpa_capture_safe_34.transpose(-3, -2);  _sdpa_capture_safe_34 = None
+    y_172 = transpose_104.reshape(4, 256, 256);  transpose_104 = None
+    y_173 = torch._C._nn.linear(y_172, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_172 = None
+    add_72 = spike_140 + y_173;  spike_140 = y_173 = None
+    lif_forward_state_default_141 = torch.ops.snn_custom.lif_forward_state.default(add_72, v_next_108, 1.0, 0.0, 2.0, False);  add_72 = v_next_108 = None
+    spike_141 = lif_forward_state_default_141[0]
+    v_next_141 = lif_forward_state_default_141[1];  lif_forward_state_default_141 = None
+    y_174 = torch.nn.functional.layer_norm(spike_141, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_147 = torch._C._nn.linear(y_174, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_174 = None
+    lif_forward_state_default_142 = torch.ops.snn_custom.lif_forward_state.default(linear_147, v_next_109, 1.0, 0.0, 2.0, False);  linear_147 = v_next_109 = None
+    spike_142 = lif_forward_state_default_142[0]
+    v_next_142 = lif_forward_state_default_142[1];  lif_forward_state_default_142 = None
+    linear_148 = torch._C._nn.linear(spike_142, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_142 = None
+    lif_forward_state_default_143 = torch.ops.snn_custom.lif_forward_state.default(linear_148, v_next_110, 1.0, 0.0, 2.0, False);  linear_148 = v_next_110 = None
+    spike_143 = lif_forward_state_default_143[0]
+    v_next_143 = lif_forward_state_default_143[1];  lif_forward_state_default_143 = None
+    add_73 = spike_141 + spike_143;  spike_141 = spike_143 = None
+    lif_forward_state_default_144 = torch.ops.snn_custom.lif_forward_state.default(add_73, v_next_111, 1.0, 0.0, 2.0, False);  add_73 = v_next_111 = None
+    spike_144 = lif_forward_state_default_144[0]
+    v_next_144 = lif_forward_state_default_144[1];  lif_forward_state_default_144 = None
+    y_175 = torch.nn.functional.layer_norm(spike_144, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_105 = torch._C._nn.linear(y_175, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_175 = None
+    qkv_106 = qkv_105.reshape(4, 256, 3, 8, 32);  qkv_105 = None
+    movedim_35 = qkv_106.movedim(-3, 0);  qkv_106 = None
+    qkv_107 = movedim_35.transpose(-3, -2);  movedim_35 = None
+    q_35 = qkv_107[0]
+    k_35 = qkv_107[1]
+    v_35 = qkv_107[2];  qkv_107 = None
+    _sdpa_capture_safe_35 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_35, k_35, v_35, scale = 0.1767766952966369);  q_35 = k_35 = v_35 = None
+    transpose_107 = _sdpa_capture_safe_35.transpose(-3, -2);  _sdpa_capture_safe_35 = None
+    y_177 = transpose_107.reshape(4, 256, 256);  transpose_107 = None
+    y_178 = torch._C._nn.linear(y_177, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_177 = None
+    add_74 = spike_144 + y_178;  spike_144 = y_178 = None
+    lif_forward_state_default_145 = torch.ops.snn_custom.lif_forward_state.default(add_74, v_next_112, 1.0, 0.0, 2.0, False);  add_74 = v_next_112 = None
+    spike_145 = lif_forward_state_default_145[0]
+    v_next_145 = lif_forward_state_default_145[1];  lif_forward_state_default_145 = None
+    y_179 = torch.nn.functional.layer_norm(spike_145, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_151 = torch._C._nn.linear(y_179, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_179 = None
+    lif_forward_state_default_146 = torch.ops.snn_custom.lif_forward_state.default(linear_151, v_next_113, 1.0, 0.0, 2.0, False);  linear_151 = v_next_113 = None
+    spike_146 = lif_forward_state_default_146[0]
+    v_next_146 = lif_forward_state_default_146[1];  lif_forward_state_default_146 = None
+    linear_152 = torch._C._nn.linear(spike_146, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_146 = None
+    lif_forward_state_default_147 = torch.ops.snn_custom.lif_forward_state.default(linear_152, v_next_114, 1.0, 0.0, 2.0, False);  linear_152 = v_next_114 = None
+    spike_147 = lif_forward_state_default_147[0]
+    v_next_147 = lif_forward_state_default_147[1];  lif_forward_state_default_147 = None
+    add_75 = spike_145 + spike_147;  spike_145 = spike_147 = None
+    lif_forward_state_default_148 = torch.ops.snn_custom.lif_forward_state.default(add_75, v_next_115, 1.0, 0.0, 2.0, False);  add_75 = v_next_115 = None
+    spike_148 = lif_forward_state_default_148[0]
+    v_next_148 = lif_forward_state_default_148[1];  lif_forward_state_default_148 = None
+    y_180 = torch.nn.functional.layer_norm(spike_148, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_108 = torch._C._nn.linear(y_180, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_180 = None
+    qkv_109 = qkv_108.reshape(4, 256, 3, 8, 32);  qkv_108 = None
+    movedim_36 = qkv_109.movedim(-3, 0);  qkv_109 = None
+    qkv_110 = movedim_36.transpose(-3, -2);  movedim_36 = None
+    q_36 = qkv_110[0]
+    k_36 = qkv_110[1]
+    v_36 = qkv_110[2];  qkv_110 = None
+    _sdpa_capture_safe_36 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_36, k_36, v_36, scale = 0.1767766952966369);  q_36 = k_36 = v_36 = None
+    transpose_110 = _sdpa_capture_safe_36.transpose(-3, -2);  _sdpa_capture_safe_36 = None
+    y_182 = transpose_110.reshape(4, 256, 256);  transpose_110 = None
+    y_183 = torch._C._nn.linear(y_182, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_182 = None
+    add_76 = spike_148 + y_183;  spike_148 = y_183 = None
+    lif_forward_state_default_149 = torch.ops.snn_custom.lif_forward_state.default(add_76, v_next_116, 1.0, 0.0, 2.0, False);  add_76 = v_next_116 = None
+    spike_149 = lif_forward_state_default_149[0]
+    v_next_149 = lif_forward_state_default_149[1];  lif_forward_state_default_149 = None
+    y_184 = torch.nn.functional.layer_norm(spike_149, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_155 = torch._C._nn.linear(y_184, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_184 = None
+    lif_forward_state_default_150 = torch.ops.snn_custom.lif_forward_state.default(linear_155, v_next_117, 1.0, 0.0, 2.0, False);  linear_155 = v_next_117 = None
+    spike_150 = lif_forward_state_default_150[0]
+    v_next_150 = lif_forward_state_default_150[1];  lif_forward_state_default_150 = None
+    linear_156 = torch._C._nn.linear(spike_150, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_150 = None
+    lif_forward_state_default_151 = torch.ops.snn_custom.lif_forward_state.default(linear_156, v_next_118, 1.0, 0.0, 2.0, False);  linear_156 = v_next_118 = None
+    spike_151 = lif_forward_state_default_151[0]
+    v_next_151 = lif_forward_state_default_151[1];  lif_forward_state_default_151 = None
+    add_77 = spike_149 + spike_151;  spike_149 = spike_151 = None
+    lif_forward_state_default_152 = torch.ops.snn_custom.lif_forward_state.default(add_77, v_next_119, 1.0, 0.0, 2.0, False);  add_77 = v_next_119 = None
+    spike_152 = lif_forward_state_default_152[0]
+    v_next_152 = lif_forward_state_default_152[1];  lif_forward_state_default_152 = None
+    y_185 = torch.nn.functional.layer_norm(spike_152, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_111 = torch._C._nn.linear(y_185, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_185 = None
+    qkv_112 = qkv_111.reshape(4, 256, 3, 8, 32);  qkv_111 = None
+    movedim_37 = qkv_112.movedim(-3, 0);  qkv_112 = None
+    qkv_113 = movedim_37.transpose(-3, -2);  movedim_37 = None
+    q_37 = qkv_113[0]
+    k_37 = qkv_113[1]
+    v_37 = qkv_113[2];  qkv_113 = None
+    _sdpa_capture_safe_37 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_37, k_37, v_37, scale = 0.1767766952966369);  q_37 = k_37 = v_37 = None
+    transpose_113 = _sdpa_capture_safe_37.transpose(-3, -2);  _sdpa_capture_safe_37 = None
+    y_187 = transpose_113.reshape(4, 256, 256);  transpose_113 = None
+    y_188 = torch._C._nn.linear(y_187, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_187 = None
+    add_78 = spike_152 + y_188;  spike_152 = y_188 = None
+    lif_forward_state_default_153 = torch.ops.snn_custom.lif_forward_state.default(add_78, v_next_120, 1.0, 0.0, 2.0, False);  add_78 = v_next_120 = None
+    spike_153 = lif_forward_state_default_153[0]
+    v_next_153 = lif_forward_state_default_153[1];  lif_forward_state_default_153 = None
+    y_189 = torch.nn.functional.layer_norm(spike_153, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_159 = torch._C._nn.linear(y_189, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_189 = None
+    lif_forward_state_default_154 = torch.ops.snn_custom.lif_forward_state.default(linear_159, v_next_121, 1.0, 0.0, 2.0, False);  linear_159 = v_next_121 = None
+    spike_154 = lif_forward_state_default_154[0]
+    v_next_154 = lif_forward_state_default_154[1];  lif_forward_state_default_154 = None
+    linear_160 = torch._C._nn.linear(spike_154, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_154 = None
+    lif_forward_state_default_155 = torch.ops.snn_custom.lif_forward_state.default(linear_160, v_next_122, 1.0, 0.0, 2.0, False);  linear_160 = v_next_122 = None
+    spike_155 = lif_forward_state_default_155[0]
+    v_next_155 = lif_forward_state_default_155[1];  lif_forward_state_default_155 = None
+    add_79 = spike_153 + spike_155;  spike_153 = spike_155 = None
+    lif_forward_state_default_156 = torch.ops.snn_custom.lif_forward_state.default(add_79, v_next_123, 1.0, 0.0, 2.0, False);  add_79 = v_next_123 = None
+    spike_156 = lif_forward_state_default_156[0]
+    v_next_156 = lif_forward_state_default_156[1];  lif_forward_state_default_156 = None
+    y_190 = torch.nn.functional.layer_norm(spike_156, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_114 = torch._C._nn.linear(y_190, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_190 = None
+    qkv_115 = qkv_114.reshape(4, 256, 3, 8, 32);  qkv_114 = None
+    movedim_38 = qkv_115.movedim(-3, 0);  qkv_115 = None
+    qkv_116 = movedim_38.transpose(-3, -2);  movedim_38 = None
+    q_38 = qkv_116[0]
+    k_38 = qkv_116[1]
+    v_38 = qkv_116[2];  qkv_116 = None
+    _sdpa_capture_safe_38 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_38, k_38, v_38, scale = 0.1767766952966369);  q_38 = k_38 = v_38 = None
+    transpose_116 = _sdpa_capture_safe_38.transpose(-3, -2);  _sdpa_capture_safe_38 = None
+    y_192 = transpose_116.reshape(4, 256, 256);  transpose_116 = None
+    y_193 = torch._C._nn.linear(y_192, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_192 = None
+    add_80 = spike_156 + y_193;  spike_156 = y_193 = None
+    lif_forward_state_default_157 = torch.ops.snn_custom.lif_forward_state.default(add_80, v_next_124, 1.0, 0.0, 2.0, False);  add_80 = v_next_124 = None
+    spike_157 = lif_forward_state_default_157[0]
+    v_next_157 = lif_forward_state_default_157[1];  lif_forward_state_default_157 = None
+    y_194 = torch.nn.functional.layer_norm(spike_157, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_163 = torch._C._nn.linear(y_194, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_194 = None
+    lif_forward_state_default_158 = torch.ops.snn_custom.lif_forward_state.default(linear_163, v_next_125, 1.0, 0.0, 2.0, False);  linear_163 = v_next_125 = None
+    spike_158 = lif_forward_state_default_158[0]
+    v_next_158 = lif_forward_state_default_158[1];  lif_forward_state_default_158 = None
+    linear_164 = torch._C._nn.linear(spike_158, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_158 = None
+    lif_forward_state_default_159 = torch.ops.snn_custom.lif_forward_state.default(linear_164, v_next_126, 1.0, 0.0, 2.0, False);  linear_164 = v_next_126 = None
+    spike_159 = lif_forward_state_default_159[0]
+    v_next_159 = lif_forward_state_default_159[1];  lif_forward_state_default_159 = None
+    add_81 = spike_157 + spike_159;  spike_157 = spike_159 = None
+    lif_forward_state_default_160 = torch.ops.snn_custom.lif_forward_state.default(add_81, v_next_127, 1.0, 0.0, 2.0, False);  add_81 = v_next_127 = None
+    spike_160 = lif_forward_state_default_160[0]
+    v_next_160 = lif_forward_state_default_160[1];  lif_forward_state_default_160 = None
+    y_195 = torch.nn.functional.layer_norm(spike_160, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_117 = torch._C._nn.linear(y_195, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_195 = None
+    qkv_118 = qkv_117.reshape(4, 256, 3, 8, 32);  qkv_117 = None
+    movedim_39 = qkv_118.movedim(-3, 0);  qkv_118 = None
+    qkv_119 = movedim_39.transpose(-3, -2);  movedim_39 = None
+    q_39 = qkv_119[0]
+    k_39 = qkv_119[1]
+    v_39 = qkv_119[2];  qkv_119 = None
+    _sdpa_capture_safe_39 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_39, k_39, v_39, scale = 0.1767766952966369);  q_39 = k_39 = v_39 = None
+    transpose_119 = _sdpa_capture_safe_39.transpose(-3, -2);  _sdpa_capture_safe_39 = None
+    y_197 = transpose_119.reshape(4, 256, 256);  transpose_119 = None
+    y_198 = torch._C._nn.linear(y_197, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_197 = None
+    add_82 = spike_160 + y_198;  spike_160 = y_198 = None
+    lif_forward_state_default_161 = torch.ops.snn_custom.lif_forward_state.default(add_82, v_next_128, 1.0, 0.0, 2.0, False);  add_82 = v_next_128 = None
+    spike_161 = lif_forward_state_default_161[0]
+    v_next_161 = lif_forward_state_default_161[1];  lif_forward_state_default_161 = None
+    y_199 = torch.nn.functional.layer_norm(spike_161, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_167 = torch._C._nn.linear(y_199, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_199 = None
+    lif_forward_state_default_162 = torch.ops.snn_custom.lif_forward_state.default(linear_167, v_next_129, 1.0, 0.0, 2.0, False);  linear_167 = v_next_129 = None
+    spike_162 = lif_forward_state_default_162[0]
+    v_next_162 = lif_forward_state_default_162[1];  lif_forward_state_default_162 = None
+    linear_168 = torch._C._nn.linear(spike_162, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_162 = None
+    lif_forward_state_default_163 = torch.ops.snn_custom.lif_forward_state.default(linear_168, v_next_130, 1.0, 0.0, 2.0, False);  linear_168 = v_next_130 = None
+    spike_163 = lif_forward_state_default_163[0]
+    v_next_163 = lif_forward_state_default_163[1];  lif_forward_state_default_163 = None
+    add_83 = spike_161 + spike_163;  spike_161 = spike_163 = None
+    lif_forward_state_default_164 = torch.ops.snn_custom.lif_forward_state.default(add_83, v_next_131, 1.0, 0.0, 2.0, False);  add_83 = v_next_131 = None
+    spike_164 = lif_forward_state_default_164[0]
+    v_next_164 = lif_forward_state_default_164[1];  lif_forward_state_default_164 = None
+    x_8 = torch.nn.functional.layer_norm(spike_164, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_164 = None
+    x_9 = x_8.mean(dim = -2);  x_8 = None
+    linear_169 = torch._C._nn.linear(x_9, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_9 = None
+    out_spikes_counter_4 = out_spikes_counter_3 + linear_169;  out_spikes_counter_3 = linear_169 = None
+    getitem_455 = l_x_seq_[5]
+    linear_170 = torch._C._nn.linear(getitem_455, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_455 = None
+    lif_forward_state_default_165 = torch.ops.snn_custom.lif_forward_state.default(linear_170, v_next_132, 1.0, 0.0, 2.0, False);  linear_170 = v_next_132 = None
+    spike_165 = lif_forward_state_default_165[0]
+    v_next_165 = lif_forward_state_default_165[1];  lif_forward_state_default_165 = None
+    y_200 = torch.nn.functional.layer_norm(spike_165, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_120 = torch._C._nn.linear(y_200, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_200 = None
+    qkv_121 = qkv_120.reshape(4, 256, 3, 8, 32);  qkv_120 = None
+    movedim_40 = qkv_121.movedim(-3, 0);  qkv_121 = None
+    qkv_122 = movedim_40.transpose(-3, -2);  movedim_40 = None
+    q_40 = qkv_122[0]
+    k_40 = qkv_122[1]
+    v_40 = qkv_122[2];  qkv_122 = None
+    _sdpa_capture_safe_40 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_40, k_40, v_40, scale = 0.1767766952966369);  q_40 = k_40 = v_40 = None
+    transpose_122 = _sdpa_capture_safe_40.transpose(-3, -2);  _sdpa_capture_safe_40 = None
+    y_202 = transpose_122.reshape(4, 256, 256);  transpose_122 = None
+    y_203 = torch._C._nn.linear(y_202, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_202 = None
+    add_85 = spike_165 + y_203;  spike_165 = y_203 = None
+    lif_forward_state_default_166 = torch.ops.snn_custom.lif_forward_state.default(add_85, v_next_133, 1.0, 0.0, 2.0, False);  add_85 = v_next_133 = None
+    spike_166 = lif_forward_state_default_166[0]
+    v_next_166 = lif_forward_state_default_166[1];  lif_forward_state_default_166 = None
+    y_204 = torch.nn.functional.layer_norm(spike_166, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_173 = torch._C._nn.linear(y_204, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_204 = None
+    lif_forward_state_default_167 = torch.ops.snn_custom.lif_forward_state.default(linear_173, v_next_134, 1.0, 0.0, 2.0, False);  linear_173 = v_next_134 = None
+    spike_167 = lif_forward_state_default_167[0]
+    v_next_167 = lif_forward_state_default_167[1];  lif_forward_state_default_167 = None
+    linear_174 = torch._C._nn.linear(spike_167, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_167 = None
+    lif_forward_state_default_168 = torch.ops.snn_custom.lif_forward_state.default(linear_174, v_next_135, 1.0, 0.0, 2.0, False);  linear_174 = v_next_135 = None
+    spike_168 = lif_forward_state_default_168[0]
+    v_next_168 = lif_forward_state_default_168[1];  lif_forward_state_default_168 = None
+    add_86 = spike_166 + spike_168;  spike_166 = spike_168 = None
+    lif_forward_state_default_169 = torch.ops.snn_custom.lif_forward_state.default(add_86, v_next_136, 1.0, 0.0, 2.0, False);  add_86 = v_next_136 = None
+    spike_169 = lif_forward_state_default_169[0]
+    v_next_169 = lif_forward_state_default_169[1];  lif_forward_state_default_169 = None
+    y_205 = torch.nn.functional.layer_norm(spike_169, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_123 = torch._C._nn.linear(y_205, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_205 = None
+    qkv_124 = qkv_123.reshape(4, 256, 3, 8, 32);  qkv_123 = None
+    movedim_41 = qkv_124.movedim(-3, 0);  qkv_124 = None
+    qkv_125 = movedim_41.transpose(-3, -2);  movedim_41 = None
+    q_41 = qkv_125[0]
+    k_41 = qkv_125[1]
+    v_41 = qkv_125[2];  qkv_125 = None
+    _sdpa_capture_safe_41 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_41, k_41, v_41, scale = 0.1767766952966369);  q_41 = k_41 = v_41 = None
+    transpose_125 = _sdpa_capture_safe_41.transpose(-3, -2);  _sdpa_capture_safe_41 = None
+    y_207 = transpose_125.reshape(4, 256, 256);  transpose_125 = None
+    y_208 = torch._C._nn.linear(y_207, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_207 = None
+    add_87 = spike_169 + y_208;  spike_169 = y_208 = None
+    lif_forward_state_default_170 = torch.ops.snn_custom.lif_forward_state.default(add_87, v_next_137, 1.0, 0.0, 2.0, False);  add_87 = v_next_137 = None
+    spike_170 = lif_forward_state_default_170[0]
+    v_next_170 = lif_forward_state_default_170[1];  lif_forward_state_default_170 = None
+    y_209 = torch.nn.functional.layer_norm(spike_170, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_177 = torch._C._nn.linear(y_209, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_209 = None
+    lif_forward_state_default_171 = torch.ops.snn_custom.lif_forward_state.default(linear_177, v_next_138, 1.0, 0.0, 2.0, False);  linear_177 = v_next_138 = None
+    spike_171 = lif_forward_state_default_171[0]
+    v_next_171 = lif_forward_state_default_171[1];  lif_forward_state_default_171 = None
+    linear_178 = torch._C._nn.linear(spike_171, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_171 = None
+    lif_forward_state_default_172 = torch.ops.snn_custom.lif_forward_state.default(linear_178, v_next_139, 1.0, 0.0, 2.0, False);  linear_178 = v_next_139 = None
+    spike_172 = lif_forward_state_default_172[0]
+    v_next_172 = lif_forward_state_default_172[1];  lif_forward_state_default_172 = None
+    add_88 = spike_170 + spike_172;  spike_170 = spike_172 = None
+    lif_forward_state_default_173 = torch.ops.snn_custom.lif_forward_state.default(add_88, v_next_140, 1.0, 0.0, 2.0, False);  add_88 = v_next_140 = None
+    spike_173 = lif_forward_state_default_173[0]
+    v_next_173 = lif_forward_state_default_173[1];  lif_forward_state_default_173 = None
+    y_210 = torch.nn.functional.layer_norm(spike_173, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_126 = torch._C._nn.linear(y_210, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_210 = None
+    qkv_127 = qkv_126.reshape(4, 256, 3, 8, 32);  qkv_126 = None
+    movedim_42 = qkv_127.movedim(-3, 0);  qkv_127 = None
+    qkv_128 = movedim_42.transpose(-3, -2);  movedim_42 = None
+    q_42 = qkv_128[0]
+    k_42 = qkv_128[1]
+    v_42 = qkv_128[2];  qkv_128 = None
+    _sdpa_capture_safe_42 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_42, k_42, v_42, scale = 0.1767766952966369);  q_42 = k_42 = v_42 = None
+    transpose_128 = _sdpa_capture_safe_42.transpose(-3, -2);  _sdpa_capture_safe_42 = None
+    y_212 = transpose_128.reshape(4, 256, 256);  transpose_128 = None
+    y_213 = torch._C._nn.linear(y_212, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_212 = None
+    add_89 = spike_173 + y_213;  spike_173 = y_213 = None
+    lif_forward_state_default_174 = torch.ops.snn_custom.lif_forward_state.default(add_89, v_next_141, 1.0, 0.0, 2.0, False);  add_89 = v_next_141 = None
+    spike_174 = lif_forward_state_default_174[0]
+    v_next_174 = lif_forward_state_default_174[1];  lif_forward_state_default_174 = None
+    y_214 = torch.nn.functional.layer_norm(spike_174, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_181 = torch._C._nn.linear(y_214, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_214 = None
+    lif_forward_state_default_175 = torch.ops.snn_custom.lif_forward_state.default(linear_181, v_next_142, 1.0, 0.0, 2.0, False);  linear_181 = v_next_142 = None
+    spike_175 = lif_forward_state_default_175[0]
+    v_next_175 = lif_forward_state_default_175[1];  lif_forward_state_default_175 = None
+    linear_182 = torch._C._nn.linear(spike_175, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_175 = None
+    lif_forward_state_default_176 = torch.ops.snn_custom.lif_forward_state.default(linear_182, v_next_143, 1.0, 0.0, 2.0, False);  linear_182 = v_next_143 = None
+    spike_176 = lif_forward_state_default_176[0]
+    v_next_176 = lif_forward_state_default_176[1];  lif_forward_state_default_176 = None
+    add_90 = spike_174 + spike_176;  spike_174 = spike_176 = None
+    lif_forward_state_default_177 = torch.ops.snn_custom.lif_forward_state.default(add_90, v_next_144, 1.0, 0.0, 2.0, False);  add_90 = v_next_144 = None
+    spike_177 = lif_forward_state_default_177[0]
+    v_next_177 = lif_forward_state_default_177[1];  lif_forward_state_default_177 = None
+    y_215 = torch.nn.functional.layer_norm(spike_177, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_129 = torch._C._nn.linear(y_215, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_215 = None
+    qkv_130 = qkv_129.reshape(4, 256, 3, 8, 32);  qkv_129 = None
+    movedim_43 = qkv_130.movedim(-3, 0);  qkv_130 = None
+    qkv_131 = movedim_43.transpose(-3, -2);  movedim_43 = None
+    q_43 = qkv_131[0]
+    k_43 = qkv_131[1]
+    v_43 = qkv_131[2];  qkv_131 = None
+    _sdpa_capture_safe_43 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_43, k_43, v_43, scale = 0.1767766952966369);  q_43 = k_43 = v_43 = None
+    transpose_131 = _sdpa_capture_safe_43.transpose(-3, -2);  _sdpa_capture_safe_43 = None
+    y_217 = transpose_131.reshape(4, 256, 256);  transpose_131 = None
+    y_218 = torch._C._nn.linear(y_217, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_217 = None
+    add_91 = spike_177 + y_218;  spike_177 = y_218 = None
+    lif_forward_state_default_178 = torch.ops.snn_custom.lif_forward_state.default(add_91, v_next_145, 1.0, 0.0, 2.0, False);  add_91 = v_next_145 = None
+    spike_178 = lif_forward_state_default_178[0]
+    v_next_178 = lif_forward_state_default_178[1];  lif_forward_state_default_178 = None
+    y_219 = torch.nn.functional.layer_norm(spike_178, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_185 = torch._C._nn.linear(y_219, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_219 = None
+    lif_forward_state_default_179 = torch.ops.snn_custom.lif_forward_state.default(linear_185, v_next_146, 1.0, 0.0, 2.0, False);  linear_185 = v_next_146 = None
+    spike_179 = lif_forward_state_default_179[0]
+    v_next_179 = lif_forward_state_default_179[1];  lif_forward_state_default_179 = None
+    linear_186 = torch._C._nn.linear(spike_179, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_179 = None
+    lif_forward_state_default_180 = torch.ops.snn_custom.lif_forward_state.default(linear_186, v_next_147, 1.0, 0.0, 2.0, False);  linear_186 = v_next_147 = None
+    spike_180 = lif_forward_state_default_180[0]
+    v_next_180 = lif_forward_state_default_180[1];  lif_forward_state_default_180 = None
+    add_92 = spike_178 + spike_180;  spike_178 = spike_180 = None
+    lif_forward_state_default_181 = torch.ops.snn_custom.lif_forward_state.default(add_92, v_next_148, 1.0, 0.0, 2.0, False);  add_92 = v_next_148 = None
+    spike_181 = lif_forward_state_default_181[0]
+    v_next_181 = lif_forward_state_default_181[1];  lif_forward_state_default_181 = None
+    y_220 = torch.nn.functional.layer_norm(spike_181, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_132 = torch._C._nn.linear(y_220, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_220 = None
+    qkv_133 = qkv_132.reshape(4, 256, 3, 8, 32);  qkv_132 = None
+    movedim_44 = qkv_133.movedim(-3, 0);  qkv_133 = None
+    qkv_134 = movedim_44.transpose(-3, -2);  movedim_44 = None
+    q_44 = qkv_134[0]
+    k_44 = qkv_134[1]
+    v_44 = qkv_134[2];  qkv_134 = None
+    _sdpa_capture_safe_44 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_44, k_44, v_44, scale = 0.1767766952966369);  q_44 = k_44 = v_44 = None
+    transpose_134 = _sdpa_capture_safe_44.transpose(-3, -2);  _sdpa_capture_safe_44 = None
+    y_222 = transpose_134.reshape(4, 256, 256);  transpose_134 = None
+    y_223 = torch._C._nn.linear(y_222, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_222 = None
+    add_93 = spike_181 + y_223;  spike_181 = y_223 = None
+    lif_forward_state_default_182 = torch.ops.snn_custom.lif_forward_state.default(add_93, v_next_149, 1.0, 0.0, 2.0, False);  add_93 = v_next_149 = None
+    spike_182 = lif_forward_state_default_182[0]
+    v_next_182 = lif_forward_state_default_182[1];  lif_forward_state_default_182 = None
+    y_224 = torch.nn.functional.layer_norm(spike_182, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_189 = torch._C._nn.linear(y_224, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_224 = None
+    lif_forward_state_default_183 = torch.ops.snn_custom.lif_forward_state.default(linear_189, v_next_150, 1.0, 0.0, 2.0, False);  linear_189 = v_next_150 = None
+    spike_183 = lif_forward_state_default_183[0]
+    v_next_183 = lif_forward_state_default_183[1];  lif_forward_state_default_183 = None
+    linear_190 = torch._C._nn.linear(spike_183, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_183 = None
+    lif_forward_state_default_184 = torch.ops.snn_custom.lif_forward_state.default(linear_190, v_next_151, 1.0, 0.0, 2.0, False);  linear_190 = v_next_151 = None
+    spike_184 = lif_forward_state_default_184[0]
+    v_next_184 = lif_forward_state_default_184[1];  lif_forward_state_default_184 = None
+    add_94 = spike_182 + spike_184;  spike_182 = spike_184 = None
+    lif_forward_state_default_185 = torch.ops.snn_custom.lif_forward_state.default(add_94, v_next_152, 1.0, 0.0, 2.0, False);  add_94 = v_next_152 = None
+    spike_185 = lif_forward_state_default_185[0]
+    v_next_185 = lif_forward_state_default_185[1];  lif_forward_state_default_185 = None
+    y_225 = torch.nn.functional.layer_norm(spike_185, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_135 = torch._C._nn.linear(y_225, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_225 = None
+    qkv_136 = qkv_135.reshape(4, 256, 3, 8, 32);  qkv_135 = None
+    movedim_45 = qkv_136.movedim(-3, 0);  qkv_136 = None
+    qkv_137 = movedim_45.transpose(-3, -2);  movedim_45 = None
+    q_45 = qkv_137[0]
+    k_45 = qkv_137[1]
+    v_45 = qkv_137[2];  qkv_137 = None
+    _sdpa_capture_safe_45 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_45, k_45, v_45, scale = 0.1767766952966369);  q_45 = k_45 = v_45 = None
+    transpose_137 = _sdpa_capture_safe_45.transpose(-3, -2);  _sdpa_capture_safe_45 = None
+    y_227 = transpose_137.reshape(4, 256, 256);  transpose_137 = None
+    y_228 = torch._C._nn.linear(y_227, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_227 = None
+    add_95 = spike_185 + y_228;  spike_185 = y_228 = None
+    lif_forward_state_default_186 = torch.ops.snn_custom.lif_forward_state.default(add_95, v_next_153, 1.0, 0.0, 2.0, False);  add_95 = v_next_153 = None
+    spike_186 = lif_forward_state_default_186[0]
+    v_next_186 = lif_forward_state_default_186[1];  lif_forward_state_default_186 = None
+    y_229 = torch.nn.functional.layer_norm(spike_186, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_193 = torch._C._nn.linear(y_229, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_229 = None
+    lif_forward_state_default_187 = torch.ops.snn_custom.lif_forward_state.default(linear_193, v_next_154, 1.0, 0.0, 2.0, False);  linear_193 = v_next_154 = None
+    spike_187 = lif_forward_state_default_187[0]
+    v_next_187 = lif_forward_state_default_187[1];  lif_forward_state_default_187 = None
+    linear_194 = torch._C._nn.linear(spike_187, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_187 = None
+    lif_forward_state_default_188 = torch.ops.snn_custom.lif_forward_state.default(linear_194, v_next_155, 1.0, 0.0, 2.0, False);  linear_194 = v_next_155 = None
+    spike_188 = lif_forward_state_default_188[0]
+    v_next_188 = lif_forward_state_default_188[1];  lif_forward_state_default_188 = None
+    add_96 = spike_186 + spike_188;  spike_186 = spike_188 = None
+    lif_forward_state_default_189 = torch.ops.snn_custom.lif_forward_state.default(add_96, v_next_156, 1.0, 0.0, 2.0, False);  add_96 = v_next_156 = None
+    spike_189 = lif_forward_state_default_189[0]
+    v_next_189 = lif_forward_state_default_189[1];  lif_forward_state_default_189 = None
+    y_230 = torch.nn.functional.layer_norm(spike_189, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_138 = torch._C._nn.linear(y_230, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_230 = None
+    qkv_139 = qkv_138.reshape(4, 256, 3, 8, 32);  qkv_138 = None
+    movedim_46 = qkv_139.movedim(-3, 0);  qkv_139 = None
+    qkv_140 = movedim_46.transpose(-3, -2);  movedim_46 = None
+    q_46 = qkv_140[0]
+    k_46 = qkv_140[1]
+    v_46 = qkv_140[2];  qkv_140 = None
+    _sdpa_capture_safe_46 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_46, k_46, v_46, scale = 0.1767766952966369);  q_46 = k_46 = v_46 = None
+    transpose_140 = _sdpa_capture_safe_46.transpose(-3, -2);  _sdpa_capture_safe_46 = None
+    y_232 = transpose_140.reshape(4, 256, 256);  transpose_140 = None
+    y_233 = torch._C._nn.linear(y_232, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_232 = None
+    add_97 = spike_189 + y_233;  spike_189 = y_233 = None
+    lif_forward_state_default_190 = torch.ops.snn_custom.lif_forward_state.default(add_97, v_next_157, 1.0, 0.0, 2.0, False);  add_97 = v_next_157 = None
+    spike_190 = lif_forward_state_default_190[0]
+    v_next_190 = lif_forward_state_default_190[1];  lif_forward_state_default_190 = None
+    y_234 = torch.nn.functional.layer_norm(spike_190, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_197 = torch._C._nn.linear(y_234, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_234 = None
+    lif_forward_state_default_191 = torch.ops.snn_custom.lif_forward_state.default(linear_197, v_next_158, 1.0, 0.0, 2.0, False);  linear_197 = v_next_158 = None
+    spike_191 = lif_forward_state_default_191[0]
+    v_next_191 = lif_forward_state_default_191[1];  lif_forward_state_default_191 = None
+    linear_198 = torch._C._nn.linear(spike_191, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_191 = None
+    lif_forward_state_default_192 = torch.ops.snn_custom.lif_forward_state.default(linear_198, v_next_159, 1.0, 0.0, 2.0, False);  linear_198 = v_next_159 = None
+    spike_192 = lif_forward_state_default_192[0]
+    v_next_192 = lif_forward_state_default_192[1];  lif_forward_state_default_192 = None
+    add_98 = spike_190 + spike_192;  spike_190 = spike_192 = None
+    lif_forward_state_default_193 = torch.ops.snn_custom.lif_forward_state.default(add_98, v_next_160, 1.0, 0.0, 2.0, False);  add_98 = v_next_160 = None
+    spike_193 = lif_forward_state_default_193[0]
+    v_next_193 = lif_forward_state_default_193[1];  lif_forward_state_default_193 = None
+    y_235 = torch.nn.functional.layer_norm(spike_193, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_141 = torch._C._nn.linear(y_235, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_235 = None
+    qkv_142 = qkv_141.reshape(4, 256, 3, 8, 32);  qkv_141 = None
+    movedim_47 = qkv_142.movedim(-3, 0);  qkv_142 = None
+    qkv_143 = movedim_47.transpose(-3, -2);  movedim_47 = None
+    q_47 = qkv_143[0]
+    k_47 = qkv_143[1]
+    v_47 = qkv_143[2];  qkv_143 = None
+    _sdpa_capture_safe_47 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_47, k_47, v_47, scale = 0.1767766952966369);  q_47 = k_47 = v_47 = None
+    transpose_143 = _sdpa_capture_safe_47.transpose(-3, -2);  _sdpa_capture_safe_47 = None
+    y_237 = transpose_143.reshape(4, 256, 256);  transpose_143 = None
+    y_238 = torch._C._nn.linear(y_237, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_237 = None
+    add_99 = spike_193 + y_238;  spike_193 = y_238 = None
+    lif_forward_state_default_194 = torch.ops.snn_custom.lif_forward_state.default(add_99, v_next_161, 1.0, 0.0, 2.0, False);  add_99 = v_next_161 = None
+    spike_194 = lif_forward_state_default_194[0]
+    v_next_194 = lif_forward_state_default_194[1];  lif_forward_state_default_194 = None
+    y_239 = torch.nn.functional.layer_norm(spike_194, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_201 = torch._C._nn.linear(y_239, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_239 = None
+    lif_forward_state_default_195 = torch.ops.snn_custom.lif_forward_state.default(linear_201, v_next_162, 1.0, 0.0, 2.0, False);  linear_201 = v_next_162 = None
+    spike_195 = lif_forward_state_default_195[0]
+    v_next_195 = lif_forward_state_default_195[1];  lif_forward_state_default_195 = None
+    linear_202 = torch._C._nn.linear(spike_195, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_195 = None
+    lif_forward_state_default_196 = torch.ops.snn_custom.lif_forward_state.default(linear_202, v_next_163, 1.0, 0.0, 2.0, False);  linear_202 = v_next_163 = None
+    spike_196 = lif_forward_state_default_196[0]
+    v_next_196 = lif_forward_state_default_196[1];  lif_forward_state_default_196 = None
+    add_100 = spike_194 + spike_196;  spike_194 = spike_196 = None
+    lif_forward_state_default_197 = torch.ops.snn_custom.lif_forward_state.default(add_100, v_next_164, 1.0, 0.0, 2.0, False);  add_100 = v_next_164 = None
+    spike_197 = lif_forward_state_default_197[0]
+    v_next_197 = lif_forward_state_default_197[1];  lif_forward_state_default_197 = None
+    x_10 = torch.nn.functional.layer_norm(spike_197, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_197 = None
+    x_11 = x_10.mean(dim = -2);  x_10 = None
+    linear_203 = torch._C._nn.linear(x_11, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_11 = None
+    out_spikes_counter_5 = out_spikes_counter_4 + linear_203;  out_spikes_counter_4 = linear_203 = None
+    getitem_546 = l_x_seq_[6]
+    linear_204 = torch._C._nn.linear(getitem_546, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_546 = None
+    lif_forward_state_default_198 = torch.ops.snn_custom.lif_forward_state.default(linear_204, v_next_165, 1.0, 0.0, 2.0, False);  linear_204 = v_next_165 = None
+    spike_198 = lif_forward_state_default_198[0]
+    v_next_198 = lif_forward_state_default_198[1];  lif_forward_state_default_198 = None
+    y_240 = torch.nn.functional.layer_norm(spike_198, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_144 = torch._C._nn.linear(y_240, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_240 = None
+    qkv_145 = qkv_144.reshape(4, 256, 3, 8, 32);  qkv_144 = None
+    movedim_48 = qkv_145.movedim(-3, 0);  qkv_145 = None
+    qkv_146 = movedim_48.transpose(-3, -2);  movedim_48 = None
+    q_48 = qkv_146[0]
+    k_48 = qkv_146[1]
+    v_48 = qkv_146[2];  qkv_146 = None
+    _sdpa_capture_safe_48 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_48, k_48, v_48, scale = 0.1767766952966369);  q_48 = k_48 = v_48 = None
+    transpose_146 = _sdpa_capture_safe_48.transpose(-3, -2);  _sdpa_capture_safe_48 = None
+    y_242 = transpose_146.reshape(4, 256, 256);  transpose_146 = None
+    y_243 = torch._C._nn.linear(y_242, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_242 = None
+    add_102 = spike_198 + y_243;  spike_198 = y_243 = None
+    lif_forward_state_default_199 = torch.ops.snn_custom.lif_forward_state.default(add_102, v_next_166, 1.0, 0.0, 2.0, False);  add_102 = v_next_166 = None
+    spike_199 = lif_forward_state_default_199[0]
+    v_next_199 = lif_forward_state_default_199[1];  lif_forward_state_default_199 = None
+    y_244 = torch.nn.functional.layer_norm(spike_199, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_207 = torch._C._nn.linear(y_244, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_244 = None
+    lif_forward_state_default_200 = torch.ops.snn_custom.lif_forward_state.default(linear_207, v_next_167, 1.0, 0.0, 2.0, False);  linear_207 = v_next_167 = None
+    spike_200 = lif_forward_state_default_200[0]
+    v_next_200 = lif_forward_state_default_200[1];  lif_forward_state_default_200 = None
+    linear_208 = torch._C._nn.linear(spike_200, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_200 = None
+    lif_forward_state_default_201 = torch.ops.snn_custom.lif_forward_state.default(linear_208, v_next_168, 1.0, 0.0, 2.0, False);  linear_208 = v_next_168 = None
+    spike_201 = lif_forward_state_default_201[0]
+    v_next_201 = lif_forward_state_default_201[1];  lif_forward_state_default_201 = None
+    add_103 = spike_199 + spike_201;  spike_199 = spike_201 = None
+    lif_forward_state_default_202 = torch.ops.snn_custom.lif_forward_state.default(add_103, v_next_169, 1.0, 0.0, 2.0, False);  add_103 = v_next_169 = None
+    spike_202 = lif_forward_state_default_202[0]
+    v_next_202 = lif_forward_state_default_202[1];  lif_forward_state_default_202 = None
+    y_245 = torch.nn.functional.layer_norm(spike_202, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_147 = torch._C._nn.linear(y_245, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_245 = None
+    qkv_148 = qkv_147.reshape(4, 256, 3, 8, 32);  qkv_147 = None
+    movedim_49 = qkv_148.movedim(-3, 0);  qkv_148 = None
+    qkv_149 = movedim_49.transpose(-3, -2);  movedim_49 = None
+    q_49 = qkv_149[0]
+    k_49 = qkv_149[1]
+    v_49 = qkv_149[2];  qkv_149 = None
+    _sdpa_capture_safe_49 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_49, k_49, v_49, scale = 0.1767766952966369);  q_49 = k_49 = v_49 = None
+    transpose_149 = _sdpa_capture_safe_49.transpose(-3, -2);  _sdpa_capture_safe_49 = None
+    y_247 = transpose_149.reshape(4, 256, 256);  transpose_149 = None
+    y_248 = torch._C._nn.linear(y_247, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_247 = None
+    add_104 = spike_202 + y_248;  spike_202 = y_248 = None
+    lif_forward_state_default_203 = torch.ops.snn_custom.lif_forward_state.default(add_104, v_next_170, 1.0, 0.0, 2.0, False);  add_104 = v_next_170 = None
+    spike_203 = lif_forward_state_default_203[0]
+    v_next_203 = lif_forward_state_default_203[1];  lif_forward_state_default_203 = None
+    y_249 = torch.nn.functional.layer_norm(spike_203, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_211 = torch._C._nn.linear(y_249, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_249 = None
+    lif_forward_state_default_204 = torch.ops.snn_custom.lif_forward_state.default(linear_211, v_next_171, 1.0, 0.0, 2.0, False);  linear_211 = v_next_171 = None
+    spike_204 = lif_forward_state_default_204[0]
+    v_next_204 = lif_forward_state_default_204[1];  lif_forward_state_default_204 = None
+    linear_212 = torch._C._nn.linear(spike_204, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_204 = None
+    lif_forward_state_default_205 = torch.ops.snn_custom.lif_forward_state.default(linear_212, v_next_172, 1.0, 0.0, 2.0, False);  linear_212 = v_next_172 = None
+    spike_205 = lif_forward_state_default_205[0]
+    v_next_205 = lif_forward_state_default_205[1];  lif_forward_state_default_205 = None
+    add_105 = spike_203 + spike_205;  spike_203 = spike_205 = None
+    lif_forward_state_default_206 = torch.ops.snn_custom.lif_forward_state.default(add_105, v_next_173, 1.0, 0.0, 2.0, False);  add_105 = v_next_173 = None
+    spike_206 = lif_forward_state_default_206[0]
+    v_next_206 = lif_forward_state_default_206[1];  lif_forward_state_default_206 = None
+    y_250 = torch.nn.functional.layer_norm(spike_206, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_150 = torch._C._nn.linear(y_250, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_250 = None
+    qkv_151 = qkv_150.reshape(4, 256, 3, 8, 32);  qkv_150 = None
+    movedim_50 = qkv_151.movedim(-3, 0);  qkv_151 = None
+    qkv_152 = movedim_50.transpose(-3, -2);  movedim_50 = None
+    q_50 = qkv_152[0]
+    k_50 = qkv_152[1]
+    v_50 = qkv_152[2];  qkv_152 = None
+    _sdpa_capture_safe_50 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_50, k_50, v_50, scale = 0.1767766952966369);  q_50 = k_50 = v_50 = None
+    transpose_152 = _sdpa_capture_safe_50.transpose(-3, -2);  _sdpa_capture_safe_50 = None
+    y_252 = transpose_152.reshape(4, 256, 256);  transpose_152 = None
+    y_253 = torch._C._nn.linear(y_252, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_252 = None
+    add_106 = spike_206 + y_253;  spike_206 = y_253 = None
+    lif_forward_state_default_207 = torch.ops.snn_custom.lif_forward_state.default(add_106, v_next_174, 1.0, 0.0, 2.0, False);  add_106 = v_next_174 = None
+    spike_207 = lif_forward_state_default_207[0]
+    v_next_207 = lif_forward_state_default_207[1];  lif_forward_state_default_207 = None
+    y_254 = torch.nn.functional.layer_norm(spike_207, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_215 = torch._C._nn.linear(y_254, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_254 = None
+    lif_forward_state_default_208 = torch.ops.snn_custom.lif_forward_state.default(linear_215, v_next_175, 1.0, 0.0, 2.0, False);  linear_215 = v_next_175 = None
+    spike_208 = lif_forward_state_default_208[0]
+    v_next_208 = lif_forward_state_default_208[1];  lif_forward_state_default_208 = None
+    linear_216 = torch._C._nn.linear(spike_208, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_208 = None
+    lif_forward_state_default_209 = torch.ops.snn_custom.lif_forward_state.default(linear_216, v_next_176, 1.0, 0.0, 2.0, False);  linear_216 = v_next_176 = None
+    spike_209 = lif_forward_state_default_209[0]
+    v_next_209 = lif_forward_state_default_209[1];  lif_forward_state_default_209 = None
+    add_107 = spike_207 + spike_209;  spike_207 = spike_209 = None
+    lif_forward_state_default_210 = torch.ops.snn_custom.lif_forward_state.default(add_107, v_next_177, 1.0, 0.0, 2.0, False);  add_107 = v_next_177 = None
+    spike_210 = lif_forward_state_default_210[0]
+    v_next_210 = lif_forward_state_default_210[1];  lif_forward_state_default_210 = None
+    y_255 = torch.nn.functional.layer_norm(spike_210, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_153 = torch._C._nn.linear(y_255, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_255 = None
+    qkv_154 = qkv_153.reshape(4, 256, 3, 8, 32);  qkv_153 = None
+    movedim_51 = qkv_154.movedim(-3, 0);  qkv_154 = None
+    qkv_155 = movedim_51.transpose(-3, -2);  movedim_51 = None
+    q_51 = qkv_155[0]
+    k_51 = qkv_155[1]
+    v_51 = qkv_155[2];  qkv_155 = None
+    _sdpa_capture_safe_51 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_51, k_51, v_51, scale = 0.1767766952966369);  q_51 = k_51 = v_51 = None
+    transpose_155 = _sdpa_capture_safe_51.transpose(-3, -2);  _sdpa_capture_safe_51 = None
+    y_257 = transpose_155.reshape(4, 256, 256);  transpose_155 = None
+    y_258 = torch._C._nn.linear(y_257, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_257 = None
+    add_108 = spike_210 + y_258;  spike_210 = y_258 = None
+    lif_forward_state_default_211 = torch.ops.snn_custom.lif_forward_state.default(add_108, v_next_178, 1.0, 0.0, 2.0, False);  add_108 = v_next_178 = None
+    spike_211 = lif_forward_state_default_211[0]
+    v_next_211 = lif_forward_state_default_211[1];  lif_forward_state_default_211 = None
+    y_259 = torch.nn.functional.layer_norm(spike_211, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_219 = torch._C._nn.linear(y_259, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_259 = None
+    lif_forward_state_default_212 = torch.ops.snn_custom.lif_forward_state.default(linear_219, v_next_179, 1.0, 0.0, 2.0, False);  linear_219 = v_next_179 = None
+    spike_212 = lif_forward_state_default_212[0]
+    v_next_212 = lif_forward_state_default_212[1];  lif_forward_state_default_212 = None
+    linear_220 = torch._C._nn.linear(spike_212, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_212 = None
+    lif_forward_state_default_213 = torch.ops.snn_custom.lif_forward_state.default(linear_220, v_next_180, 1.0, 0.0, 2.0, False);  linear_220 = v_next_180 = None
+    spike_213 = lif_forward_state_default_213[0]
+    v_next_213 = lif_forward_state_default_213[1];  lif_forward_state_default_213 = None
+    add_109 = spike_211 + spike_213;  spike_211 = spike_213 = None
+    lif_forward_state_default_214 = torch.ops.snn_custom.lif_forward_state.default(add_109, v_next_181, 1.0, 0.0, 2.0, False);  add_109 = v_next_181 = None
+    spike_214 = lif_forward_state_default_214[0]
+    v_next_214 = lif_forward_state_default_214[1];  lif_forward_state_default_214 = None
+    y_260 = torch.nn.functional.layer_norm(spike_214, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_156 = torch._C._nn.linear(y_260, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_260 = None
+    qkv_157 = qkv_156.reshape(4, 256, 3, 8, 32);  qkv_156 = None
+    movedim_52 = qkv_157.movedim(-3, 0);  qkv_157 = None
+    qkv_158 = movedim_52.transpose(-3, -2);  movedim_52 = None
+    q_52 = qkv_158[0]
+    k_52 = qkv_158[1]
+    v_52 = qkv_158[2];  qkv_158 = None
+    _sdpa_capture_safe_52 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_52, k_52, v_52, scale = 0.1767766952966369);  q_52 = k_52 = v_52 = None
+    transpose_158 = _sdpa_capture_safe_52.transpose(-3, -2);  _sdpa_capture_safe_52 = None
+    y_262 = transpose_158.reshape(4, 256, 256);  transpose_158 = None
+    y_263 = torch._C._nn.linear(y_262, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_262 = None
+    add_110 = spike_214 + y_263;  spike_214 = y_263 = None
+    lif_forward_state_default_215 = torch.ops.snn_custom.lif_forward_state.default(add_110, v_next_182, 1.0, 0.0, 2.0, False);  add_110 = v_next_182 = None
+    spike_215 = lif_forward_state_default_215[0]
+    v_next_215 = lif_forward_state_default_215[1];  lif_forward_state_default_215 = None
+    y_264 = torch.nn.functional.layer_norm(spike_215, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_223 = torch._C._nn.linear(y_264, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_264 = None
+    lif_forward_state_default_216 = torch.ops.snn_custom.lif_forward_state.default(linear_223, v_next_183, 1.0, 0.0, 2.0, False);  linear_223 = v_next_183 = None
+    spike_216 = lif_forward_state_default_216[0]
+    v_next_216 = lif_forward_state_default_216[1];  lif_forward_state_default_216 = None
+    linear_224 = torch._C._nn.linear(spike_216, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_216 = None
+    lif_forward_state_default_217 = torch.ops.snn_custom.lif_forward_state.default(linear_224, v_next_184, 1.0, 0.0, 2.0, False);  linear_224 = v_next_184 = None
+    spike_217 = lif_forward_state_default_217[0]
+    v_next_217 = lif_forward_state_default_217[1];  lif_forward_state_default_217 = None
+    add_111 = spike_215 + spike_217;  spike_215 = spike_217 = None
+    lif_forward_state_default_218 = torch.ops.snn_custom.lif_forward_state.default(add_111, v_next_185, 1.0, 0.0, 2.0, False);  add_111 = v_next_185 = None
+    spike_218 = lif_forward_state_default_218[0]
+    v_next_218 = lif_forward_state_default_218[1];  lif_forward_state_default_218 = None
+    y_265 = torch.nn.functional.layer_norm(spike_218, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_159 = torch._C._nn.linear(y_265, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_265 = None
+    qkv_160 = qkv_159.reshape(4, 256, 3, 8, 32);  qkv_159 = None
+    movedim_53 = qkv_160.movedim(-3, 0);  qkv_160 = None
+    qkv_161 = movedim_53.transpose(-3, -2);  movedim_53 = None
+    q_53 = qkv_161[0]
+    k_53 = qkv_161[1]
+    v_53 = qkv_161[2];  qkv_161 = None
+    _sdpa_capture_safe_53 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_53, k_53, v_53, scale = 0.1767766952966369);  q_53 = k_53 = v_53 = None
+    transpose_161 = _sdpa_capture_safe_53.transpose(-3, -2);  _sdpa_capture_safe_53 = None
+    y_267 = transpose_161.reshape(4, 256, 256);  transpose_161 = None
+    y_268 = torch._C._nn.linear(y_267, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_267 = None
+    add_112 = spike_218 + y_268;  spike_218 = y_268 = None
+    lif_forward_state_default_219 = torch.ops.snn_custom.lif_forward_state.default(add_112, v_next_186, 1.0, 0.0, 2.0, False);  add_112 = v_next_186 = None
+    spike_219 = lif_forward_state_default_219[0]
+    v_next_219 = lif_forward_state_default_219[1];  lif_forward_state_default_219 = None
+    y_269 = torch.nn.functional.layer_norm(spike_219, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_227 = torch._C._nn.linear(y_269, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_269 = None
+    lif_forward_state_default_220 = torch.ops.snn_custom.lif_forward_state.default(linear_227, v_next_187, 1.0, 0.0, 2.0, False);  linear_227 = v_next_187 = None
+    spike_220 = lif_forward_state_default_220[0]
+    v_next_220 = lif_forward_state_default_220[1];  lif_forward_state_default_220 = None
+    linear_228 = torch._C._nn.linear(spike_220, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_220 = None
+    lif_forward_state_default_221 = torch.ops.snn_custom.lif_forward_state.default(linear_228, v_next_188, 1.0, 0.0, 2.0, False);  linear_228 = v_next_188 = None
+    spike_221 = lif_forward_state_default_221[0]
+    v_next_221 = lif_forward_state_default_221[1];  lif_forward_state_default_221 = None
+    add_113 = spike_219 + spike_221;  spike_219 = spike_221 = None
+    lif_forward_state_default_222 = torch.ops.snn_custom.lif_forward_state.default(add_113, v_next_189, 1.0, 0.0, 2.0, False);  add_113 = v_next_189 = None
+    spike_222 = lif_forward_state_default_222[0]
+    v_next_222 = lif_forward_state_default_222[1];  lif_forward_state_default_222 = None
+    y_270 = torch.nn.functional.layer_norm(spike_222, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_162 = torch._C._nn.linear(y_270, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_270 = None
+    qkv_163 = qkv_162.reshape(4, 256, 3, 8, 32);  qkv_162 = None
+    movedim_54 = qkv_163.movedim(-3, 0);  qkv_163 = None
+    qkv_164 = movedim_54.transpose(-3, -2);  movedim_54 = None
+    q_54 = qkv_164[0]
+    k_54 = qkv_164[1]
+    v_54 = qkv_164[2];  qkv_164 = None
+    _sdpa_capture_safe_54 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_54, k_54, v_54, scale = 0.1767766952966369);  q_54 = k_54 = v_54 = None
+    transpose_164 = _sdpa_capture_safe_54.transpose(-3, -2);  _sdpa_capture_safe_54 = None
+    y_272 = transpose_164.reshape(4, 256, 256);  transpose_164 = None
+    y_273 = torch._C._nn.linear(y_272, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_272 = None
+    add_114 = spike_222 + y_273;  spike_222 = y_273 = None
+    lif_forward_state_default_223 = torch.ops.snn_custom.lif_forward_state.default(add_114, v_next_190, 1.0, 0.0, 2.0, False);  add_114 = v_next_190 = None
+    spike_223 = lif_forward_state_default_223[0]
+    v_next_223 = lif_forward_state_default_223[1];  lif_forward_state_default_223 = None
+    y_274 = torch.nn.functional.layer_norm(spike_223, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_231 = torch._C._nn.linear(y_274, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_274 = None
+    lif_forward_state_default_224 = torch.ops.snn_custom.lif_forward_state.default(linear_231, v_next_191, 1.0, 0.0, 2.0, False);  linear_231 = v_next_191 = None
+    spike_224 = lif_forward_state_default_224[0]
+    v_next_224 = lif_forward_state_default_224[1];  lif_forward_state_default_224 = None
+    linear_232 = torch._C._nn.linear(spike_224, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_224 = None
+    lif_forward_state_default_225 = torch.ops.snn_custom.lif_forward_state.default(linear_232, v_next_192, 1.0, 0.0, 2.0, False);  linear_232 = v_next_192 = None
+    spike_225 = lif_forward_state_default_225[0]
+    v_next_225 = lif_forward_state_default_225[1];  lif_forward_state_default_225 = None
+    add_115 = spike_223 + spike_225;  spike_223 = spike_225 = None
+    lif_forward_state_default_226 = torch.ops.snn_custom.lif_forward_state.default(add_115, v_next_193, 1.0, 0.0, 2.0, False);  add_115 = v_next_193 = None
+    spike_226 = lif_forward_state_default_226[0]
+    v_next_226 = lif_forward_state_default_226[1];  lif_forward_state_default_226 = None
+    y_275 = torch.nn.functional.layer_norm(spike_226, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_165 = torch._C._nn.linear(y_275, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_275 = None
+    qkv_166 = qkv_165.reshape(4, 256, 3, 8, 32);  qkv_165 = None
+    movedim_55 = qkv_166.movedim(-3, 0);  qkv_166 = None
+    qkv_167 = movedim_55.transpose(-3, -2);  movedim_55 = None
+    q_55 = qkv_167[0]
+    k_55 = qkv_167[1]
+    v_55 = qkv_167[2];  qkv_167 = None
+    _sdpa_capture_safe_55 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_55, k_55, v_55, scale = 0.1767766952966369);  q_55 = k_55 = v_55 = None
+    transpose_167 = _sdpa_capture_safe_55.transpose(-3, -2);  _sdpa_capture_safe_55 = None
+    y_277 = transpose_167.reshape(4, 256, 256);  transpose_167 = None
+    y_278 = torch._C._nn.linear(y_277, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_277 = None
+    add_116 = spike_226 + y_278;  spike_226 = y_278 = None
+    lif_forward_state_default_227 = torch.ops.snn_custom.lif_forward_state.default(add_116, v_next_194, 1.0, 0.0, 2.0, False);  add_116 = v_next_194 = None
+    spike_227 = lif_forward_state_default_227[0]
+    v_next_227 = lif_forward_state_default_227[1];  lif_forward_state_default_227 = None
+    y_279 = torch.nn.functional.layer_norm(spike_227, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_235 = torch._C._nn.linear(y_279, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_279 = None
+    lif_forward_state_default_228 = torch.ops.snn_custom.lif_forward_state.default(linear_235, v_next_195, 1.0, 0.0, 2.0, False);  linear_235 = v_next_195 = None
+    spike_228 = lif_forward_state_default_228[0]
+    v_next_228 = lif_forward_state_default_228[1];  lif_forward_state_default_228 = None
+    linear_236 = torch._C._nn.linear(spike_228, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_228 = None
+    lif_forward_state_default_229 = torch.ops.snn_custom.lif_forward_state.default(linear_236, v_next_196, 1.0, 0.0, 2.0, False);  linear_236 = v_next_196 = None
+    spike_229 = lif_forward_state_default_229[0]
+    v_next_229 = lif_forward_state_default_229[1];  lif_forward_state_default_229 = None
+    add_117 = spike_227 + spike_229;  spike_227 = spike_229 = None
+    lif_forward_state_default_230 = torch.ops.snn_custom.lif_forward_state.default(add_117, v_next_197, 1.0, 0.0, 2.0, False);  add_117 = v_next_197 = None
+    spike_230 = lif_forward_state_default_230[0]
+    v_next_230 = lif_forward_state_default_230[1];  lif_forward_state_default_230 = None
+    x_12 = torch.nn.functional.layer_norm(spike_230, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_230 = None
+    x_13 = x_12.mean(dim = -2);  x_12 = None
+    linear_237 = torch._C._nn.linear(x_13, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_13 = None
+    out_spikes_counter_6 = out_spikes_counter_5 + linear_237;  out_spikes_counter_5 = linear_237 = None
+    getitem_637 = l_x_seq_[7]
+    linear_238 = torch._C._nn.linear(getitem_637, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_637 = None
+    lif_forward_state_default_231 = torch.ops.snn_custom.lif_forward_state.default(linear_238, v_next_198, 1.0, 0.0, 2.0, False);  linear_238 = v_next_198 = None
+    spike_231 = lif_forward_state_default_231[0]
+    v_next_231 = lif_forward_state_default_231[1];  lif_forward_state_default_231 = None
+    y_280 = torch.nn.functional.layer_norm(spike_231, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_168 = torch._C._nn.linear(y_280, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_280 = None
+    qkv_169 = qkv_168.reshape(4, 256, 3, 8, 32);  qkv_168 = None
+    movedim_56 = qkv_169.movedim(-3, 0);  qkv_169 = None
+    qkv_170 = movedim_56.transpose(-3, -2);  movedim_56 = None
+    q_56 = qkv_170[0]
+    k_56 = qkv_170[1]
+    v_56 = qkv_170[2];  qkv_170 = None
+    _sdpa_capture_safe_56 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_56, k_56, v_56, scale = 0.1767766952966369);  q_56 = k_56 = v_56 = None
+    transpose_170 = _sdpa_capture_safe_56.transpose(-3, -2);  _sdpa_capture_safe_56 = None
+    y_282 = transpose_170.reshape(4, 256, 256);  transpose_170 = None
+    y_283 = torch._C._nn.linear(y_282, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_282 = None
+    add_119 = spike_231 + y_283;  spike_231 = y_283 = None
+    lif_forward_state_default_232 = torch.ops.snn_custom.lif_forward_state.default(add_119, v_next_199, 1.0, 0.0, 2.0, False);  add_119 = v_next_199 = None
+    spike_232 = lif_forward_state_default_232[0]
+    v_next_232 = lif_forward_state_default_232[1];  lif_forward_state_default_232 = None
+    y_284 = torch.nn.functional.layer_norm(spike_232, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_241 = torch._C._nn.linear(y_284, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_284 = None
+    lif_forward_state_default_233 = torch.ops.snn_custom.lif_forward_state.default(linear_241, v_next_200, 1.0, 0.0, 2.0, False);  linear_241 = v_next_200 = None
+    spike_233 = lif_forward_state_default_233[0]
+    v_next_233 = lif_forward_state_default_233[1];  lif_forward_state_default_233 = None
+    linear_242 = torch._C._nn.linear(spike_233, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_233 = None
+    lif_forward_state_default_234 = torch.ops.snn_custom.lif_forward_state.default(linear_242, v_next_201, 1.0, 0.0, 2.0, False);  linear_242 = v_next_201 = None
+    spike_234 = lif_forward_state_default_234[0]
+    v_next_234 = lif_forward_state_default_234[1];  lif_forward_state_default_234 = None
+    add_120 = spike_232 + spike_234;  spike_232 = spike_234 = None
+    lif_forward_state_default_235 = torch.ops.snn_custom.lif_forward_state.default(add_120, v_next_202, 1.0, 0.0, 2.0, False);  add_120 = v_next_202 = None
+    spike_235 = lif_forward_state_default_235[0]
+    v_next_235 = lif_forward_state_default_235[1];  lif_forward_state_default_235 = None
+    y_285 = torch.nn.functional.layer_norm(spike_235, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_171 = torch._C._nn.linear(y_285, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_285 = None
+    qkv_172 = qkv_171.reshape(4, 256, 3, 8, 32);  qkv_171 = None
+    movedim_57 = qkv_172.movedim(-3, 0);  qkv_172 = None
+    qkv_173 = movedim_57.transpose(-3, -2);  movedim_57 = None
+    q_57 = qkv_173[0]
+    k_57 = qkv_173[1]
+    v_57 = qkv_173[2];  qkv_173 = None
+    _sdpa_capture_safe_57 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_57, k_57, v_57, scale = 0.1767766952966369);  q_57 = k_57 = v_57 = None
+    transpose_173 = _sdpa_capture_safe_57.transpose(-3, -2);  _sdpa_capture_safe_57 = None
+    y_287 = transpose_173.reshape(4, 256, 256);  transpose_173 = None
+    y_288 = torch._C._nn.linear(y_287, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_287 = None
+    add_121 = spike_235 + y_288;  spike_235 = y_288 = None
+    lif_forward_state_default_236 = torch.ops.snn_custom.lif_forward_state.default(add_121, v_next_203, 1.0, 0.0, 2.0, False);  add_121 = v_next_203 = None
+    spike_236 = lif_forward_state_default_236[0]
+    v_next_236 = lif_forward_state_default_236[1];  lif_forward_state_default_236 = None
+    y_289 = torch.nn.functional.layer_norm(spike_236, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_245 = torch._C._nn.linear(y_289, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_289 = None
+    lif_forward_state_default_237 = torch.ops.snn_custom.lif_forward_state.default(linear_245, v_next_204, 1.0, 0.0, 2.0, False);  linear_245 = v_next_204 = None
+    spike_237 = lif_forward_state_default_237[0]
+    v_next_237 = lif_forward_state_default_237[1];  lif_forward_state_default_237 = None
+    linear_246 = torch._C._nn.linear(spike_237, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_237 = None
+    lif_forward_state_default_238 = torch.ops.snn_custom.lif_forward_state.default(linear_246, v_next_205, 1.0, 0.0, 2.0, False);  linear_246 = v_next_205 = None
+    spike_238 = lif_forward_state_default_238[0]
+    v_next_238 = lif_forward_state_default_238[1];  lif_forward_state_default_238 = None
+    add_122 = spike_236 + spike_238;  spike_236 = spike_238 = None
+    lif_forward_state_default_239 = torch.ops.snn_custom.lif_forward_state.default(add_122, v_next_206, 1.0, 0.0, 2.0, False);  add_122 = v_next_206 = None
+    spike_239 = lif_forward_state_default_239[0]
+    v_next_239 = lif_forward_state_default_239[1];  lif_forward_state_default_239 = None
+    y_290 = torch.nn.functional.layer_norm(spike_239, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_174 = torch._C._nn.linear(y_290, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_290 = None
+    qkv_175 = qkv_174.reshape(4, 256, 3, 8, 32);  qkv_174 = None
+    movedim_58 = qkv_175.movedim(-3, 0);  qkv_175 = None
+    qkv_176 = movedim_58.transpose(-3, -2);  movedim_58 = None
+    q_58 = qkv_176[0]
+    k_58 = qkv_176[1]
+    v_58 = qkv_176[2];  qkv_176 = None
+    _sdpa_capture_safe_58 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_58, k_58, v_58, scale = 0.1767766952966369);  q_58 = k_58 = v_58 = None
+    transpose_176 = _sdpa_capture_safe_58.transpose(-3, -2);  _sdpa_capture_safe_58 = None
+    y_292 = transpose_176.reshape(4, 256, 256);  transpose_176 = None
+    y_293 = torch._C._nn.linear(y_292, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_292 = None
+    add_123 = spike_239 + y_293;  spike_239 = y_293 = None
+    lif_forward_state_default_240 = torch.ops.snn_custom.lif_forward_state.default(add_123, v_next_207, 1.0, 0.0, 2.0, False);  add_123 = v_next_207 = None
+    spike_240 = lif_forward_state_default_240[0]
+    v_next_240 = lif_forward_state_default_240[1];  lif_forward_state_default_240 = None
+    y_294 = torch.nn.functional.layer_norm(spike_240, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_249 = torch._C._nn.linear(y_294, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_294 = None
+    lif_forward_state_default_241 = torch.ops.snn_custom.lif_forward_state.default(linear_249, v_next_208, 1.0, 0.0, 2.0, False);  linear_249 = v_next_208 = None
+    spike_241 = lif_forward_state_default_241[0]
+    v_next_241 = lif_forward_state_default_241[1];  lif_forward_state_default_241 = None
+    linear_250 = torch._C._nn.linear(spike_241, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_241 = None
+    lif_forward_state_default_242 = torch.ops.snn_custom.lif_forward_state.default(linear_250, v_next_209, 1.0, 0.0, 2.0, False);  linear_250 = v_next_209 = None
+    spike_242 = lif_forward_state_default_242[0]
+    v_next_242 = lif_forward_state_default_242[1];  lif_forward_state_default_242 = None
+    add_124 = spike_240 + spike_242;  spike_240 = spike_242 = None
+    lif_forward_state_default_243 = torch.ops.snn_custom.lif_forward_state.default(add_124, v_next_210, 1.0, 0.0, 2.0, False);  add_124 = v_next_210 = None
+    spike_243 = lif_forward_state_default_243[0]
+    v_next_243 = lif_forward_state_default_243[1];  lif_forward_state_default_243 = None
+    y_295 = torch.nn.functional.layer_norm(spike_243, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_177 = torch._C._nn.linear(y_295, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_295 = None
+    qkv_178 = qkv_177.reshape(4, 256, 3, 8, 32);  qkv_177 = None
+    movedim_59 = qkv_178.movedim(-3, 0);  qkv_178 = None
+    qkv_179 = movedim_59.transpose(-3, -2);  movedim_59 = None
+    q_59 = qkv_179[0]
+    k_59 = qkv_179[1]
+    v_59 = qkv_179[2];  qkv_179 = None
+    _sdpa_capture_safe_59 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_59, k_59, v_59, scale = 0.1767766952966369);  q_59 = k_59 = v_59 = None
+    transpose_179 = _sdpa_capture_safe_59.transpose(-3, -2);  _sdpa_capture_safe_59 = None
+    y_297 = transpose_179.reshape(4, 256, 256);  transpose_179 = None
+    y_298 = torch._C._nn.linear(y_297, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_297 = None
+    add_125 = spike_243 + y_298;  spike_243 = y_298 = None
+    lif_forward_state_default_244 = torch.ops.snn_custom.lif_forward_state.default(add_125, v_next_211, 1.0, 0.0, 2.0, False);  add_125 = v_next_211 = None
+    spike_244 = lif_forward_state_default_244[0]
+    v_next_244 = lif_forward_state_default_244[1];  lif_forward_state_default_244 = None
+    y_299 = torch.nn.functional.layer_norm(spike_244, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_253 = torch._C._nn.linear(y_299, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_299 = None
+    lif_forward_state_default_245 = torch.ops.snn_custom.lif_forward_state.default(linear_253, v_next_212, 1.0, 0.0, 2.0, False);  linear_253 = v_next_212 = None
+    spike_245 = lif_forward_state_default_245[0]
+    v_next_245 = lif_forward_state_default_245[1];  lif_forward_state_default_245 = None
+    linear_254 = torch._C._nn.linear(spike_245, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_245 = None
+    lif_forward_state_default_246 = torch.ops.snn_custom.lif_forward_state.default(linear_254, v_next_213, 1.0, 0.0, 2.0, False);  linear_254 = v_next_213 = None
+    spike_246 = lif_forward_state_default_246[0]
+    v_next_246 = lif_forward_state_default_246[1];  lif_forward_state_default_246 = None
+    add_126 = spike_244 + spike_246;  spike_244 = spike_246 = None
+    lif_forward_state_default_247 = torch.ops.snn_custom.lif_forward_state.default(add_126, v_next_214, 1.0, 0.0, 2.0, False);  add_126 = v_next_214 = None
+    spike_247 = lif_forward_state_default_247[0]
+    v_next_247 = lif_forward_state_default_247[1];  lif_forward_state_default_247 = None
+    y_300 = torch.nn.functional.layer_norm(spike_247, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_180 = torch._C._nn.linear(y_300, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_300 = None
+    qkv_181 = qkv_180.reshape(4, 256, 3, 8, 32);  qkv_180 = None
+    movedim_60 = qkv_181.movedim(-3, 0);  qkv_181 = None
+    qkv_182 = movedim_60.transpose(-3, -2);  movedim_60 = None
+    q_60 = qkv_182[0]
+    k_60 = qkv_182[1]
+    v_60 = qkv_182[2];  qkv_182 = None
+    _sdpa_capture_safe_60 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_60, k_60, v_60, scale = 0.1767766952966369);  q_60 = k_60 = v_60 = None
+    transpose_182 = _sdpa_capture_safe_60.transpose(-3, -2);  _sdpa_capture_safe_60 = None
+    y_302 = transpose_182.reshape(4, 256, 256);  transpose_182 = None
+    y_303 = torch._C._nn.linear(y_302, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_302 = None
+    add_127 = spike_247 + y_303;  spike_247 = y_303 = None
+    lif_forward_state_default_248 = torch.ops.snn_custom.lif_forward_state.default(add_127, v_next_215, 1.0, 0.0, 2.0, False);  add_127 = v_next_215 = None
+    spike_248 = lif_forward_state_default_248[0]
+    v_next_248 = lif_forward_state_default_248[1];  lif_forward_state_default_248 = None
+    y_304 = torch.nn.functional.layer_norm(spike_248, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_257 = torch._C._nn.linear(y_304, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_304 = None
+    lif_forward_state_default_249 = torch.ops.snn_custom.lif_forward_state.default(linear_257, v_next_216, 1.0, 0.0, 2.0, False);  linear_257 = v_next_216 = None
+    spike_249 = lif_forward_state_default_249[0]
+    v_next_249 = lif_forward_state_default_249[1];  lif_forward_state_default_249 = None
+    linear_258 = torch._C._nn.linear(spike_249, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_249 = None
+    lif_forward_state_default_250 = torch.ops.snn_custom.lif_forward_state.default(linear_258, v_next_217, 1.0, 0.0, 2.0, False);  linear_258 = v_next_217 = None
+    spike_250 = lif_forward_state_default_250[0]
+    v_next_250 = lif_forward_state_default_250[1];  lif_forward_state_default_250 = None
+    add_128 = spike_248 + spike_250;  spike_248 = spike_250 = None
+    lif_forward_state_default_251 = torch.ops.snn_custom.lif_forward_state.default(add_128, v_next_218, 1.0, 0.0, 2.0, False);  add_128 = v_next_218 = None
+    spike_251 = lif_forward_state_default_251[0]
+    v_next_251 = lif_forward_state_default_251[1];  lif_forward_state_default_251 = None
+    y_305 = torch.nn.functional.layer_norm(spike_251, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_183 = torch._C._nn.linear(y_305, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_305 = None
+    qkv_184 = qkv_183.reshape(4, 256, 3, 8, 32);  qkv_183 = None
+    movedim_61 = qkv_184.movedim(-3, 0);  qkv_184 = None
+    qkv_185 = movedim_61.transpose(-3, -2);  movedim_61 = None
+    q_61 = qkv_185[0]
+    k_61 = qkv_185[1]
+    v_61 = qkv_185[2];  qkv_185 = None
+    _sdpa_capture_safe_61 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_61, k_61, v_61, scale = 0.1767766952966369);  q_61 = k_61 = v_61 = None
+    transpose_185 = _sdpa_capture_safe_61.transpose(-3, -2);  _sdpa_capture_safe_61 = None
+    y_307 = transpose_185.reshape(4, 256, 256);  transpose_185 = None
+    y_308 = torch._C._nn.linear(y_307, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_307 = None
+    add_129 = spike_251 + y_308;  spike_251 = y_308 = None
+    lif_forward_state_default_252 = torch.ops.snn_custom.lif_forward_state.default(add_129, v_next_219, 1.0, 0.0, 2.0, False);  add_129 = v_next_219 = None
+    spike_252 = lif_forward_state_default_252[0]
+    v_next_252 = lif_forward_state_default_252[1];  lif_forward_state_default_252 = None
+    y_309 = torch.nn.functional.layer_norm(spike_252, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_261 = torch._C._nn.linear(y_309, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_309 = None
+    lif_forward_state_default_253 = torch.ops.snn_custom.lif_forward_state.default(linear_261, v_next_220, 1.0, 0.0, 2.0, False);  linear_261 = v_next_220 = None
+    spike_253 = lif_forward_state_default_253[0]
+    v_next_253 = lif_forward_state_default_253[1];  lif_forward_state_default_253 = None
+    linear_262 = torch._C._nn.linear(spike_253, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_253 = None
+    lif_forward_state_default_254 = torch.ops.snn_custom.lif_forward_state.default(linear_262, v_next_221, 1.0, 0.0, 2.0, False);  linear_262 = v_next_221 = None
+    spike_254 = lif_forward_state_default_254[0]
+    v_next_254 = lif_forward_state_default_254[1];  lif_forward_state_default_254 = None
+    add_130 = spike_252 + spike_254;  spike_252 = spike_254 = None
+    lif_forward_state_default_255 = torch.ops.snn_custom.lif_forward_state.default(add_130, v_next_222, 1.0, 0.0, 2.0, False);  add_130 = v_next_222 = None
+    spike_255 = lif_forward_state_default_255[0]
+    v_next_255 = lif_forward_state_default_255[1];  lif_forward_state_default_255 = None
+    y_310 = torch.nn.functional.layer_norm(spike_255, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_186 = torch._C._nn.linear(y_310, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_310 = None
+    qkv_187 = qkv_186.reshape(4, 256, 3, 8, 32);  qkv_186 = None
+    movedim_62 = qkv_187.movedim(-3, 0);  qkv_187 = None
+    qkv_188 = movedim_62.transpose(-3, -2);  movedim_62 = None
+    q_62 = qkv_188[0]
+    k_62 = qkv_188[1]
+    v_62 = qkv_188[2];  qkv_188 = None
+    _sdpa_capture_safe_62 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_62, k_62, v_62, scale = 0.1767766952966369);  q_62 = k_62 = v_62 = None
+    transpose_188 = _sdpa_capture_safe_62.transpose(-3, -2);  _sdpa_capture_safe_62 = None
+    y_312 = transpose_188.reshape(4, 256, 256);  transpose_188 = None
+    y_313 = torch._C._nn.linear(y_312, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_312 = None
+    add_131 = spike_255 + y_313;  spike_255 = y_313 = None
+    lif_forward_state_default_256 = torch.ops.snn_custom.lif_forward_state.default(add_131, v_next_223, 1.0, 0.0, 2.0, False);  add_131 = v_next_223 = None
+    spike_256 = lif_forward_state_default_256[0]
+    v_next_256 = lif_forward_state_default_256[1];  lif_forward_state_default_256 = None
+    y_314 = torch.nn.functional.layer_norm(spike_256, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_265 = torch._C._nn.linear(y_314, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_314 = None
+    lif_forward_state_default_257 = torch.ops.snn_custom.lif_forward_state.default(linear_265, v_next_224, 1.0, 0.0, 2.0, False);  linear_265 = v_next_224 = None
+    spike_257 = lif_forward_state_default_257[0]
+    v_next_257 = lif_forward_state_default_257[1];  lif_forward_state_default_257 = None
+    linear_266 = torch._C._nn.linear(spike_257, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_257 = None
+    lif_forward_state_default_258 = torch.ops.snn_custom.lif_forward_state.default(linear_266, v_next_225, 1.0, 0.0, 2.0, False);  linear_266 = v_next_225 = None
+    spike_258 = lif_forward_state_default_258[0]
+    v_next_258 = lif_forward_state_default_258[1];  lif_forward_state_default_258 = None
+    add_132 = spike_256 + spike_258;  spike_256 = spike_258 = None
+    lif_forward_state_default_259 = torch.ops.snn_custom.lif_forward_state.default(add_132, v_next_226, 1.0, 0.0, 2.0, False);  add_132 = v_next_226 = None
+    spike_259 = lif_forward_state_default_259[0]
+    v_next_259 = lif_forward_state_default_259[1];  lif_forward_state_default_259 = None
+    y_315 = torch.nn.functional.layer_norm(spike_259, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_189 = torch._C._nn.linear(y_315, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_315 = None
+    qkv_190 = qkv_189.reshape(4, 256, 3, 8, 32);  qkv_189 = None
+    movedim_63 = qkv_190.movedim(-3, 0);  qkv_190 = None
+    qkv_191 = movedim_63.transpose(-3, -2);  movedim_63 = None
+    q_63 = qkv_191[0]
+    k_63 = qkv_191[1]
+    v_63 = qkv_191[2];  qkv_191 = None
+    _sdpa_capture_safe_63 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_63, k_63, v_63, scale = 0.1767766952966369);  q_63 = k_63 = v_63 = None
+    transpose_191 = _sdpa_capture_safe_63.transpose(-3, -2);  _sdpa_capture_safe_63 = None
+    y_317 = transpose_191.reshape(4, 256, 256);  transpose_191 = None
+    y_318 = torch._C._nn.linear(y_317, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_317 = None
+    add_133 = spike_259 + y_318;  spike_259 = y_318 = None
+    lif_forward_state_default_260 = torch.ops.snn_custom.lif_forward_state.default(add_133, v_next_227, 1.0, 0.0, 2.0, False);  add_133 = v_next_227 = None
+    spike_260 = lif_forward_state_default_260[0]
+    v_next_260 = lif_forward_state_default_260[1];  lif_forward_state_default_260 = None
+    y_319 = torch.nn.functional.layer_norm(spike_260, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_269 = torch._C._nn.linear(y_319, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_319 = None
+    lif_forward_state_default_261 = torch.ops.snn_custom.lif_forward_state.default(linear_269, v_next_228, 1.0, 0.0, 2.0, False);  linear_269 = v_next_228 = None
+    spike_261 = lif_forward_state_default_261[0]
+    v_next_261 = lif_forward_state_default_261[1];  lif_forward_state_default_261 = None
+    linear_270 = torch._C._nn.linear(spike_261, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_261 = None
+    lif_forward_state_default_262 = torch.ops.snn_custom.lif_forward_state.default(linear_270, v_next_229, 1.0, 0.0, 2.0, False);  linear_270 = v_next_229 = None
+    spike_262 = lif_forward_state_default_262[0]
+    v_next_262 = lif_forward_state_default_262[1];  lif_forward_state_default_262 = None
+    add_134 = spike_260 + spike_262;  spike_260 = spike_262 = None
+    lif_forward_state_default_263 = torch.ops.snn_custom.lif_forward_state.default(add_134, v_next_230, 1.0, 0.0, 2.0, False);  add_134 = v_next_230 = None
+    spike_263 = lif_forward_state_default_263[0]
+    v_next_263 = lif_forward_state_default_263[1];  lif_forward_state_default_263 = None
+    x_14 = torch.nn.functional.layer_norm(spike_263, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_263 = None
+    x_15 = x_14.mean(dim = -2);  x_14 = None
+    linear_271 = torch._C._nn.linear(x_15, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_15 = None
+    out_spikes_counter_7 = out_spikes_counter_6 + linear_271;  out_spikes_counter_6 = linear_271 = None
+    getitem_728 = l_x_seq_[8]
+    linear_272 = torch._C._nn.linear(getitem_728, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_728 = None
+    lif_forward_state_default_264 = torch.ops.snn_custom.lif_forward_state.default(linear_272, v_next_231, 1.0, 0.0, 2.0, False);  linear_272 = v_next_231 = None
+    spike_264 = lif_forward_state_default_264[0]
+    v_next_264 = lif_forward_state_default_264[1];  lif_forward_state_default_264 = None
+    y_320 = torch.nn.functional.layer_norm(spike_264, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_192 = torch._C._nn.linear(y_320, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_320 = None
+    qkv_193 = qkv_192.reshape(4, 256, 3, 8, 32);  qkv_192 = None
+    movedim_64 = qkv_193.movedim(-3, 0);  qkv_193 = None
+    qkv_194 = movedim_64.transpose(-3, -2);  movedim_64 = None
+    q_64 = qkv_194[0]
+    k_64 = qkv_194[1]
+    v_64 = qkv_194[2];  qkv_194 = None
+    _sdpa_capture_safe_64 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_64, k_64, v_64, scale = 0.1767766952966369);  q_64 = k_64 = v_64 = None
+    transpose_194 = _sdpa_capture_safe_64.transpose(-3, -2);  _sdpa_capture_safe_64 = None
+    y_322 = transpose_194.reshape(4, 256, 256);  transpose_194 = None
+    y_323 = torch._C._nn.linear(y_322, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_322 = None
+    add_136 = spike_264 + y_323;  spike_264 = y_323 = None
+    lif_forward_state_default_265 = torch.ops.snn_custom.lif_forward_state.default(add_136, v_next_232, 1.0, 0.0, 2.0, False);  add_136 = v_next_232 = None
+    spike_265 = lif_forward_state_default_265[0]
+    v_next_265 = lif_forward_state_default_265[1];  lif_forward_state_default_265 = None
+    y_324 = torch.nn.functional.layer_norm(spike_265, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_275 = torch._C._nn.linear(y_324, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_324 = None
+    lif_forward_state_default_266 = torch.ops.snn_custom.lif_forward_state.default(linear_275, v_next_233, 1.0, 0.0, 2.0, False);  linear_275 = v_next_233 = None
+    spike_266 = lif_forward_state_default_266[0]
+    v_next_266 = lif_forward_state_default_266[1];  lif_forward_state_default_266 = None
+    linear_276 = torch._C._nn.linear(spike_266, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_266 = None
+    lif_forward_state_default_267 = torch.ops.snn_custom.lif_forward_state.default(linear_276, v_next_234, 1.0, 0.0, 2.0, False);  linear_276 = v_next_234 = None
+    spike_267 = lif_forward_state_default_267[0]
+    v_next_267 = lif_forward_state_default_267[1];  lif_forward_state_default_267 = None
+    add_137 = spike_265 + spike_267;  spike_265 = spike_267 = None
+    lif_forward_state_default_268 = torch.ops.snn_custom.lif_forward_state.default(add_137, v_next_235, 1.0, 0.0, 2.0, False);  add_137 = v_next_235 = None
+    spike_268 = lif_forward_state_default_268[0]
+    v_next_268 = lif_forward_state_default_268[1];  lif_forward_state_default_268 = None
+    y_325 = torch.nn.functional.layer_norm(spike_268, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_195 = torch._C._nn.linear(y_325, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_325 = None
+    qkv_196 = qkv_195.reshape(4, 256, 3, 8, 32);  qkv_195 = None
+    movedim_65 = qkv_196.movedim(-3, 0);  qkv_196 = None
+    qkv_197 = movedim_65.transpose(-3, -2);  movedim_65 = None
+    q_65 = qkv_197[0]
+    k_65 = qkv_197[1]
+    v_65 = qkv_197[2];  qkv_197 = None
+    _sdpa_capture_safe_65 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_65, k_65, v_65, scale = 0.1767766952966369);  q_65 = k_65 = v_65 = None
+    transpose_197 = _sdpa_capture_safe_65.transpose(-3, -2);  _sdpa_capture_safe_65 = None
+    y_327 = transpose_197.reshape(4, 256, 256);  transpose_197 = None
+    y_328 = torch._C._nn.linear(y_327, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_327 = None
+    add_138 = spike_268 + y_328;  spike_268 = y_328 = None
+    lif_forward_state_default_269 = torch.ops.snn_custom.lif_forward_state.default(add_138, v_next_236, 1.0, 0.0, 2.0, False);  add_138 = v_next_236 = None
+    spike_269 = lif_forward_state_default_269[0]
+    v_next_269 = lif_forward_state_default_269[1];  lif_forward_state_default_269 = None
+    y_329 = torch.nn.functional.layer_norm(spike_269, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_279 = torch._C._nn.linear(y_329, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_329 = None
+    lif_forward_state_default_270 = torch.ops.snn_custom.lif_forward_state.default(linear_279, v_next_237, 1.0, 0.0, 2.0, False);  linear_279 = v_next_237 = None
+    spike_270 = lif_forward_state_default_270[0]
+    v_next_270 = lif_forward_state_default_270[1];  lif_forward_state_default_270 = None
+    linear_280 = torch._C._nn.linear(spike_270, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_270 = None
+    lif_forward_state_default_271 = torch.ops.snn_custom.lif_forward_state.default(linear_280, v_next_238, 1.0, 0.0, 2.0, False);  linear_280 = v_next_238 = None
+    spike_271 = lif_forward_state_default_271[0]
+    v_next_271 = lif_forward_state_default_271[1];  lif_forward_state_default_271 = None
+    add_139 = spike_269 + spike_271;  spike_269 = spike_271 = None
+    lif_forward_state_default_272 = torch.ops.snn_custom.lif_forward_state.default(add_139, v_next_239, 1.0, 0.0, 2.0, False);  add_139 = v_next_239 = None
+    spike_272 = lif_forward_state_default_272[0]
+    v_next_272 = lif_forward_state_default_272[1];  lif_forward_state_default_272 = None
+    y_330 = torch.nn.functional.layer_norm(spike_272, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_198 = torch._C._nn.linear(y_330, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_330 = None
+    qkv_199 = qkv_198.reshape(4, 256, 3, 8, 32);  qkv_198 = None
+    movedim_66 = qkv_199.movedim(-3, 0);  qkv_199 = None
+    qkv_200 = movedim_66.transpose(-3, -2);  movedim_66 = None
+    q_66 = qkv_200[0]
+    k_66 = qkv_200[1]
+    v_66 = qkv_200[2];  qkv_200 = None
+    _sdpa_capture_safe_66 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_66, k_66, v_66, scale = 0.1767766952966369);  q_66 = k_66 = v_66 = None
+    transpose_200 = _sdpa_capture_safe_66.transpose(-3, -2);  _sdpa_capture_safe_66 = None
+    y_332 = transpose_200.reshape(4, 256, 256);  transpose_200 = None
+    y_333 = torch._C._nn.linear(y_332, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_332 = None
+    add_140 = spike_272 + y_333;  spike_272 = y_333 = None
+    lif_forward_state_default_273 = torch.ops.snn_custom.lif_forward_state.default(add_140, v_next_240, 1.0, 0.0, 2.0, False);  add_140 = v_next_240 = None
+    spike_273 = lif_forward_state_default_273[0]
+    v_next_273 = lif_forward_state_default_273[1];  lif_forward_state_default_273 = None
+    y_334 = torch.nn.functional.layer_norm(spike_273, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_283 = torch._C._nn.linear(y_334, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_334 = None
+    lif_forward_state_default_274 = torch.ops.snn_custom.lif_forward_state.default(linear_283, v_next_241, 1.0, 0.0, 2.0, False);  linear_283 = v_next_241 = None
+    spike_274 = lif_forward_state_default_274[0]
+    v_next_274 = lif_forward_state_default_274[1];  lif_forward_state_default_274 = None
+    linear_284 = torch._C._nn.linear(spike_274, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_274 = None
+    lif_forward_state_default_275 = torch.ops.snn_custom.lif_forward_state.default(linear_284, v_next_242, 1.0, 0.0, 2.0, False);  linear_284 = v_next_242 = None
+    spike_275 = lif_forward_state_default_275[0]
+    v_next_275 = lif_forward_state_default_275[1];  lif_forward_state_default_275 = None
+    add_141 = spike_273 + spike_275;  spike_273 = spike_275 = None
+    lif_forward_state_default_276 = torch.ops.snn_custom.lif_forward_state.default(add_141, v_next_243, 1.0, 0.0, 2.0, False);  add_141 = v_next_243 = None
+    spike_276 = lif_forward_state_default_276[0]
+    v_next_276 = lif_forward_state_default_276[1];  lif_forward_state_default_276 = None
+    y_335 = torch.nn.functional.layer_norm(spike_276, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_201 = torch._C._nn.linear(y_335, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_335 = None
+    qkv_202 = qkv_201.reshape(4, 256, 3, 8, 32);  qkv_201 = None
+    movedim_67 = qkv_202.movedim(-3, 0);  qkv_202 = None
+    qkv_203 = movedim_67.transpose(-3, -2);  movedim_67 = None
+    q_67 = qkv_203[0]
+    k_67 = qkv_203[1]
+    v_67 = qkv_203[2];  qkv_203 = None
+    _sdpa_capture_safe_67 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_67, k_67, v_67, scale = 0.1767766952966369);  q_67 = k_67 = v_67 = None
+    transpose_203 = _sdpa_capture_safe_67.transpose(-3, -2);  _sdpa_capture_safe_67 = None
+    y_337 = transpose_203.reshape(4, 256, 256);  transpose_203 = None
+    y_338 = torch._C._nn.linear(y_337, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_337 = None
+    add_142 = spike_276 + y_338;  spike_276 = y_338 = None
+    lif_forward_state_default_277 = torch.ops.snn_custom.lif_forward_state.default(add_142, v_next_244, 1.0, 0.0, 2.0, False);  add_142 = v_next_244 = None
+    spike_277 = lif_forward_state_default_277[0]
+    v_next_277 = lif_forward_state_default_277[1];  lif_forward_state_default_277 = None
+    y_339 = torch.nn.functional.layer_norm(spike_277, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_287 = torch._C._nn.linear(y_339, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_339 = None
+    lif_forward_state_default_278 = torch.ops.snn_custom.lif_forward_state.default(linear_287, v_next_245, 1.0, 0.0, 2.0, False);  linear_287 = v_next_245 = None
+    spike_278 = lif_forward_state_default_278[0]
+    v_next_278 = lif_forward_state_default_278[1];  lif_forward_state_default_278 = None
+    linear_288 = torch._C._nn.linear(spike_278, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_278 = None
+    lif_forward_state_default_279 = torch.ops.snn_custom.lif_forward_state.default(linear_288, v_next_246, 1.0, 0.0, 2.0, False);  linear_288 = v_next_246 = None
+    spike_279 = lif_forward_state_default_279[0]
+    v_next_279 = lif_forward_state_default_279[1];  lif_forward_state_default_279 = None
+    add_143 = spike_277 + spike_279;  spike_277 = spike_279 = None
+    lif_forward_state_default_280 = torch.ops.snn_custom.lif_forward_state.default(add_143, v_next_247, 1.0, 0.0, 2.0, False);  add_143 = v_next_247 = None
+    spike_280 = lif_forward_state_default_280[0]
+    v_next_280 = lif_forward_state_default_280[1];  lif_forward_state_default_280 = None
+    y_340 = torch.nn.functional.layer_norm(spike_280, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_204 = torch._C._nn.linear(y_340, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_340 = None
+    qkv_205 = qkv_204.reshape(4, 256, 3, 8, 32);  qkv_204 = None
+    movedim_68 = qkv_205.movedim(-3, 0);  qkv_205 = None
+    qkv_206 = movedim_68.transpose(-3, -2);  movedim_68 = None
+    q_68 = qkv_206[0]
+    k_68 = qkv_206[1]
+    v_68 = qkv_206[2];  qkv_206 = None
+    _sdpa_capture_safe_68 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_68, k_68, v_68, scale = 0.1767766952966369);  q_68 = k_68 = v_68 = None
+    transpose_206 = _sdpa_capture_safe_68.transpose(-3, -2);  _sdpa_capture_safe_68 = None
+    y_342 = transpose_206.reshape(4, 256, 256);  transpose_206 = None
+    y_343 = torch._C._nn.linear(y_342, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_342 = None
+    add_144 = spike_280 + y_343;  spike_280 = y_343 = None
+    lif_forward_state_default_281 = torch.ops.snn_custom.lif_forward_state.default(add_144, v_next_248, 1.0, 0.0, 2.0, False);  add_144 = v_next_248 = None
+    spike_281 = lif_forward_state_default_281[0]
+    v_next_281 = lif_forward_state_default_281[1];  lif_forward_state_default_281 = None
+    y_344 = torch.nn.functional.layer_norm(spike_281, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_291 = torch._C._nn.linear(y_344, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_344 = None
+    lif_forward_state_default_282 = torch.ops.snn_custom.lif_forward_state.default(linear_291, v_next_249, 1.0, 0.0, 2.0, False);  linear_291 = v_next_249 = None
+    spike_282 = lif_forward_state_default_282[0]
+    v_next_282 = lif_forward_state_default_282[1];  lif_forward_state_default_282 = None
+    linear_292 = torch._C._nn.linear(spike_282, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_282 = None
+    lif_forward_state_default_283 = torch.ops.snn_custom.lif_forward_state.default(linear_292, v_next_250, 1.0, 0.0, 2.0, False);  linear_292 = v_next_250 = None
+    spike_283 = lif_forward_state_default_283[0]
+    v_next_283 = lif_forward_state_default_283[1];  lif_forward_state_default_283 = None
+    add_145 = spike_281 + spike_283;  spike_281 = spike_283 = None
+    lif_forward_state_default_284 = torch.ops.snn_custom.lif_forward_state.default(add_145, v_next_251, 1.0, 0.0, 2.0, False);  add_145 = v_next_251 = None
+    spike_284 = lif_forward_state_default_284[0]
+    v_next_284 = lif_forward_state_default_284[1];  lif_forward_state_default_284 = None
+    y_345 = torch.nn.functional.layer_norm(spike_284, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_207 = torch._C._nn.linear(y_345, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_345 = None
+    qkv_208 = qkv_207.reshape(4, 256, 3, 8, 32);  qkv_207 = None
+    movedim_69 = qkv_208.movedim(-3, 0);  qkv_208 = None
+    qkv_209 = movedim_69.transpose(-3, -2);  movedim_69 = None
+    q_69 = qkv_209[0]
+    k_69 = qkv_209[1]
+    v_69 = qkv_209[2];  qkv_209 = None
+    _sdpa_capture_safe_69 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_69, k_69, v_69, scale = 0.1767766952966369);  q_69 = k_69 = v_69 = None
+    transpose_209 = _sdpa_capture_safe_69.transpose(-3, -2);  _sdpa_capture_safe_69 = None
+    y_347 = transpose_209.reshape(4, 256, 256);  transpose_209 = None
+    y_348 = torch._C._nn.linear(y_347, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_347 = None
+    add_146 = spike_284 + y_348;  spike_284 = y_348 = None
+    lif_forward_state_default_285 = torch.ops.snn_custom.lif_forward_state.default(add_146, v_next_252, 1.0, 0.0, 2.0, False);  add_146 = v_next_252 = None
+    spike_285 = lif_forward_state_default_285[0]
+    v_next_285 = lif_forward_state_default_285[1];  lif_forward_state_default_285 = None
+    y_349 = torch.nn.functional.layer_norm(spike_285, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_295 = torch._C._nn.linear(y_349, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_349 = None
+    lif_forward_state_default_286 = torch.ops.snn_custom.lif_forward_state.default(linear_295, v_next_253, 1.0, 0.0, 2.0, False);  linear_295 = v_next_253 = None
+    spike_286 = lif_forward_state_default_286[0]
+    v_next_286 = lif_forward_state_default_286[1];  lif_forward_state_default_286 = None
+    linear_296 = torch._C._nn.linear(spike_286, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_286 = None
+    lif_forward_state_default_287 = torch.ops.snn_custom.lif_forward_state.default(linear_296, v_next_254, 1.0, 0.0, 2.0, False);  linear_296 = v_next_254 = None
+    spike_287 = lif_forward_state_default_287[0]
+    v_next_287 = lif_forward_state_default_287[1];  lif_forward_state_default_287 = None
+    add_147 = spike_285 + spike_287;  spike_285 = spike_287 = None
+    lif_forward_state_default_288 = torch.ops.snn_custom.lif_forward_state.default(add_147, v_next_255, 1.0, 0.0, 2.0, False);  add_147 = v_next_255 = None
+    spike_288 = lif_forward_state_default_288[0]
+    v_next_288 = lif_forward_state_default_288[1];  lif_forward_state_default_288 = None
+    y_350 = torch.nn.functional.layer_norm(spike_288, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_210 = torch._C._nn.linear(y_350, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_350 = None
+    qkv_211 = qkv_210.reshape(4, 256, 3, 8, 32);  qkv_210 = None
+    movedim_70 = qkv_211.movedim(-3, 0);  qkv_211 = None
+    qkv_212 = movedim_70.transpose(-3, -2);  movedim_70 = None
+    q_70 = qkv_212[0]
+    k_70 = qkv_212[1]
+    v_70 = qkv_212[2];  qkv_212 = None
+    _sdpa_capture_safe_70 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_70, k_70, v_70, scale = 0.1767766952966369);  q_70 = k_70 = v_70 = None
+    transpose_212 = _sdpa_capture_safe_70.transpose(-3, -2);  _sdpa_capture_safe_70 = None
+    y_352 = transpose_212.reshape(4, 256, 256);  transpose_212 = None
+    y_353 = torch._C._nn.linear(y_352, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_352 = None
+    add_148 = spike_288 + y_353;  spike_288 = y_353 = None
+    lif_forward_state_default_289 = torch.ops.snn_custom.lif_forward_state.default(add_148, v_next_256, 1.0, 0.0, 2.0, False);  add_148 = v_next_256 = None
+    spike_289 = lif_forward_state_default_289[0]
+    v_next_289 = lif_forward_state_default_289[1];  lif_forward_state_default_289 = None
+    y_354 = torch.nn.functional.layer_norm(spike_289, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_299 = torch._C._nn.linear(y_354, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_354 = None
+    lif_forward_state_default_290 = torch.ops.snn_custom.lif_forward_state.default(linear_299, v_next_257, 1.0, 0.0, 2.0, False);  linear_299 = v_next_257 = None
+    spike_290 = lif_forward_state_default_290[0]
+    v_next_290 = lif_forward_state_default_290[1];  lif_forward_state_default_290 = None
+    linear_300 = torch._C._nn.linear(spike_290, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_290 = None
+    lif_forward_state_default_291 = torch.ops.snn_custom.lif_forward_state.default(linear_300, v_next_258, 1.0, 0.0, 2.0, False);  linear_300 = v_next_258 = None
+    spike_291 = lif_forward_state_default_291[0]
+    v_next_291 = lif_forward_state_default_291[1];  lif_forward_state_default_291 = None
+    add_149 = spike_289 + spike_291;  spike_289 = spike_291 = None
+    lif_forward_state_default_292 = torch.ops.snn_custom.lif_forward_state.default(add_149, v_next_259, 1.0, 0.0, 2.0, False);  add_149 = v_next_259 = None
+    spike_292 = lif_forward_state_default_292[0]
+    v_next_292 = lif_forward_state_default_292[1];  lif_forward_state_default_292 = None
+    y_355 = torch.nn.functional.layer_norm(spike_292, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_213 = torch._C._nn.linear(y_355, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_355 = None
+    qkv_214 = qkv_213.reshape(4, 256, 3, 8, 32);  qkv_213 = None
+    movedim_71 = qkv_214.movedim(-3, 0);  qkv_214 = None
+    qkv_215 = movedim_71.transpose(-3, -2);  movedim_71 = None
+    q_71 = qkv_215[0]
+    k_71 = qkv_215[1]
+    v_71 = qkv_215[2];  qkv_215 = None
+    _sdpa_capture_safe_71 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_71, k_71, v_71, scale = 0.1767766952966369);  q_71 = k_71 = v_71 = None
+    transpose_215 = _sdpa_capture_safe_71.transpose(-3, -2);  _sdpa_capture_safe_71 = None
+    y_357 = transpose_215.reshape(4, 256, 256);  transpose_215 = None
+    y_358 = torch._C._nn.linear(y_357, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_357 = None
+    add_150 = spike_292 + y_358;  spike_292 = y_358 = None
+    lif_forward_state_default_293 = torch.ops.snn_custom.lif_forward_state.default(add_150, v_next_260, 1.0, 0.0, 2.0, False);  add_150 = v_next_260 = None
+    spike_293 = lif_forward_state_default_293[0]
+    v_next_293 = lif_forward_state_default_293[1];  lif_forward_state_default_293 = None
+    y_359 = torch.nn.functional.layer_norm(spike_293, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_303 = torch._C._nn.linear(y_359, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_359 = None
+    lif_forward_state_default_294 = torch.ops.snn_custom.lif_forward_state.default(linear_303, v_next_261, 1.0, 0.0, 2.0, False);  linear_303 = v_next_261 = None
+    spike_294 = lif_forward_state_default_294[0]
+    v_next_294 = lif_forward_state_default_294[1];  lif_forward_state_default_294 = None
+    linear_304 = torch._C._nn.linear(spike_294, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_294 = None
+    lif_forward_state_default_295 = torch.ops.snn_custom.lif_forward_state.default(linear_304, v_next_262, 1.0, 0.0, 2.0, False);  linear_304 = v_next_262 = None
+    spike_295 = lif_forward_state_default_295[0]
+    v_next_295 = lif_forward_state_default_295[1];  lif_forward_state_default_295 = None
+    add_151 = spike_293 + spike_295;  spike_293 = spike_295 = None
+    lif_forward_state_default_296 = torch.ops.snn_custom.lif_forward_state.default(add_151, v_next_263, 1.0, 0.0, 2.0, False);  add_151 = v_next_263 = None
+    spike_296 = lif_forward_state_default_296[0]
+    v_next_296 = lif_forward_state_default_296[1];  lif_forward_state_default_296 = None
+    x_16 = torch.nn.functional.layer_norm(spike_296, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_296 = None
+    x_17 = x_16.mean(dim = -2);  x_16 = None
+    linear_305 = torch._C._nn.linear(x_17, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_17 = None
+    out_spikes_counter_8 = out_spikes_counter_7 + linear_305;  out_spikes_counter_7 = linear_305 = None
+    getitem_819 = l_x_seq_[9]
+    linear_306 = torch._C._nn.linear(getitem_819, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_819 = None
+    lif_forward_state_default_297 = torch.ops.snn_custom.lif_forward_state.default(linear_306, v_next_264, 1.0, 0.0, 2.0, False);  linear_306 = v_next_264 = None
+    spike_297 = lif_forward_state_default_297[0]
+    v_next_297 = lif_forward_state_default_297[1];  lif_forward_state_default_297 = None
+    y_360 = torch.nn.functional.layer_norm(spike_297, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_216 = torch._C._nn.linear(y_360, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_360 = None
+    qkv_217 = qkv_216.reshape(4, 256, 3, 8, 32);  qkv_216 = None
+    movedim_72 = qkv_217.movedim(-3, 0);  qkv_217 = None
+    qkv_218 = movedim_72.transpose(-3, -2);  movedim_72 = None
+    q_72 = qkv_218[0]
+    k_72 = qkv_218[1]
+    v_72 = qkv_218[2];  qkv_218 = None
+    _sdpa_capture_safe_72 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_72, k_72, v_72, scale = 0.1767766952966369);  q_72 = k_72 = v_72 = None
+    transpose_218 = _sdpa_capture_safe_72.transpose(-3, -2);  _sdpa_capture_safe_72 = None
+    y_362 = transpose_218.reshape(4, 256, 256);  transpose_218 = None
+    y_363 = torch._C._nn.linear(y_362, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_362 = None
+    add_153 = spike_297 + y_363;  spike_297 = y_363 = None
+    lif_forward_state_default_298 = torch.ops.snn_custom.lif_forward_state.default(add_153, v_next_265, 1.0, 0.0, 2.0, False);  add_153 = v_next_265 = None
+    spike_298 = lif_forward_state_default_298[0]
+    v_next_298 = lif_forward_state_default_298[1];  lif_forward_state_default_298 = None
+    y_364 = torch.nn.functional.layer_norm(spike_298, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_309 = torch._C._nn.linear(y_364, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_364 = None
+    lif_forward_state_default_299 = torch.ops.snn_custom.lif_forward_state.default(linear_309, v_next_266, 1.0, 0.0, 2.0, False);  linear_309 = v_next_266 = None
+    spike_299 = lif_forward_state_default_299[0]
+    v_next_299 = lif_forward_state_default_299[1];  lif_forward_state_default_299 = None
+    linear_310 = torch._C._nn.linear(spike_299, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_299 = None
+    lif_forward_state_default_300 = torch.ops.snn_custom.lif_forward_state.default(linear_310, v_next_267, 1.0, 0.0, 2.0, False);  linear_310 = v_next_267 = None
+    spike_300 = lif_forward_state_default_300[0]
+    v_next_300 = lif_forward_state_default_300[1];  lif_forward_state_default_300 = None
+    add_154 = spike_298 + spike_300;  spike_298 = spike_300 = None
+    lif_forward_state_default_301 = torch.ops.snn_custom.lif_forward_state.default(add_154, v_next_268, 1.0, 0.0, 2.0, False);  add_154 = v_next_268 = None
+    spike_301 = lif_forward_state_default_301[0]
+    v_next_301 = lif_forward_state_default_301[1];  lif_forward_state_default_301 = None
+    y_365 = torch.nn.functional.layer_norm(spike_301, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_219 = torch._C._nn.linear(y_365, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_365 = None
+    qkv_220 = qkv_219.reshape(4, 256, 3, 8, 32);  qkv_219 = None
+    movedim_73 = qkv_220.movedim(-3, 0);  qkv_220 = None
+    qkv_221 = movedim_73.transpose(-3, -2);  movedim_73 = None
+    q_73 = qkv_221[0]
+    k_73 = qkv_221[1]
+    v_73 = qkv_221[2];  qkv_221 = None
+    _sdpa_capture_safe_73 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_73, k_73, v_73, scale = 0.1767766952966369);  q_73 = k_73 = v_73 = None
+    transpose_221 = _sdpa_capture_safe_73.transpose(-3, -2);  _sdpa_capture_safe_73 = None
+    y_367 = transpose_221.reshape(4, 256, 256);  transpose_221 = None
+    y_368 = torch._C._nn.linear(y_367, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_367 = None
+    add_155 = spike_301 + y_368;  spike_301 = y_368 = None
+    lif_forward_state_default_302 = torch.ops.snn_custom.lif_forward_state.default(add_155, v_next_269, 1.0, 0.0, 2.0, False);  add_155 = v_next_269 = None
+    spike_302 = lif_forward_state_default_302[0]
+    v_next_302 = lif_forward_state_default_302[1];  lif_forward_state_default_302 = None
+    y_369 = torch.nn.functional.layer_norm(spike_302, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_313 = torch._C._nn.linear(y_369, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_369 = None
+    lif_forward_state_default_303 = torch.ops.snn_custom.lif_forward_state.default(linear_313, v_next_270, 1.0, 0.0, 2.0, False);  linear_313 = v_next_270 = None
+    spike_303 = lif_forward_state_default_303[0]
+    v_next_303 = lif_forward_state_default_303[1];  lif_forward_state_default_303 = None
+    linear_314 = torch._C._nn.linear(spike_303, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_303 = None
+    lif_forward_state_default_304 = torch.ops.snn_custom.lif_forward_state.default(linear_314, v_next_271, 1.0, 0.0, 2.0, False);  linear_314 = v_next_271 = None
+    spike_304 = lif_forward_state_default_304[0]
+    v_next_304 = lif_forward_state_default_304[1];  lif_forward_state_default_304 = None
+    add_156 = spike_302 + spike_304;  spike_302 = spike_304 = None
+    lif_forward_state_default_305 = torch.ops.snn_custom.lif_forward_state.default(add_156, v_next_272, 1.0, 0.0, 2.0, False);  add_156 = v_next_272 = None
+    spike_305 = lif_forward_state_default_305[0]
+    v_next_305 = lif_forward_state_default_305[1];  lif_forward_state_default_305 = None
+    y_370 = torch.nn.functional.layer_norm(spike_305, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_222 = torch._C._nn.linear(y_370, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_370 = None
+    qkv_223 = qkv_222.reshape(4, 256, 3, 8, 32);  qkv_222 = None
+    movedim_74 = qkv_223.movedim(-3, 0);  qkv_223 = None
+    qkv_224 = movedim_74.transpose(-3, -2);  movedim_74 = None
+    q_74 = qkv_224[0]
+    k_74 = qkv_224[1]
+    v_74 = qkv_224[2];  qkv_224 = None
+    _sdpa_capture_safe_74 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_74, k_74, v_74, scale = 0.1767766952966369);  q_74 = k_74 = v_74 = None
+    transpose_224 = _sdpa_capture_safe_74.transpose(-3, -2);  _sdpa_capture_safe_74 = None
+    y_372 = transpose_224.reshape(4, 256, 256);  transpose_224 = None
+    y_373 = torch._C._nn.linear(y_372, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_372 = None
+    add_157 = spike_305 + y_373;  spike_305 = y_373 = None
+    lif_forward_state_default_306 = torch.ops.snn_custom.lif_forward_state.default(add_157, v_next_273, 1.0, 0.0, 2.0, False);  add_157 = v_next_273 = None
+    spike_306 = lif_forward_state_default_306[0]
+    v_next_306 = lif_forward_state_default_306[1];  lif_forward_state_default_306 = None
+    y_374 = torch.nn.functional.layer_norm(spike_306, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_317 = torch._C._nn.linear(y_374, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_374 = None
+    lif_forward_state_default_307 = torch.ops.snn_custom.lif_forward_state.default(linear_317, v_next_274, 1.0, 0.0, 2.0, False);  linear_317 = v_next_274 = None
+    spike_307 = lif_forward_state_default_307[0]
+    v_next_307 = lif_forward_state_default_307[1];  lif_forward_state_default_307 = None
+    linear_318 = torch._C._nn.linear(spike_307, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_307 = None
+    lif_forward_state_default_308 = torch.ops.snn_custom.lif_forward_state.default(linear_318, v_next_275, 1.0, 0.0, 2.0, False);  linear_318 = v_next_275 = None
+    spike_308 = lif_forward_state_default_308[0]
+    v_next_308 = lif_forward_state_default_308[1];  lif_forward_state_default_308 = None
+    add_158 = spike_306 + spike_308;  spike_306 = spike_308 = None
+    lif_forward_state_default_309 = torch.ops.snn_custom.lif_forward_state.default(add_158, v_next_276, 1.0, 0.0, 2.0, False);  add_158 = v_next_276 = None
+    spike_309 = lif_forward_state_default_309[0]
+    v_next_309 = lif_forward_state_default_309[1];  lif_forward_state_default_309 = None
+    y_375 = torch.nn.functional.layer_norm(spike_309, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_225 = torch._C._nn.linear(y_375, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_375 = None
+    qkv_226 = qkv_225.reshape(4, 256, 3, 8, 32);  qkv_225 = None
+    movedim_75 = qkv_226.movedim(-3, 0);  qkv_226 = None
+    qkv_227 = movedim_75.transpose(-3, -2);  movedim_75 = None
+    q_75 = qkv_227[0]
+    k_75 = qkv_227[1]
+    v_75 = qkv_227[2];  qkv_227 = None
+    _sdpa_capture_safe_75 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_75, k_75, v_75, scale = 0.1767766952966369);  q_75 = k_75 = v_75 = None
+    transpose_227 = _sdpa_capture_safe_75.transpose(-3, -2);  _sdpa_capture_safe_75 = None
+    y_377 = transpose_227.reshape(4, 256, 256);  transpose_227 = None
+    y_378 = torch._C._nn.linear(y_377, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_377 = None
+    add_159 = spike_309 + y_378;  spike_309 = y_378 = None
+    lif_forward_state_default_310 = torch.ops.snn_custom.lif_forward_state.default(add_159, v_next_277, 1.0, 0.0, 2.0, False);  add_159 = v_next_277 = None
+    spike_310 = lif_forward_state_default_310[0]
+    v_next_310 = lif_forward_state_default_310[1];  lif_forward_state_default_310 = None
+    y_379 = torch.nn.functional.layer_norm(spike_310, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_321 = torch._C._nn.linear(y_379, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_379 = None
+    lif_forward_state_default_311 = torch.ops.snn_custom.lif_forward_state.default(linear_321, v_next_278, 1.0, 0.0, 2.0, False);  linear_321 = v_next_278 = None
+    spike_311 = lif_forward_state_default_311[0]
+    v_next_311 = lif_forward_state_default_311[1];  lif_forward_state_default_311 = None
+    linear_322 = torch._C._nn.linear(spike_311, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_311 = None
+    lif_forward_state_default_312 = torch.ops.snn_custom.lif_forward_state.default(linear_322, v_next_279, 1.0, 0.0, 2.0, False);  linear_322 = v_next_279 = None
+    spike_312 = lif_forward_state_default_312[0]
+    v_next_312 = lif_forward_state_default_312[1];  lif_forward_state_default_312 = None
+    add_160 = spike_310 + spike_312;  spike_310 = spike_312 = None
+    lif_forward_state_default_313 = torch.ops.snn_custom.lif_forward_state.default(add_160, v_next_280, 1.0, 0.0, 2.0, False);  add_160 = v_next_280 = None
+    spike_313 = lif_forward_state_default_313[0]
+    v_next_313 = lif_forward_state_default_313[1];  lif_forward_state_default_313 = None
+    y_380 = torch.nn.functional.layer_norm(spike_313, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_228 = torch._C._nn.linear(y_380, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_380 = None
+    qkv_229 = qkv_228.reshape(4, 256, 3, 8, 32);  qkv_228 = None
+    movedim_76 = qkv_229.movedim(-3, 0);  qkv_229 = None
+    qkv_230 = movedim_76.transpose(-3, -2);  movedim_76 = None
+    q_76 = qkv_230[0]
+    k_76 = qkv_230[1]
+    v_76 = qkv_230[2];  qkv_230 = None
+    _sdpa_capture_safe_76 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_76, k_76, v_76, scale = 0.1767766952966369);  q_76 = k_76 = v_76 = None
+    transpose_230 = _sdpa_capture_safe_76.transpose(-3, -2);  _sdpa_capture_safe_76 = None
+    y_382 = transpose_230.reshape(4, 256, 256);  transpose_230 = None
+    y_383 = torch._C._nn.linear(y_382, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_382 = None
+    add_161 = spike_313 + y_383;  spike_313 = y_383 = None
+    lif_forward_state_default_314 = torch.ops.snn_custom.lif_forward_state.default(add_161, v_next_281, 1.0, 0.0, 2.0, False);  add_161 = v_next_281 = None
+    spike_314 = lif_forward_state_default_314[0]
+    v_next_314 = lif_forward_state_default_314[1];  lif_forward_state_default_314 = None
+    y_384 = torch.nn.functional.layer_norm(spike_314, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_325 = torch._C._nn.linear(y_384, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_384 = None
+    lif_forward_state_default_315 = torch.ops.snn_custom.lif_forward_state.default(linear_325, v_next_282, 1.0, 0.0, 2.0, False);  linear_325 = v_next_282 = None
+    spike_315 = lif_forward_state_default_315[0]
+    v_next_315 = lif_forward_state_default_315[1];  lif_forward_state_default_315 = None
+    linear_326 = torch._C._nn.linear(spike_315, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_315 = None
+    lif_forward_state_default_316 = torch.ops.snn_custom.lif_forward_state.default(linear_326, v_next_283, 1.0, 0.0, 2.0, False);  linear_326 = v_next_283 = None
+    spike_316 = lif_forward_state_default_316[0]
+    v_next_316 = lif_forward_state_default_316[1];  lif_forward_state_default_316 = None
+    add_162 = spike_314 + spike_316;  spike_314 = spike_316 = None
+    lif_forward_state_default_317 = torch.ops.snn_custom.lif_forward_state.default(add_162, v_next_284, 1.0, 0.0, 2.0, False);  add_162 = v_next_284 = None
+    spike_317 = lif_forward_state_default_317[0]
+    v_next_317 = lif_forward_state_default_317[1];  lif_forward_state_default_317 = None
+    y_385 = torch.nn.functional.layer_norm(spike_317, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_231 = torch._C._nn.linear(y_385, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_385 = None
+    qkv_232 = qkv_231.reshape(4, 256, 3, 8, 32);  qkv_231 = None
+    movedim_77 = qkv_232.movedim(-3, 0);  qkv_232 = None
+    qkv_233 = movedim_77.transpose(-3, -2);  movedim_77 = None
+    q_77 = qkv_233[0]
+    k_77 = qkv_233[1]
+    v_77 = qkv_233[2];  qkv_233 = None
+    _sdpa_capture_safe_77 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_77, k_77, v_77, scale = 0.1767766952966369);  q_77 = k_77 = v_77 = None
+    transpose_233 = _sdpa_capture_safe_77.transpose(-3, -2);  _sdpa_capture_safe_77 = None
+    y_387 = transpose_233.reshape(4, 256, 256);  transpose_233 = None
+    y_388 = torch._C._nn.linear(y_387, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_387 = None
+    add_163 = spike_317 + y_388;  spike_317 = y_388 = None
+    lif_forward_state_default_318 = torch.ops.snn_custom.lif_forward_state.default(add_163, v_next_285, 1.0, 0.0, 2.0, False);  add_163 = v_next_285 = None
+    spike_318 = lif_forward_state_default_318[0]
+    v_next_318 = lif_forward_state_default_318[1];  lif_forward_state_default_318 = None
+    y_389 = torch.nn.functional.layer_norm(spike_318, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_329 = torch._C._nn.linear(y_389, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_389 = None
+    lif_forward_state_default_319 = torch.ops.snn_custom.lif_forward_state.default(linear_329, v_next_286, 1.0, 0.0, 2.0, False);  linear_329 = v_next_286 = None
+    spike_319 = lif_forward_state_default_319[0]
+    v_next_319 = lif_forward_state_default_319[1];  lif_forward_state_default_319 = None
+    linear_330 = torch._C._nn.linear(spike_319, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_319 = None
+    lif_forward_state_default_320 = torch.ops.snn_custom.lif_forward_state.default(linear_330, v_next_287, 1.0, 0.0, 2.0, False);  linear_330 = v_next_287 = None
+    spike_320 = lif_forward_state_default_320[0]
+    v_next_320 = lif_forward_state_default_320[1];  lif_forward_state_default_320 = None
+    add_164 = spike_318 + spike_320;  spike_318 = spike_320 = None
+    lif_forward_state_default_321 = torch.ops.snn_custom.lif_forward_state.default(add_164, v_next_288, 1.0, 0.0, 2.0, False);  add_164 = v_next_288 = None
+    spike_321 = lif_forward_state_default_321[0]
+    v_next_321 = lif_forward_state_default_321[1];  lif_forward_state_default_321 = None
+    y_390 = torch.nn.functional.layer_norm(spike_321, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_234 = torch._C._nn.linear(y_390, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_390 = None
+    qkv_235 = qkv_234.reshape(4, 256, 3, 8, 32);  qkv_234 = None
+    movedim_78 = qkv_235.movedim(-3, 0);  qkv_235 = None
+    qkv_236 = movedim_78.transpose(-3, -2);  movedim_78 = None
+    q_78 = qkv_236[0]
+    k_78 = qkv_236[1]
+    v_78 = qkv_236[2];  qkv_236 = None
+    _sdpa_capture_safe_78 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_78, k_78, v_78, scale = 0.1767766952966369);  q_78 = k_78 = v_78 = None
+    transpose_236 = _sdpa_capture_safe_78.transpose(-3, -2);  _sdpa_capture_safe_78 = None
+    y_392 = transpose_236.reshape(4, 256, 256);  transpose_236 = None
+    y_393 = torch._C._nn.linear(y_392, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_392 = None
+    add_165 = spike_321 + y_393;  spike_321 = y_393 = None
+    lif_forward_state_default_322 = torch.ops.snn_custom.lif_forward_state.default(add_165, v_next_289, 1.0, 0.0, 2.0, False);  add_165 = v_next_289 = None
+    spike_322 = lif_forward_state_default_322[0]
+    v_next_322 = lif_forward_state_default_322[1];  lif_forward_state_default_322 = None
+    y_394 = torch.nn.functional.layer_norm(spike_322, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_333 = torch._C._nn.linear(y_394, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_394 = None
+    lif_forward_state_default_323 = torch.ops.snn_custom.lif_forward_state.default(linear_333, v_next_290, 1.0, 0.0, 2.0, False);  linear_333 = v_next_290 = None
+    spike_323 = lif_forward_state_default_323[0]
+    v_next_323 = lif_forward_state_default_323[1];  lif_forward_state_default_323 = None
+    linear_334 = torch._C._nn.linear(spike_323, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_323 = None
+    lif_forward_state_default_324 = torch.ops.snn_custom.lif_forward_state.default(linear_334, v_next_291, 1.0, 0.0, 2.0, False);  linear_334 = v_next_291 = None
+    spike_324 = lif_forward_state_default_324[0]
+    v_next_324 = lif_forward_state_default_324[1];  lif_forward_state_default_324 = None
+    add_166 = spike_322 + spike_324;  spike_322 = spike_324 = None
+    lif_forward_state_default_325 = torch.ops.snn_custom.lif_forward_state.default(add_166, v_next_292, 1.0, 0.0, 2.0, False);  add_166 = v_next_292 = None
+    spike_325 = lif_forward_state_default_325[0]
+    v_next_325 = lif_forward_state_default_325[1];  lif_forward_state_default_325 = None
+    y_395 = torch.nn.functional.layer_norm(spike_325, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_237 = torch._C._nn.linear(y_395, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_395 = None
+    qkv_238 = qkv_237.reshape(4, 256, 3, 8, 32);  qkv_237 = None
+    movedim_79 = qkv_238.movedim(-3, 0);  qkv_238 = None
+    qkv_239 = movedim_79.transpose(-3, -2);  movedim_79 = None
+    q_79 = qkv_239[0]
+    k_79 = qkv_239[1]
+    v_79 = qkv_239[2];  qkv_239 = None
+    _sdpa_capture_safe_79 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_79, k_79, v_79, scale = 0.1767766952966369);  q_79 = k_79 = v_79 = None
+    transpose_239 = _sdpa_capture_safe_79.transpose(-3, -2);  _sdpa_capture_safe_79 = None
+    y_397 = transpose_239.reshape(4, 256, 256);  transpose_239 = None
+    y_398 = torch._C._nn.linear(y_397, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_397 = None
+    add_167 = spike_325 + y_398;  spike_325 = y_398 = None
+    lif_forward_state_default_326 = torch.ops.snn_custom.lif_forward_state.default(add_167, v_next_293, 1.0, 0.0, 2.0, False);  add_167 = v_next_293 = None
+    spike_326 = lif_forward_state_default_326[0]
+    v_next_326 = lif_forward_state_default_326[1];  lif_forward_state_default_326 = None
+    y_399 = torch.nn.functional.layer_norm(spike_326, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_337 = torch._C._nn.linear(y_399, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_399 = None
+    lif_forward_state_default_327 = torch.ops.snn_custom.lif_forward_state.default(linear_337, v_next_294, 1.0, 0.0, 2.0, False);  linear_337 = v_next_294 = None
+    spike_327 = lif_forward_state_default_327[0]
+    v_next_327 = lif_forward_state_default_327[1];  lif_forward_state_default_327 = None
+    linear_338 = torch._C._nn.linear(spike_327, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_327 = None
+    lif_forward_state_default_328 = torch.ops.snn_custom.lif_forward_state.default(linear_338, v_next_295, 1.0, 0.0, 2.0, False);  linear_338 = v_next_295 = None
+    spike_328 = lif_forward_state_default_328[0]
+    v_next_328 = lif_forward_state_default_328[1];  lif_forward_state_default_328 = None
+    add_168 = spike_326 + spike_328;  spike_326 = spike_328 = None
+    lif_forward_state_default_329 = torch.ops.snn_custom.lif_forward_state.default(add_168, v_next_296, 1.0, 0.0, 2.0, False);  add_168 = v_next_296 = None
+    spike_329 = lif_forward_state_default_329[0]
+    v_next_329 = lif_forward_state_default_329[1];  lif_forward_state_default_329 = None
+    x_18 = torch.nn.functional.layer_norm(spike_329, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_329 = None
+    x_19 = x_18.mean(dim = -2);  x_18 = None
+    linear_339 = torch._C._nn.linear(x_19, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_19 = None
+    out_spikes_counter_9 = out_spikes_counter_8 + linear_339;  out_spikes_counter_8 = linear_339 = None
+    getitem_910 = l_x_seq_[10]
+    linear_340 = torch._C._nn.linear(getitem_910, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_910 = None
+    lif_forward_state_default_330 = torch.ops.snn_custom.lif_forward_state.default(linear_340, v_next_297, 1.0, 0.0, 2.0, False);  linear_340 = v_next_297 = None
+    spike_330 = lif_forward_state_default_330[0]
+    v_next_330 = lif_forward_state_default_330[1];  lif_forward_state_default_330 = None
+    y_400 = torch.nn.functional.layer_norm(spike_330, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_240 = torch._C._nn.linear(y_400, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_400 = None
+    qkv_241 = qkv_240.reshape(4, 256, 3, 8, 32);  qkv_240 = None
+    movedim_80 = qkv_241.movedim(-3, 0);  qkv_241 = None
+    qkv_242 = movedim_80.transpose(-3, -2);  movedim_80 = None
+    q_80 = qkv_242[0]
+    k_80 = qkv_242[1]
+    v_80 = qkv_242[2];  qkv_242 = None
+    _sdpa_capture_safe_80 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_80, k_80, v_80, scale = 0.1767766952966369);  q_80 = k_80 = v_80 = None
+    transpose_242 = _sdpa_capture_safe_80.transpose(-3, -2);  _sdpa_capture_safe_80 = None
+    y_402 = transpose_242.reshape(4, 256, 256);  transpose_242 = None
+    y_403 = torch._C._nn.linear(y_402, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_402 = None
+    add_170 = spike_330 + y_403;  spike_330 = y_403 = None
+    lif_forward_state_default_331 = torch.ops.snn_custom.lif_forward_state.default(add_170, v_next_298, 1.0, 0.0, 2.0, False);  add_170 = v_next_298 = None
+    spike_331 = lif_forward_state_default_331[0]
+    v_next_331 = lif_forward_state_default_331[1];  lif_forward_state_default_331 = None
+    y_404 = torch.nn.functional.layer_norm(spike_331, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_343 = torch._C._nn.linear(y_404, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_404 = None
+    lif_forward_state_default_332 = torch.ops.snn_custom.lif_forward_state.default(linear_343, v_next_299, 1.0, 0.0, 2.0, False);  linear_343 = v_next_299 = None
+    spike_332 = lif_forward_state_default_332[0]
+    v_next_332 = lif_forward_state_default_332[1];  lif_forward_state_default_332 = None
+    linear_344 = torch._C._nn.linear(spike_332, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_332 = None
+    lif_forward_state_default_333 = torch.ops.snn_custom.lif_forward_state.default(linear_344, v_next_300, 1.0, 0.0, 2.0, False);  linear_344 = v_next_300 = None
+    spike_333 = lif_forward_state_default_333[0]
+    v_next_333 = lif_forward_state_default_333[1];  lif_forward_state_default_333 = None
+    add_171 = spike_331 + spike_333;  spike_331 = spike_333 = None
+    lif_forward_state_default_334 = torch.ops.snn_custom.lif_forward_state.default(add_171, v_next_301, 1.0, 0.0, 2.0, False);  add_171 = v_next_301 = None
+    spike_334 = lif_forward_state_default_334[0]
+    v_next_334 = lif_forward_state_default_334[1];  lif_forward_state_default_334 = None
+    y_405 = torch.nn.functional.layer_norm(spike_334, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_243 = torch._C._nn.linear(y_405, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_405 = None
+    qkv_244 = qkv_243.reshape(4, 256, 3, 8, 32);  qkv_243 = None
+    movedim_81 = qkv_244.movedim(-3, 0);  qkv_244 = None
+    qkv_245 = movedim_81.transpose(-3, -2);  movedim_81 = None
+    q_81 = qkv_245[0]
+    k_81 = qkv_245[1]
+    v_81 = qkv_245[2];  qkv_245 = None
+    _sdpa_capture_safe_81 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_81, k_81, v_81, scale = 0.1767766952966369);  q_81 = k_81 = v_81 = None
+    transpose_245 = _sdpa_capture_safe_81.transpose(-3, -2);  _sdpa_capture_safe_81 = None
+    y_407 = transpose_245.reshape(4, 256, 256);  transpose_245 = None
+    y_408 = torch._C._nn.linear(y_407, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_407 = None
+    add_172 = spike_334 + y_408;  spike_334 = y_408 = None
+    lif_forward_state_default_335 = torch.ops.snn_custom.lif_forward_state.default(add_172, v_next_302, 1.0, 0.0, 2.0, False);  add_172 = v_next_302 = None
+    spike_335 = lif_forward_state_default_335[0]
+    v_next_335 = lif_forward_state_default_335[1];  lif_forward_state_default_335 = None
+    y_409 = torch.nn.functional.layer_norm(spike_335, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_347 = torch._C._nn.linear(y_409, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_409 = None
+    lif_forward_state_default_336 = torch.ops.snn_custom.lif_forward_state.default(linear_347, v_next_303, 1.0, 0.0, 2.0, False);  linear_347 = v_next_303 = None
+    spike_336 = lif_forward_state_default_336[0]
+    v_next_336 = lif_forward_state_default_336[1];  lif_forward_state_default_336 = None
+    linear_348 = torch._C._nn.linear(spike_336, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_336 = None
+    lif_forward_state_default_337 = torch.ops.snn_custom.lif_forward_state.default(linear_348, v_next_304, 1.0, 0.0, 2.0, False);  linear_348 = v_next_304 = None
+    spike_337 = lif_forward_state_default_337[0]
+    v_next_337 = lif_forward_state_default_337[1];  lif_forward_state_default_337 = None
+    add_173 = spike_335 + spike_337;  spike_335 = spike_337 = None
+    lif_forward_state_default_338 = torch.ops.snn_custom.lif_forward_state.default(add_173, v_next_305, 1.0, 0.0, 2.0, False);  add_173 = v_next_305 = None
+    spike_338 = lif_forward_state_default_338[0]
+    v_next_338 = lif_forward_state_default_338[1];  lif_forward_state_default_338 = None
+    y_410 = torch.nn.functional.layer_norm(spike_338, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_246 = torch._C._nn.linear(y_410, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_410 = None
+    qkv_247 = qkv_246.reshape(4, 256, 3, 8, 32);  qkv_246 = None
+    movedim_82 = qkv_247.movedim(-3, 0);  qkv_247 = None
+    qkv_248 = movedim_82.transpose(-3, -2);  movedim_82 = None
+    q_82 = qkv_248[0]
+    k_82 = qkv_248[1]
+    v_82 = qkv_248[2];  qkv_248 = None
+    _sdpa_capture_safe_82 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_82, k_82, v_82, scale = 0.1767766952966369);  q_82 = k_82 = v_82 = None
+    transpose_248 = _sdpa_capture_safe_82.transpose(-3, -2);  _sdpa_capture_safe_82 = None
+    y_412 = transpose_248.reshape(4, 256, 256);  transpose_248 = None
+    y_413 = torch._C._nn.linear(y_412, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_412 = None
+    add_174 = spike_338 + y_413;  spike_338 = y_413 = None
+    lif_forward_state_default_339 = torch.ops.snn_custom.lif_forward_state.default(add_174, v_next_306, 1.0, 0.0, 2.0, False);  add_174 = v_next_306 = None
+    spike_339 = lif_forward_state_default_339[0]
+    v_next_339 = lif_forward_state_default_339[1];  lif_forward_state_default_339 = None
+    y_414 = torch.nn.functional.layer_norm(spike_339, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_351 = torch._C._nn.linear(y_414, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_414 = None
+    lif_forward_state_default_340 = torch.ops.snn_custom.lif_forward_state.default(linear_351, v_next_307, 1.0, 0.0, 2.0, False);  linear_351 = v_next_307 = None
+    spike_340 = lif_forward_state_default_340[0]
+    v_next_340 = lif_forward_state_default_340[1];  lif_forward_state_default_340 = None
+    linear_352 = torch._C._nn.linear(spike_340, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_340 = None
+    lif_forward_state_default_341 = torch.ops.snn_custom.lif_forward_state.default(linear_352, v_next_308, 1.0, 0.0, 2.0, False);  linear_352 = v_next_308 = None
+    spike_341 = lif_forward_state_default_341[0]
+    v_next_341 = lif_forward_state_default_341[1];  lif_forward_state_default_341 = None
+    add_175 = spike_339 + spike_341;  spike_339 = spike_341 = None
+    lif_forward_state_default_342 = torch.ops.snn_custom.lif_forward_state.default(add_175, v_next_309, 1.0, 0.0, 2.0, False);  add_175 = v_next_309 = None
+    spike_342 = lif_forward_state_default_342[0]
+    v_next_342 = lif_forward_state_default_342[1];  lif_forward_state_default_342 = None
+    y_415 = torch.nn.functional.layer_norm(spike_342, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_249 = torch._C._nn.linear(y_415, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_415 = None
+    qkv_250 = qkv_249.reshape(4, 256, 3, 8, 32);  qkv_249 = None
+    movedim_83 = qkv_250.movedim(-3, 0);  qkv_250 = None
+    qkv_251 = movedim_83.transpose(-3, -2);  movedim_83 = None
+    q_83 = qkv_251[0]
+    k_83 = qkv_251[1]
+    v_83 = qkv_251[2];  qkv_251 = None
+    _sdpa_capture_safe_83 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_83, k_83, v_83, scale = 0.1767766952966369);  q_83 = k_83 = v_83 = None
+    transpose_251 = _sdpa_capture_safe_83.transpose(-3, -2);  _sdpa_capture_safe_83 = None
+    y_417 = transpose_251.reshape(4, 256, 256);  transpose_251 = None
+    y_418 = torch._C._nn.linear(y_417, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_417 = None
+    add_176 = spike_342 + y_418;  spike_342 = y_418 = None
+    lif_forward_state_default_343 = torch.ops.snn_custom.lif_forward_state.default(add_176, v_next_310, 1.0, 0.0, 2.0, False);  add_176 = v_next_310 = None
+    spike_343 = lif_forward_state_default_343[0]
+    v_next_343 = lif_forward_state_default_343[1];  lif_forward_state_default_343 = None
+    y_419 = torch.nn.functional.layer_norm(spike_343, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_355 = torch._C._nn.linear(y_419, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_419 = None
+    lif_forward_state_default_344 = torch.ops.snn_custom.lif_forward_state.default(linear_355, v_next_311, 1.0, 0.0, 2.0, False);  linear_355 = v_next_311 = None
+    spike_344 = lif_forward_state_default_344[0]
+    v_next_344 = lif_forward_state_default_344[1];  lif_forward_state_default_344 = None
+    linear_356 = torch._C._nn.linear(spike_344, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_344 = None
+    lif_forward_state_default_345 = torch.ops.snn_custom.lif_forward_state.default(linear_356, v_next_312, 1.0, 0.0, 2.0, False);  linear_356 = v_next_312 = None
+    spike_345 = lif_forward_state_default_345[0]
+    v_next_345 = lif_forward_state_default_345[1];  lif_forward_state_default_345 = None
+    add_177 = spike_343 + spike_345;  spike_343 = spike_345 = None
+    lif_forward_state_default_346 = torch.ops.snn_custom.lif_forward_state.default(add_177, v_next_313, 1.0, 0.0, 2.0, False);  add_177 = v_next_313 = None
+    spike_346 = lif_forward_state_default_346[0]
+    v_next_346 = lif_forward_state_default_346[1];  lif_forward_state_default_346 = None
+    y_420 = torch.nn.functional.layer_norm(spike_346, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_252 = torch._C._nn.linear(y_420, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_420 = None
+    qkv_253 = qkv_252.reshape(4, 256, 3, 8, 32);  qkv_252 = None
+    movedim_84 = qkv_253.movedim(-3, 0);  qkv_253 = None
+    qkv_254 = movedim_84.transpose(-3, -2);  movedim_84 = None
+    q_84 = qkv_254[0]
+    k_84 = qkv_254[1]
+    v_84 = qkv_254[2];  qkv_254 = None
+    _sdpa_capture_safe_84 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_84, k_84, v_84, scale = 0.1767766952966369);  q_84 = k_84 = v_84 = None
+    transpose_254 = _sdpa_capture_safe_84.transpose(-3, -2);  _sdpa_capture_safe_84 = None
+    y_422 = transpose_254.reshape(4, 256, 256);  transpose_254 = None
+    y_423 = torch._C._nn.linear(y_422, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_422 = None
+    add_178 = spike_346 + y_423;  spike_346 = y_423 = None
+    lif_forward_state_default_347 = torch.ops.snn_custom.lif_forward_state.default(add_178, v_next_314, 1.0, 0.0, 2.0, False);  add_178 = v_next_314 = None
+    spike_347 = lif_forward_state_default_347[0]
+    v_next_347 = lif_forward_state_default_347[1];  lif_forward_state_default_347 = None
+    y_424 = torch.nn.functional.layer_norm(spike_347, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_359 = torch._C._nn.linear(y_424, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_424 = None
+    lif_forward_state_default_348 = torch.ops.snn_custom.lif_forward_state.default(linear_359, v_next_315, 1.0, 0.0, 2.0, False);  linear_359 = v_next_315 = None
+    spike_348 = lif_forward_state_default_348[0]
+    v_next_348 = lif_forward_state_default_348[1];  lif_forward_state_default_348 = None
+    linear_360 = torch._C._nn.linear(spike_348, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_348 = None
+    lif_forward_state_default_349 = torch.ops.snn_custom.lif_forward_state.default(linear_360, v_next_316, 1.0, 0.0, 2.0, False);  linear_360 = v_next_316 = None
+    spike_349 = lif_forward_state_default_349[0]
+    v_next_349 = lif_forward_state_default_349[1];  lif_forward_state_default_349 = None
+    add_179 = spike_347 + spike_349;  spike_347 = spike_349 = None
+    lif_forward_state_default_350 = torch.ops.snn_custom.lif_forward_state.default(add_179, v_next_317, 1.0, 0.0, 2.0, False);  add_179 = v_next_317 = None
+    spike_350 = lif_forward_state_default_350[0]
+    v_next_350 = lif_forward_state_default_350[1];  lif_forward_state_default_350 = None
+    y_425 = torch.nn.functional.layer_norm(spike_350, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_255 = torch._C._nn.linear(y_425, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_425 = None
+    qkv_256 = qkv_255.reshape(4, 256, 3, 8, 32);  qkv_255 = None
+    movedim_85 = qkv_256.movedim(-3, 0);  qkv_256 = None
+    qkv_257 = movedim_85.transpose(-3, -2);  movedim_85 = None
+    q_85 = qkv_257[0]
+    k_85 = qkv_257[1]
+    v_85 = qkv_257[2];  qkv_257 = None
+    _sdpa_capture_safe_85 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_85, k_85, v_85, scale = 0.1767766952966369);  q_85 = k_85 = v_85 = None
+    transpose_257 = _sdpa_capture_safe_85.transpose(-3, -2);  _sdpa_capture_safe_85 = None
+    y_427 = transpose_257.reshape(4, 256, 256);  transpose_257 = None
+    y_428 = torch._C._nn.linear(y_427, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_427 = None
+    add_180 = spike_350 + y_428;  spike_350 = y_428 = None
+    lif_forward_state_default_351 = torch.ops.snn_custom.lif_forward_state.default(add_180, v_next_318, 1.0, 0.0, 2.0, False);  add_180 = v_next_318 = None
+    spike_351 = lif_forward_state_default_351[0]
+    v_next_351 = lif_forward_state_default_351[1];  lif_forward_state_default_351 = None
+    y_429 = torch.nn.functional.layer_norm(spike_351, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_363 = torch._C._nn.linear(y_429, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_429 = None
+    lif_forward_state_default_352 = torch.ops.snn_custom.lif_forward_state.default(linear_363, v_next_319, 1.0, 0.0, 2.0, False);  linear_363 = v_next_319 = None
+    spike_352 = lif_forward_state_default_352[0]
+    v_next_352 = lif_forward_state_default_352[1];  lif_forward_state_default_352 = None
+    linear_364 = torch._C._nn.linear(spike_352, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_352 = None
+    lif_forward_state_default_353 = torch.ops.snn_custom.lif_forward_state.default(linear_364, v_next_320, 1.0, 0.0, 2.0, False);  linear_364 = v_next_320 = None
+    spike_353 = lif_forward_state_default_353[0]
+    v_next_353 = lif_forward_state_default_353[1];  lif_forward_state_default_353 = None
+    add_181 = spike_351 + spike_353;  spike_351 = spike_353 = None
+    lif_forward_state_default_354 = torch.ops.snn_custom.lif_forward_state.default(add_181, v_next_321, 1.0, 0.0, 2.0, False);  add_181 = v_next_321 = None
+    spike_354 = lif_forward_state_default_354[0]
+    v_next_354 = lif_forward_state_default_354[1];  lif_forward_state_default_354 = None
+    y_430 = torch.nn.functional.layer_norm(spike_354, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_258 = torch._C._nn.linear(y_430, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_430 = None
+    qkv_259 = qkv_258.reshape(4, 256, 3, 8, 32);  qkv_258 = None
+    movedim_86 = qkv_259.movedim(-3, 0);  qkv_259 = None
+    qkv_260 = movedim_86.transpose(-3, -2);  movedim_86 = None
+    q_86 = qkv_260[0]
+    k_86 = qkv_260[1]
+    v_86 = qkv_260[2];  qkv_260 = None
+    _sdpa_capture_safe_86 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_86, k_86, v_86, scale = 0.1767766952966369);  q_86 = k_86 = v_86 = None
+    transpose_260 = _sdpa_capture_safe_86.transpose(-3, -2);  _sdpa_capture_safe_86 = None
+    y_432 = transpose_260.reshape(4, 256, 256);  transpose_260 = None
+    y_433 = torch._C._nn.linear(y_432, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_432 = None
+    add_182 = spike_354 + y_433;  spike_354 = y_433 = None
+    lif_forward_state_default_355 = torch.ops.snn_custom.lif_forward_state.default(add_182, v_next_322, 1.0, 0.0, 2.0, False);  add_182 = v_next_322 = None
+    spike_355 = lif_forward_state_default_355[0]
+    v_next_355 = lif_forward_state_default_355[1];  lif_forward_state_default_355 = None
+    y_434 = torch.nn.functional.layer_norm(spike_355, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_367 = torch._C._nn.linear(y_434, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_434 = None
+    lif_forward_state_default_356 = torch.ops.snn_custom.lif_forward_state.default(linear_367, v_next_323, 1.0, 0.0, 2.0, False);  linear_367 = v_next_323 = None
+    spike_356 = lif_forward_state_default_356[0]
+    v_next_356 = lif_forward_state_default_356[1];  lif_forward_state_default_356 = None
+    linear_368 = torch._C._nn.linear(spike_356, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_356 = None
+    lif_forward_state_default_357 = torch.ops.snn_custom.lif_forward_state.default(linear_368, v_next_324, 1.0, 0.0, 2.0, False);  linear_368 = v_next_324 = None
+    spike_357 = lif_forward_state_default_357[0]
+    v_next_357 = lif_forward_state_default_357[1];  lif_forward_state_default_357 = None
+    add_183 = spike_355 + spike_357;  spike_355 = spike_357 = None
+    lif_forward_state_default_358 = torch.ops.snn_custom.lif_forward_state.default(add_183, v_next_325, 1.0, 0.0, 2.0, False);  add_183 = v_next_325 = None
+    spike_358 = lif_forward_state_default_358[0]
+    v_next_358 = lif_forward_state_default_358[1];  lif_forward_state_default_358 = None
+    y_435 = torch.nn.functional.layer_norm(spike_358, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_261 = torch._C._nn.linear(y_435, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_435 = None
+    qkv_262 = qkv_261.reshape(4, 256, 3, 8, 32);  qkv_261 = None
+    movedim_87 = qkv_262.movedim(-3, 0);  qkv_262 = None
+    qkv_263 = movedim_87.transpose(-3, -2);  movedim_87 = None
+    q_87 = qkv_263[0]
+    k_87 = qkv_263[1]
+    v_87 = qkv_263[2];  qkv_263 = None
+    _sdpa_capture_safe_87 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_87, k_87, v_87, scale = 0.1767766952966369);  q_87 = k_87 = v_87 = None
+    transpose_263 = _sdpa_capture_safe_87.transpose(-3, -2);  _sdpa_capture_safe_87 = None
+    y_437 = transpose_263.reshape(4, 256, 256);  transpose_263 = None
+    y_438 = torch._C._nn.linear(y_437, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_437 = None
+    add_184 = spike_358 + y_438;  spike_358 = y_438 = None
+    lif_forward_state_default_359 = torch.ops.snn_custom.lif_forward_state.default(add_184, v_next_326, 1.0, 0.0, 2.0, False);  add_184 = v_next_326 = None
+    spike_359 = lif_forward_state_default_359[0]
+    v_next_359 = lif_forward_state_default_359[1];  lif_forward_state_default_359 = None
+    y_439 = torch.nn.functional.layer_norm(spike_359, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_371 = torch._C._nn.linear(y_439, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_439 = None
+    lif_forward_state_default_360 = torch.ops.snn_custom.lif_forward_state.default(linear_371, v_next_327, 1.0, 0.0, 2.0, False);  linear_371 = v_next_327 = None
+    spike_360 = lif_forward_state_default_360[0]
+    v_next_360 = lif_forward_state_default_360[1];  lif_forward_state_default_360 = None
+    linear_372 = torch._C._nn.linear(spike_360, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_360 = None
+    lif_forward_state_default_361 = torch.ops.snn_custom.lif_forward_state.default(linear_372, v_next_328, 1.0, 0.0, 2.0, False);  linear_372 = v_next_328 = None
+    spike_361 = lif_forward_state_default_361[0]
+    v_next_361 = lif_forward_state_default_361[1];  lif_forward_state_default_361 = None
+    add_185 = spike_359 + spike_361;  spike_359 = spike_361 = None
+    lif_forward_state_default_362 = torch.ops.snn_custom.lif_forward_state.default(add_185, v_next_329, 1.0, 0.0, 2.0, False);  add_185 = v_next_329 = None
+    spike_362 = lif_forward_state_default_362[0]
+    v_next_362 = lif_forward_state_default_362[1];  lif_forward_state_default_362 = None
+    x_20 = torch.nn.functional.layer_norm(spike_362, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_362 = None
+    x_21 = x_20.mean(dim = -2);  x_20 = None
+    linear_373 = torch._C._nn.linear(x_21, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_21 = None
+    out_spikes_counter_10 = out_spikes_counter_9 + linear_373;  out_spikes_counter_9 = linear_373 = None
+    getitem_1001 = l_x_seq_[11]
+    linear_374 = torch._C._nn.linear(getitem_1001, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_1001 = None
+    lif_forward_state_default_363 = torch.ops.snn_custom.lif_forward_state.default(linear_374, v_next_330, 1.0, 0.0, 2.0, False);  linear_374 = v_next_330 = None
+    spike_363 = lif_forward_state_default_363[0]
+    v_next_363 = lif_forward_state_default_363[1];  lif_forward_state_default_363 = None
+    y_440 = torch.nn.functional.layer_norm(spike_363, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_264 = torch._C._nn.linear(y_440, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_440 = None
+    qkv_265 = qkv_264.reshape(4, 256, 3, 8, 32);  qkv_264 = None
+    movedim_88 = qkv_265.movedim(-3, 0);  qkv_265 = None
+    qkv_266 = movedim_88.transpose(-3, -2);  movedim_88 = None
+    q_88 = qkv_266[0]
+    k_88 = qkv_266[1]
+    v_88 = qkv_266[2];  qkv_266 = None
+    _sdpa_capture_safe_88 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_88, k_88, v_88, scale = 0.1767766952966369);  q_88 = k_88 = v_88 = None
+    transpose_266 = _sdpa_capture_safe_88.transpose(-3, -2);  _sdpa_capture_safe_88 = None
+    y_442 = transpose_266.reshape(4, 256, 256);  transpose_266 = None
+    y_443 = torch._C._nn.linear(y_442, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_442 = None
+    add_187 = spike_363 + y_443;  spike_363 = y_443 = None
+    lif_forward_state_default_364 = torch.ops.snn_custom.lif_forward_state.default(add_187, v_next_331, 1.0, 0.0, 2.0, False);  add_187 = v_next_331 = None
+    spike_364 = lif_forward_state_default_364[0]
+    v_next_364 = lif_forward_state_default_364[1];  lif_forward_state_default_364 = None
+    y_444 = torch.nn.functional.layer_norm(spike_364, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_377 = torch._C._nn.linear(y_444, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_444 = None
+    lif_forward_state_default_365 = torch.ops.snn_custom.lif_forward_state.default(linear_377, v_next_332, 1.0, 0.0, 2.0, False);  linear_377 = v_next_332 = None
+    spike_365 = lif_forward_state_default_365[0]
+    v_next_365 = lif_forward_state_default_365[1];  lif_forward_state_default_365 = None
+    linear_378 = torch._C._nn.linear(spike_365, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_365 = None
+    lif_forward_state_default_366 = torch.ops.snn_custom.lif_forward_state.default(linear_378, v_next_333, 1.0, 0.0, 2.0, False);  linear_378 = v_next_333 = None
+    spike_366 = lif_forward_state_default_366[0]
+    v_next_366 = lif_forward_state_default_366[1];  lif_forward_state_default_366 = None
+    add_188 = spike_364 + spike_366;  spike_364 = spike_366 = None
+    lif_forward_state_default_367 = torch.ops.snn_custom.lif_forward_state.default(add_188, v_next_334, 1.0, 0.0, 2.0, False);  add_188 = v_next_334 = None
+    spike_367 = lif_forward_state_default_367[0]
+    v_next_367 = lif_forward_state_default_367[1];  lif_forward_state_default_367 = None
+    y_445 = torch.nn.functional.layer_norm(spike_367, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_267 = torch._C._nn.linear(y_445, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_445 = None
+    qkv_268 = qkv_267.reshape(4, 256, 3, 8, 32);  qkv_267 = None
+    movedim_89 = qkv_268.movedim(-3, 0);  qkv_268 = None
+    qkv_269 = movedim_89.transpose(-3, -2);  movedim_89 = None
+    q_89 = qkv_269[0]
+    k_89 = qkv_269[1]
+    v_89 = qkv_269[2];  qkv_269 = None
+    _sdpa_capture_safe_89 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_89, k_89, v_89, scale = 0.1767766952966369);  q_89 = k_89 = v_89 = None
+    transpose_269 = _sdpa_capture_safe_89.transpose(-3, -2);  _sdpa_capture_safe_89 = None
+    y_447 = transpose_269.reshape(4, 256, 256);  transpose_269 = None
+    y_448 = torch._C._nn.linear(y_447, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_447 = None
+    add_189 = spike_367 + y_448;  spike_367 = y_448 = None
+    lif_forward_state_default_368 = torch.ops.snn_custom.lif_forward_state.default(add_189, v_next_335, 1.0, 0.0, 2.0, False);  add_189 = v_next_335 = None
+    spike_368 = lif_forward_state_default_368[0]
+    v_next_368 = lif_forward_state_default_368[1];  lif_forward_state_default_368 = None
+    y_449 = torch.nn.functional.layer_norm(spike_368, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_381 = torch._C._nn.linear(y_449, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_449 = None
+    lif_forward_state_default_369 = torch.ops.snn_custom.lif_forward_state.default(linear_381, v_next_336, 1.0, 0.0, 2.0, False);  linear_381 = v_next_336 = None
+    spike_369 = lif_forward_state_default_369[0]
+    v_next_369 = lif_forward_state_default_369[1];  lif_forward_state_default_369 = None
+    linear_382 = torch._C._nn.linear(spike_369, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_369 = None
+    lif_forward_state_default_370 = torch.ops.snn_custom.lif_forward_state.default(linear_382, v_next_337, 1.0, 0.0, 2.0, False);  linear_382 = v_next_337 = None
+    spike_370 = lif_forward_state_default_370[0]
+    v_next_370 = lif_forward_state_default_370[1];  lif_forward_state_default_370 = None
+    add_190 = spike_368 + spike_370;  spike_368 = spike_370 = None
+    lif_forward_state_default_371 = torch.ops.snn_custom.lif_forward_state.default(add_190, v_next_338, 1.0, 0.0, 2.0, False);  add_190 = v_next_338 = None
+    spike_371 = lif_forward_state_default_371[0]
+    v_next_371 = lif_forward_state_default_371[1];  lif_forward_state_default_371 = None
+    y_450 = torch.nn.functional.layer_norm(spike_371, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_270 = torch._C._nn.linear(y_450, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_450 = None
+    qkv_271 = qkv_270.reshape(4, 256, 3, 8, 32);  qkv_270 = None
+    movedim_90 = qkv_271.movedim(-3, 0);  qkv_271 = None
+    qkv_272 = movedim_90.transpose(-3, -2);  movedim_90 = None
+    q_90 = qkv_272[0]
+    k_90 = qkv_272[1]
+    v_90 = qkv_272[2];  qkv_272 = None
+    _sdpa_capture_safe_90 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_90, k_90, v_90, scale = 0.1767766952966369);  q_90 = k_90 = v_90 = None
+    transpose_272 = _sdpa_capture_safe_90.transpose(-3, -2);  _sdpa_capture_safe_90 = None
+    y_452 = transpose_272.reshape(4, 256, 256);  transpose_272 = None
+    y_453 = torch._C._nn.linear(y_452, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_452 = None
+    add_191 = spike_371 + y_453;  spike_371 = y_453 = None
+    lif_forward_state_default_372 = torch.ops.snn_custom.lif_forward_state.default(add_191, v_next_339, 1.0, 0.0, 2.0, False);  add_191 = v_next_339 = None
+    spike_372 = lif_forward_state_default_372[0]
+    v_next_372 = lif_forward_state_default_372[1];  lif_forward_state_default_372 = None
+    y_454 = torch.nn.functional.layer_norm(spike_372, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_385 = torch._C._nn.linear(y_454, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_454 = None
+    lif_forward_state_default_373 = torch.ops.snn_custom.lif_forward_state.default(linear_385, v_next_340, 1.0, 0.0, 2.0, False);  linear_385 = v_next_340 = None
+    spike_373 = lif_forward_state_default_373[0]
+    v_next_373 = lif_forward_state_default_373[1];  lif_forward_state_default_373 = None
+    linear_386 = torch._C._nn.linear(spike_373, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_373 = None
+    lif_forward_state_default_374 = torch.ops.snn_custom.lif_forward_state.default(linear_386, v_next_341, 1.0, 0.0, 2.0, False);  linear_386 = v_next_341 = None
+    spike_374 = lif_forward_state_default_374[0]
+    v_next_374 = lif_forward_state_default_374[1];  lif_forward_state_default_374 = None
+    add_192 = spike_372 + spike_374;  spike_372 = spike_374 = None
+    lif_forward_state_default_375 = torch.ops.snn_custom.lif_forward_state.default(add_192, v_next_342, 1.0, 0.0, 2.0, False);  add_192 = v_next_342 = None
+    spike_375 = lif_forward_state_default_375[0]
+    v_next_375 = lif_forward_state_default_375[1];  lif_forward_state_default_375 = None
+    y_455 = torch.nn.functional.layer_norm(spike_375, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_273 = torch._C._nn.linear(y_455, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_455 = None
+    qkv_274 = qkv_273.reshape(4, 256, 3, 8, 32);  qkv_273 = None
+    movedim_91 = qkv_274.movedim(-3, 0);  qkv_274 = None
+    qkv_275 = movedim_91.transpose(-3, -2);  movedim_91 = None
+    q_91 = qkv_275[0]
+    k_91 = qkv_275[1]
+    v_91 = qkv_275[2];  qkv_275 = None
+    _sdpa_capture_safe_91 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_91, k_91, v_91, scale = 0.1767766952966369);  q_91 = k_91 = v_91 = None
+    transpose_275 = _sdpa_capture_safe_91.transpose(-3, -2);  _sdpa_capture_safe_91 = None
+    y_457 = transpose_275.reshape(4, 256, 256);  transpose_275 = None
+    y_458 = torch._C._nn.linear(y_457, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_457 = None
+    add_193 = spike_375 + y_458;  spike_375 = y_458 = None
+    lif_forward_state_default_376 = torch.ops.snn_custom.lif_forward_state.default(add_193, v_next_343, 1.0, 0.0, 2.0, False);  add_193 = v_next_343 = None
+    spike_376 = lif_forward_state_default_376[0]
+    v_next_376 = lif_forward_state_default_376[1];  lif_forward_state_default_376 = None
+    y_459 = torch.nn.functional.layer_norm(spike_376, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_389 = torch._C._nn.linear(y_459, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_459 = None
+    lif_forward_state_default_377 = torch.ops.snn_custom.lif_forward_state.default(linear_389, v_next_344, 1.0, 0.0, 2.0, False);  linear_389 = v_next_344 = None
+    spike_377 = lif_forward_state_default_377[0]
+    v_next_377 = lif_forward_state_default_377[1];  lif_forward_state_default_377 = None
+    linear_390 = torch._C._nn.linear(spike_377, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_377 = None
+    lif_forward_state_default_378 = torch.ops.snn_custom.lif_forward_state.default(linear_390, v_next_345, 1.0, 0.0, 2.0, False);  linear_390 = v_next_345 = None
+    spike_378 = lif_forward_state_default_378[0]
+    v_next_378 = lif_forward_state_default_378[1];  lif_forward_state_default_378 = None
+    add_194 = spike_376 + spike_378;  spike_376 = spike_378 = None
+    lif_forward_state_default_379 = torch.ops.snn_custom.lif_forward_state.default(add_194, v_next_346, 1.0, 0.0, 2.0, False);  add_194 = v_next_346 = None
+    spike_379 = lif_forward_state_default_379[0]
+    v_next_379 = lif_forward_state_default_379[1];  lif_forward_state_default_379 = None
+    y_460 = torch.nn.functional.layer_norm(spike_379, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_276 = torch._C._nn.linear(y_460, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_460 = None
+    qkv_277 = qkv_276.reshape(4, 256, 3, 8, 32);  qkv_276 = None
+    movedim_92 = qkv_277.movedim(-3, 0);  qkv_277 = None
+    qkv_278 = movedim_92.transpose(-3, -2);  movedim_92 = None
+    q_92 = qkv_278[0]
+    k_92 = qkv_278[1]
+    v_92 = qkv_278[2];  qkv_278 = None
+    _sdpa_capture_safe_92 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_92, k_92, v_92, scale = 0.1767766952966369);  q_92 = k_92 = v_92 = None
+    transpose_278 = _sdpa_capture_safe_92.transpose(-3, -2);  _sdpa_capture_safe_92 = None
+    y_462 = transpose_278.reshape(4, 256, 256);  transpose_278 = None
+    y_463 = torch._C._nn.linear(y_462, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_462 = None
+    add_195 = spike_379 + y_463;  spike_379 = y_463 = None
+    lif_forward_state_default_380 = torch.ops.snn_custom.lif_forward_state.default(add_195, v_next_347, 1.0, 0.0, 2.0, False);  add_195 = v_next_347 = None
+    spike_380 = lif_forward_state_default_380[0]
+    v_next_380 = lif_forward_state_default_380[1];  lif_forward_state_default_380 = None
+    y_464 = torch.nn.functional.layer_norm(spike_380, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_393 = torch._C._nn.linear(y_464, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_464 = None
+    lif_forward_state_default_381 = torch.ops.snn_custom.lif_forward_state.default(linear_393, v_next_348, 1.0, 0.0, 2.0, False);  linear_393 = v_next_348 = None
+    spike_381 = lif_forward_state_default_381[0]
+    v_next_381 = lif_forward_state_default_381[1];  lif_forward_state_default_381 = None
+    linear_394 = torch._C._nn.linear(spike_381, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_381 = None
+    lif_forward_state_default_382 = torch.ops.snn_custom.lif_forward_state.default(linear_394, v_next_349, 1.0, 0.0, 2.0, False);  linear_394 = v_next_349 = None
+    spike_382 = lif_forward_state_default_382[0]
+    v_next_382 = lif_forward_state_default_382[1];  lif_forward_state_default_382 = None
+    add_196 = spike_380 + spike_382;  spike_380 = spike_382 = None
+    lif_forward_state_default_383 = torch.ops.snn_custom.lif_forward_state.default(add_196, v_next_350, 1.0, 0.0, 2.0, False);  add_196 = v_next_350 = None
+    spike_383 = lif_forward_state_default_383[0]
+    v_next_383 = lif_forward_state_default_383[1];  lif_forward_state_default_383 = None
+    y_465 = torch.nn.functional.layer_norm(spike_383, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_279 = torch._C._nn.linear(y_465, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_465 = None
+    qkv_280 = qkv_279.reshape(4, 256, 3, 8, 32);  qkv_279 = None
+    movedim_93 = qkv_280.movedim(-3, 0);  qkv_280 = None
+    qkv_281 = movedim_93.transpose(-3, -2);  movedim_93 = None
+    q_93 = qkv_281[0]
+    k_93 = qkv_281[1]
+    v_93 = qkv_281[2];  qkv_281 = None
+    _sdpa_capture_safe_93 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_93, k_93, v_93, scale = 0.1767766952966369);  q_93 = k_93 = v_93 = None
+    transpose_281 = _sdpa_capture_safe_93.transpose(-3, -2);  _sdpa_capture_safe_93 = None
+    y_467 = transpose_281.reshape(4, 256, 256);  transpose_281 = None
+    y_468 = torch._C._nn.linear(y_467, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_467 = None
+    add_197 = spike_383 + y_468;  spike_383 = y_468 = None
+    lif_forward_state_default_384 = torch.ops.snn_custom.lif_forward_state.default(add_197, v_next_351, 1.0, 0.0, 2.0, False);  add_197 = v_next_351 = None
+    spike_384 = lif_forward_state_default_384[0]
+    v_next_384 = lif_forward_state_default_384[1];  lif_forward_state_default_384 = None
+    y_469 = torch.nn.functional.layer_norm(spike_384, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_397 = torch._C._nn.linear(y_469, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_469 = None
+    lif_forward_state_default_385 = torch.ops.snn_custom.lif_forward_state.default(linear_397, v_next_352, 1.0, 0.0, 2.0, False);  linear_397 = v_next_352 = None
+    spike_385 = lif_forward_state_default_385[0]
+    v_next_385 = lif_forward_state_default_385[1];  lif_forward_state_default_385 = None
+    linear_398 = torch._C._nn.linear(spike_385, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_385 = None
+    lif_forward_state_default_386 = torch.ops.snn_custom.lif_forward_state.default(linear_398, v_next_353, 1.0, 0.0, 2.0, False);  linear_398 = v_next_353 = None
+    spike_386 = lif_forward_state_default_386[0]
+    v_next_386 = lif_forward_state_default_386[1];  lif_forward_state_default_386 = None
+    add_198 = spike_384 + spike_386;  spike_384 = spike_386 = None
+    lif_forward_state_default_387 = torch.ops.snn_custom.lif_forward_state.default(add_198, v_next_354, 1.0, 0.0, 2.0, False);  add_198 = v_next_354 = None
+    spike_387 = lif_forward_state_default_387[0]
+    v_next_387 = lif_forward_state_default_387[1];  lif_forward_state_default_387 = None
+    y_470 = torch.nn.functional.layer_norm(spike_387, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_282 = torch._C._nn.linear(y_470, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_470 = None
+    qkv_283 = qkv_282.reshape(4, 256, 3, 8, 32);  qkv_282 = None
+    movedim_94 = qkv_283.movedim(-3, 0);  qkv_283 = None
+    qkv_284 = movedim_94.transpose(-3, -2);  movedim_94 = None
+    q_94 = qkv_284[0]
+    k_94 = qkv_284[1]
+    v_94 = qkv_284[2];  qkv_284 = None
+    _sdpa_capture_safe_94 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_94, k_94, v_94, scale = 0.1767766952966369);  q_94 = k_94 = v_94 = None
+    transpose_284 = _sdpa_capture_safe_94.transpose(-3, -2);  _sdpa_capture_safe_94 = None
+    y_472 = transpose_284.reshape(4, 256, 256);  transpose_284 = None
+    y_473 = torch._C._nn.linear(y_472, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_472 = None
+    add_199 = spike_387 + y_473;  spike_387 = y_473 = None
+    lif_forward_state_default_388 = torch.ops.snn_custom.lif_forward_state.default(add_199, v_next_355, 1.0, 0.0, 2.0, False);  add_199 = v_next_355 = None
+    spike_388 = lif_forward_state_default_388[0]
+    v_next_388 = lif_forward_state_default_388[1];  lif_forward_state_default_388 = None
+    y_474 = torch.nn.functional.layer_norm(spike_388, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_401 = torch._C._nn.linear(y_474, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_474 = None
+    lif_forward_state_default_389 = torch.ops.snn_custom.lif_forward_state.default(linear_401, v_next_356, 1.0, 0.0, 2.0, False);  linear_401 = v_next_356 = None
+    spike_389 = lif_forward_state_default_389[0]
+    v_next_389 = lif_forward_state_default_389[1];  lif_forward_state_default_389 = None
+    linear_402 = torch._C._nn.linear(spike_389, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_389 = None
+    lif_forward_state_default_390 = torch.ops.snn_custom.lif_forward_state.default(linear_402, v_next_357, 1.0, 0.0, 2.0, False);  linear_402 = v_next_357 = None
+    spike_390 = lif_forward_state_default_390[0]
+    v_next_390 = lif_forward_state_default_390[1];  lif_forward_state_default_390 = None
+    add_200 = spike_388 + spike_390;  spike_388 = spike_390 = None
+    lif_forward_state_default_391 = torch.ops.snn_custom.lif_forward_state.default(add_200, v_next_358, 1.0, 0.0, 2.0, False);  add_200 = v_next_358 = None
+    spike_391 = lif_forward_state_default_391[0]
+    v_next_391 = lif_forward_state_default_391[1];  lif_forward_state_default_391 = None
+    y_475 = torch.nn.functional.layer_norm(spike_391, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_285 = torch._C._nn.linear(y_475, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_475 = None
+    qkv_286 = qkv_285.reshape(4, 256, 3, 8, 32);  qkv_285 = None
+    movedim_95 = qkv_286.movedim(-3, 0);  qkv_286 = None
+    qkv_287 = movedim_95.transpose(-3, -2);  movedim_95 = None
+    q_95 = qkv_287[0]
+    k_95 = qkv_287[1]
+    v_95 = qkv_287[2];  qkv_287 = None
+    _sdpa_capture_safe_95 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_95, k_95, v_95, scale = 0.1767766952966369);  q_95 = k_95 = v_95 = None
+    transpose_287 = _sdpa_capture_safe_95.transpose(-3, -2);  _sdpa_capture_safe_95 = None
+    y_477 = transpose_287.reshape(4, 256, 256);  transpose_287 = None
+    y_478 = torch._C._nn.linear(y_477, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_477 = None
+    add_201 = spike_391 + y_478;  spike_391 = y_478 = None
+    lif_forward_state_default_392 = torch.ops.snn_custom.lif_forward_state.default(add_201, v_next_359, 1.0, 0.0, 2.0, False);  add_201 = v_next_359 = None
+    spike_392 = lif_forward_state_default_392[0]
+    v_next_392 = lif_forward_state_default_392[1];  lif_forward_state_default_392 = None
+    y_479 = torch.nn.functional.layer_norm(spike_392, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_405 = torch._C._nn.linear(y_479, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_479 = None
+    lif_forward_state_default_393 = torch.ops.snn_custom.lif_forward_state.default(linear_405, v_next_360, 1.0, 0.0, 2.0, False);  linear_405 = v_next_360 = None
+    spike_393 = lif_forward_state_default_393[0]
+    v_next_393 = lif_forward_state_default_393[1];  lif_forward_state_default_393 = None
+    linear_406 = torch._C._nn.linear(spike_393, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_393 = None
+    lif_forward_state_default_394 = torch.ops.snn_custom.lif_forward_state.default(linear_406, v_next_361, 1.0, 0.0, 2.0, False);  linear_406 = v_next_361 = None
+    spike_394 = lif_forward_state_default_394[0]
+    v_next_394 = lif_forward_state_default_394[1];  lif_forward_state_default_394 = None
+    add_202 = spike_392 + spike_394;  spike_392 = spike_394 = None
+    lif_forward_state_default_395 = torch.ops.snn_custom.lif_forward_state.default(add_202, v_next_362, 1.0, 0.0, 2.0, False);  add_202 = v_next_362 = None
+    spike_395 = lif_forward_state_default_395[0]
+    v_next_395 = lif_forward_state_default_395[1];  lif_forward_state_default_395 = None
+    x_22 = torch.nn.functional.layer_norm(spike_395, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_395 = None
+    x_23 = x_22.mean(dim = -2);  x_22 = None
+    linear_407 = torch._C._nn.linear(x_23, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_23 = None
+    out_spikes_counter_11 = out_spikes_counter_10 + linear_407;  out_spikes_counter_10 = linear_407 = None
+    getitem_1092 = l_x_seq_[12]
+    linear_408 = torch._C._nn.linear(getitem_1092, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_1092 = None
+    lif_forward_state_default_396 = torch.ops.snn_custom.lif_forward_state.default(linear_408, v_next_363, 1.0, 0.0, 2.0, False);  linear_408 = v_next_363 = None
+    spike_396 = lif_forward_state_default_396[0]
+    v_next_396 = lif_forward_state_default_396[1];  lif_forward_state_default_396 = None
+    y_480 = torch.nn.functional.layer_norm(spike_396, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_288 = torch._C._nn.linear(y_480, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_480 = None
+    qkv_289 = qkv_288.reshape(4, 256, 3, 8, 32);  qkv_288 = None
+    movedim_96 = qkv_289.movedim(-3, 0);  qkv_289 = None
+    qkv_290 = movedim_96.transpose(-3, -2);  movedim_96 = None
+    q_96 = qkv_290[0]
+    k_96 = qkv_290[1]
+    v_96 = qkv_290[2];  qkv_290 = None
+    _sdpa_capture_safe_96 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_96, k_96, v_96, scale = 0.1767766952966369);  q_96 = k_96 = v_96 = None
+    transpose_290 = _sdpa_capture_safe_96.transpose(-3, -2);  _sdpa_capture_safe_96 = None
+    y_482 = transpose_290.reshape(4, 256, 256);  transpose_290 = None
+    y_483 = torch._C._nn.linear(y_482, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_482 = None
+    add_204 = spike_396 + y_483;  spike_396 = y_483 = None
+    lif_forward_state_default_397 = torch.ops.snn_custom.lif_forward_state.default(add_204, v_next_364, 1.0, 0.0, 2.0, False);  add_204 = v_next_364 = None
+    spike_397 = lif_forward_state_default_397[0]
+    v_next_397 = lif_forward_state_default_397[1];  lif_forward_state_default_397 = None
+    y_484 = torch.nn.functional.layer_norm(spike_397, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_411 = torch._C._nn.linear(y_484, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_484 = None
+    lif_forward_state_default_398 = torch.ops.snn_custom.lif_forward_state.default(linear_411, v_next_365, 1.0, 0.0, 2.0, False);  linear_411 = v_next_365 = None
+    spike_398 = lif_forward_state_default_398[0]
+    v_next_398 = lif_forward_state_default_398[1];  lif_forward_state_default_398 = None
+    linear_412 = torch._C._nn.linear(spike_398, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_398 = None
+    lif_forward_state_default_399 = torch.ops.snn_custom.lif_forward_state.default(linear_412, v_next_366, 1.0, 0.0, 2.0, False);  linear_412 = v_next_366 = None
+    spike_399 = lif_forward_state_default_399[0]
+    v_next_399 = lif_forward_state_default_399[1];  lif_forward_state_default_399 = None
+    add_205 = spike_397 + spike_399;  spike_397 = spike_399 = None
+    lif_forward_state_default_400 = torch.ops.snn_custom.lif_forward_state.default(add_205, v_next_367, 1.0, 0.0, 2.0, False);  add_205 = v_next_367 = None
+    spike_400 = lif_forward_state_default_400[0]
+    v_next_400 = lif_forward_state_default_400[1];  lif_forward_state_default_400 = None
+    y_485 = torch.nn.functional.layer_norm(spike_400, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_291 = torch._C._nn.linear(y_485, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_485 = None
+    qkv_292 = qkv_291.reshape(4, 256, 3, 8, 32);  qkv_291 = None
+    movedim_97 = qkv_292.movedim(-3, 0);  qkv_292 = None
+    qkv_293 = movedim_97.transpose(-3, -2);  movedim_97 = None
+    q_97 = qkv_293[0]
+    k_97 = qkv_293[1]
+    v_97 = qkv_293[2];  qkv_293 = None
+    _sdpa_capture_safe_97 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_97, k_97, v_97, scale = 0.1767766952966369);  q_97 = k_97 = v_97 = None
+    transpose_293 = _sdpa_capture_safe_97.transpose(-3, -2);  _sdpa_capture_safe_97 = None
+    y_487 = transpose_293.reshape(4, 256, 256);  transpose_293 = None
+    y_488 = torch._C._nn.linear(y_487, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_487 = None
+    add_206 = spike_400 + y_488;  spike_400 = y_488 = None
+    lif_forward_state_default_401 = torch.ops.snn_custom.lif_forward_state.default(add_206, v_next_368, 1.0, 0.0, 2.0, False);  add_206 = v_next_368 = None
+    spike_401 = lif_forward_state_default_401[0]
+    v_next_401 = lif_forward_state_default_401[1];  lif_forward_state_default_401 = None
+    y_489 = torch.nn.functional.layer_norm(spike_401, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_415 = torch._C._nn.linear(y_489, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_489 = None
+    lif_forward_state_default_402 = torch.ops.snn_custom.lif_forward_state.default(linear_415, v_next_369, 1.0, 0.0, 2.0, False);  linear_415 = v_next_369 = None
+    spike_402 = lif_forward_state_default_402[0]
+    v_next_402 = lif_forward_state_default_402[1];  lif_forward_state_default_402 = None
+    linear_416 = torch._C._nn.linear(spike_402, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_402 = None
+    lif_forward_state_default_403 = torch.ops.snn_custom.lif_forward_state.default(linear_416, v_next_370, 1.0, 0.0, 2.0, False);  linear_416 = v_next_370 = None
+    spike_403 = lif_forward_state_default_403[0]
+    v_next_403 = lif_forward_state_default_403[1];  lif_forward_state_default_403 = None
+    add_207 = spike_401 + spike_403;  spike_401 = spike_403 = None
+    lif_forward_state_default_404 = torch.ops.snn_custom.lif_forward_state.default(add_207, v_next_371, 1.0, 0.0, 2.0, False);  add_207 = v_next_371 = None
+    spike_404 = lif_forward_state_default_404[0]
+    v_next_404 = lif_forward_state_default_404[1];  lif_forward_state_default_404 = None
+    y_490 = torch.nn.functional.layer_norm(spike_404, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_294 = torch._C._nn.linear(y_490, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_490 = None
+    qkv_295 = qkv_294.reshape(4, 256, 3, 8, 32);  qkv_294 = None
+    movedim_98 = qkv_295.movedim(-3, 0);  qkv_295 = None
+    qkv_296 = movedim_98.transpose(-3, -2);  movedim_98 = None
+    q_98 = qkv_296[0]
+    k_98 = qkv_296[1]
+    v_98 = qkv_296[2];  qkv_296 = None
+    _sdpa_capture_safe_98 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_98, k_98, v_98, scale = 0.1767766952966369);  q_98 = k_98 = v_98 = None
+    transpose_296 = _sdpa_capture_safe_98.transpose(-3, -2);  _sdpa_capture_safe_98 = None
+    y_492 = transpose_296.reshape(4, 256, 256);  transpose_296 = None
+    y_493 = torch._C._nn.linear(y_492, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_492 = None
+    add_208 = spike_404 + y_493;  spike_404 = y_493 = None
+    lif_forward_state_default_405 = torch.ops.snn_custom.lif_forward_state.default(add_208, v_next_372, 1.0, 0.0, 2.0, False);  add_208 = v_next_372 = None
+    spike_405 = lif_forward_state_default_405[0]
+    v_next_405 = lif_forward_state_default_405[1];  lif_forward_state_default_405 = None
+    y_494 = torch.nn.functional.layer_norm(spike_405, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_419 = torch._C._nn.linear(y_494, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_494 = None
+    lif_forward_state_default_406 = torch.ops.snn_custom.lif_forward_state.default(linear_419, v_next_373, 1.0, 0.0, 2.0, False);  linear_419 = v_next_373 = None
+    spike_406 = lif_forward_state_default_406[0]
+    v_next_406 = lif_forward_state_default_406[1];  lif_forward_state_default_406 = None
+    linear_420 = torch._C._nn.linear(spike_406, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_406 = None
+    lif_forward_state_default_407 = torch.ops.snn_custom.lif_forward_state.default(linear_420, v_next_374, 1.0, 0.0, 2.0, False);  linear_420 = v_next_374 = None
+    spike_407 = lif_forward_state_default_407[0]
+    v_next_407 = lif_forward_state_default_407[1];  lif_forward_state_default_407 = None
+    add_209 = spike_405 + spike_407;  spike_405 = spike_407 = None
+    lif_forward_state_default_408 = torch.ops.snn_custom.lif_forward_state.default(add_209, v_next_375, 1.0, 0.0, 2.0, False);  add_209 = v_next_375 = None
+    spike_408 = lif_forward_state_default_408[0]
+    v_next_408 = lif_forward_state_default_408[1];  lif_forward_state_default_408 = None
+    y_495 = torch.nn.functional.layer_norm(spike_408, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_297 = torch._C._nn.linear(y_495, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_495 = None
+    qkv_298 = qkv_297.reshape(4, 256, 3, 8, 32);  qkv_297 = None
+    movedim_99 = qkv_298.movedim(-3, 0);  qkv_298 = None
+    qkv_299 = movedim_99.transpose(-3, -2);  movedim_99 = None
+    q_99 = qkv_299[0]
+    k_99 = qkv_299[1]
+    v_99 = qkv_299[2];  qkv_299 = None
+    _sdpa_capture_safe_99 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_99, k_99, v_99, scale = 0.1767766952966369);  q_99 = k_99 = v_99 = None
+    transpose_299 = _sdpa_capture_safe_99.transpose(-3, -2);  _sdpa_capture_safe_99 = None
+    y_497 = transpose_299.reshape(4, 256, 256);  transpose_299 = None
+    y_498 = torch._C._nn.linear(y_497, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_497 = None
+    add_210 = spike_408 + y_498;  spike_408 = y_498 = None
+    lif_forward_state_default_409 = torch.ops.snn_custom.lif_forward_state.default(add_210, v_next_376, 1.0, 0.0, 2.0, False);  add_210 = v_next_376 = None
+    spike_409 = lif_forward_state_default_409[0]
+    v_next_409 = lif_forward_state_default_409[1];  lif_forward_state_default_409 = None
+    y_499 = torch.nn.functional.layer_norm(spike_409, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_423 = torch._C._nn.linear(y_499, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_499 = None
+    lif_forward_state_default_410 = torch.ops.snn_custom.lif_forward_state.default(linear_423, v_next_377, 1.0, 0.0, 2.0, False);  linear_423 = v_next_377 = None
+    spike_410 = lif_forward_state_default_410[0]
+    v_next_410 = lif_forward_state_default_410[1];  lif_forward_state_default_410 = None
+    linear_424 = torch._C._nn.linear(spike_410, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_410 = None
+    lif_forward_state_default_411 = torch.ops.snn_custom.lif_forward_state.default(linear_424, v_next_378, 1.0, 0.0, 2.0, False);  linear_424 = v_next_378 = None
+    spike_411 = lif_forward_state_default_411[0]
+    v_next_411 = lif_forward_state_default_411[1];  lif_forward_state_default_411 = None
+    add_211 = spike_409 + spike_411;  spike_409 = spike_411 = None
+    lif_forward_state_default_412 = torch.ops.snn_custom.lif_forward_state.default(add_211, v_next_379, 1.0, 0.0, 2.0, False);  add_211 = v_next_379 = None
+    spike_412 = lif_forward_state_default_412[0]
+    v_next_412 = lif_forward_state_default_412[1];  lif_forward_state_default_412 = None
+    y_500 = torch.nn.functional.layer_norm(spike_412, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_300 = torch._C._nn.linear(y_500, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_500 = None
+    qkv_301 = qkv_300.reshape(4, 256, 3, 8, 32);  qkv_300 = None
+    movedim_100 = qkv_301.movedim(-3, 0);  qkv_301 = None
+    qkv_302 = movedim_100.transpose(-3, -2);  movedim_100 = None
+    q_100 = qkv_302[0]
+    k_100 = qkv_302[1]
+    v_100 = qkv_302[2];  qkv_302 = None
+    _sdpa_capture_safe_100 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_100, k_100, v_100, scale = 0.1767766952966369);  q_100 = k_100 = v_100 = None
+    transpose_302 = _sdpa_capture_safe_100.transpose(-3, -2);  _sdpa_capture_safe_100 = None
+    y_502 = transpose_302.reshape(4, 256, 256);  transpose_302 = None
+    y_503 = torch._C._nn.linear(y_502, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_502 = None
+    add_212 = spike_412 + y_503;  spike_412 = y_503 = None
+    lif_forward_state_default_413 = torch.ops.snn_custom.lif_forward_state.default(add_212, v_next_380, 1.0, 0.0, 2.0, False);  add_212 = v_next_380 = None
+    spike_413 = lif_forward_state_default_413[0]
+    v_next_413 = lif_forward_state_default_413[1];  lif_forward_state_default_413 = None
+    y_504 = torch.nn.functional.layer_norm(spike_413, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_427 = torch._C._nn.linear(y_504, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_504 = None
+    lif_forward_state_default_414 = torch.ops.snn_custom.lif_forward_state.default(linear_427, v_next_381, 1.0, 0.0, 2.0, False);  linear_427 = v_next_381 = None
+    spike_414 = lif_forward_state_default_414[0]
+    v_next_414 = lif_forward_state_default_414[1];  lif_forward_state_default_414 = None
+    linear_428 = torch._C._nn.linear(spike_414, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_414 = None
+    lif_forward_state_default_415 = torch.ops.snn_custom.lif_forward_state.default(linear_428, v_next_382, 1.0, 0.0, 2.0, False);  linear_428 = v_next_382 = None
+    spike_415 = lif_forward_state_default_415[0]
+    v_next_415 = lif_forward_state_default_415[1];  lif_forward_state_default_415 = None
+    add_213 = spike_413 + spike_415;  spike_413 = spike_415 = None
+    lif_forward_state_default_416 = torch.ops.snn_custom.lif_forward_state.default(add_213, v_next_383, 1.0, 0.0, 2.0, False);  add_213 = v_next_383 = None
+    spike_416 = lif_forward_state_default_416[0]
+    v_next_416 = lif_forward_state_default_416[1];  lif_forward_state_default_416 = None
+    y_505 = torch.nn.functional.layer_norm(spike_416, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_303 = torch._C._nn.linear(y_505, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_505 = None
+    qkv_304 = qkv_303.reshape(4, 256, 3, 8, 32);  qkv_303 = None
+    movedim_101 = qkv_304.movedim(-3, 0);  qkv_304 = None
+    qkv_305 = movedim_101.transpose(-3, -2);  movedim_101 = None
+    q_101 = qkv_305[0]
+    k_101 = qkv_305[1]
+    v_101 = qkv_305[2];  qkv_305 = None
+    _sdpa_capture_safe_101 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_101, k_101, v_101, scale = 0.1767766952966369);  q_101 = k_101 = v_101 = None
+    transpose_305 = _sdpa_capture_safe_101.transpose(-3, -2);  _sdpa_capture_safe_101 = None
+    y_507 = transpose_305.reshape(4, 256, 256);  transpose_305 = None
+    y_508 = torch._C._nn.linear(y_507, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_507 = None
+    add_214 = spike_416 + y_508;  spike_416 = y_508 = None
+    lif_forward_state_default_417 = torch.ops.snn_custom.lif_forward_state.default(add_214, v_next_384, 1.0, 0.0, 2.0, False);  add_214 = v_next_384 = None
+    spike_417 = lif_forward_state_default_417[0]
+    v_next_417 = lif_forward_state_default_417[1];  lif_forward_state_default_417 = None
+    y_509 = torch.nn.functional.layer_norm(spike_417, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_431 = torch._C._nn.linear(y_509, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_509 = None
+    lif_forward_state_default_418 = torch.ops.snn_custom.lif_forward_state.default(linear_431, v_next_385, 1.0, 0.0, 2.0, False);  linear_431 = v_next_385 = None
+    spike_418 = lif_forward_state_default_418[0]
+    v_next_418 = lif_forward_state_default_418[1];  lif_forward_state_default_418 = None
+    linear_432 = torch._C._nn.linear(spike_418, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_418 = None
+    lif_forward_state_default_419 = torch.ops.snn_custom.lif_forward_state.default(linear_432, v_next_386, 1.0, 0.0, 2.0, False);  linear_432 = v_next_386 = None
+    spike_419 = lif_forward_state_default_419[0]
+    v_next_419 = lif_forward_state_default_419[1];  lif_forward_state_default_419 = None
+    add_215 = spike_417 + spike_419;  spike_417 = spike_419 = None
+    lif_forward_state_default_420 = torch.ops.snn_custom.lif_forward_state.default(add_215, v_next_387, 1.0, 0.0, 2.0, False);  add_215 = v_next_387 = None
+    spike_420 = lif_forward_state_default_420[0]
+    v_next_420 = lif_forward_state_default_420[1];  lif_forward_state_default_420 = None
+    y_510 = torch.nn.functional.layer_norm(spike_420, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_306 = torch._C._nn.linear(y_510, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_510 = None
+    qkv_307 = qkv_306.reshape(4, 256, 3, 8, 32);  qkv_306 = None
+    movedim_102 = qkv_307.movedim(-3, 0);  qkv_307 = None
+    qkv_308 = movedim_102.transpose(-3, -2);  movedim_102 = None
+    q_102 = qkv_308[0]
+    k_102 = qkv_308[1]
+    v_102 = qkv_308[2];  qkv_308 = None
+    _sdpa_capture_safe_102 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_102, k_102, v_102, scale = 0.1767766952966369);  q_102 = k_102 = v_102 = None
+    transpose_308 = _sdpa_capture_safe_102.transpose(-3, -2);  _sdpa_capture_safe_102 = None
+    y_512 = transpose_308.reshape(4, 256, 256);  transpose_308 = None
+    y_513 = torch._C._nn.linear(y_512, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_512 = None
+    add_216 = spike_420 + y_513;  spike_420 = y_513 = None
+    lif_forward_state_default_421 = torch.ops.snn_custom.lif_forward_state.default(add_216, v_next_388, 1.0, 0.0, 2.0, False);  add_216 = v_next_388 = None
+    spike_421 = lif_forward_state_default_421[0]
+    v_next_421 = lif_forward_state_default_421[1];  lif_forward_state_default_421 = None
+    y_514 = torch.nn.functional.layer_norm(spike_421, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_435 = torch._C._nn.linear(y_514, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_514 = None
+    lif_forward_state_default_422 = torch.ops.snn_custom.lif_forward_state.default(linear_435, v_next_389, 1.0, 0.0, 2.0, False);  linear_435 = v_next_389 = None
+    spike_422 = lif_forward_state_default_422[0]
+    v_next_422 = lif_forward_state_default_422[1];  lif_forward_state_default_422 = None
+    linear_436 = torch._C._nn.linear(spike_422, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_422 = None
+    lif_forward_state_default_423 = torch.ops.snn_custom.lif_forward_state.default(linear_436, v_next_390, 1.0, 0.0, 2.0, False);  linear_436 = v_next_390 = None
+    spike_423 = lif_forward_state_default_423[0]
+    v_next_423 = lif_forward_state_default_423[1];  lif_forward_state_default_423 = None
+    add_217 = spike_421 + spike_423;  spike_421 = spike_423 = None
+    lif_forward_state_default_424 = torch.ops.snn_custom.lif_forward_state.default(add_217, v_next_391, 1.0, 0.0, 2.0, False);  add_217 = v_next_391 = None
+    spike_424 = lif_forward_state_default_424[0]
+    v_next_424 = lif_forward_state_default_424[1];  lif_forward_state_default_424 = None
+    y_515 = torch.nn.functional.layer_norm(spike_424, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_309 = torch._C._nn.linear(y_515, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_515 = None
+    qkv_310 = qkv_309.reshape(4, 256, 3, 8, 32);  qkv_309 = None
+    movedim_103 = qkv_310.movedim(-3, 0);  qkv_310 = None
+    qkv_311 = movedim_103.transpose(-3, -2);  movedim_103 = None
+    q_103 = qkv_311[0]
+    k_103 = qkv_311[1]
+    v_103 = qkv_311[2];  qkv_311 = None
+    _sdpa_capture_safe_103 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_103, k_103, v_103, scale = 0.1767766952966369);  q_103 = k_103 = v_103 = None
+    transpose_311 = _sdpa_capture_safe_103.transpose(-3, -2);  _sdpa_capture_safe_103 = None
+    y_517 = transpose_311.reshape(4, 256, 256);  transpose_311 = None
+    y_518 = torch._C._nn.linear(y_517, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_517 = None
+    add_218 = spike_424 + y_518;  spike_424 = y_518 = None
+    lif_forward_state_default_425 = torch.ops.snn_custom.lif_forward_state.default(add_218, v_next_392, 1.0, 0.0, 2.0, False);  add_218 = v_next_392 = None
+    spike_425 = lif_forward_state_default_425[0]
+    v_next_425 = lif_forward_state_default_425[1];  lif_forward_state_default_425 = None
+    y_519 = torch.nn.functional.layer_norm(spike_425, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_439 = torch._C._nn.linear(y_519, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_519 = None
+    lif_forward_state_default_426 = torch.ops.snn_custom.lif_forward_state.default(linear_439, v_next_393, 1.0, 0.0, 2.0, False);  linear_439 = v_next_393 = None
+    spike_426 = lif_forward_state_default_426[0]
+    v_next_426 = lif_forward_state_default_426[1];  lif_forward_state_default_426 = None
+    linear_440 = torch._C._nn.linear(spike_426, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_426 = None
+    lif_forward_state_default_427 = torch.ops.snn_custom.lif_forward_state.default(linear_440, v_next_394, 1.0, 0.0, 2.0, False);  linear_440 = v_next_394 = None
+    spike_427 = lif_forward_state_default_427[0]
+    v_next_427 = lif_forward_state_default_427[1];  lif_forward_state_default_427 = None
+    add_219 = spike_425 + spike_427;  spike_425 = spike_427 = None
+    lif_forward_state_default_428 = torch.ops.snn_custom.lif_forward_state.default(add_219, v_next_395, 1.0, 0.0, 2.0, False);  add_219 = v_next_395 = None
+    spike_428 = lif_forward_state_default_428[0]
+    v_next_428 = lif_forward_state_default_428[1];  lif_forward_state_default_428 = None
+    x_24 = torch.nn.functional.layer_norm(spike_428, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_428 = None
+    x_25 = x_24.mean(dim = -2);  x_24 = None
+    linear_441 = torch._C._nn.linear(x_25, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_25 = None
+    out_spikes_counter_12 = out_spikes_counter_11 + linear_441;  out_spikes_counter_11 = linear_441 = None
+    getitem_1183 = l_x_seq_[13]
+    linear_442 = torch._C._nn.linear(getitem_1183, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_1183 = None
+    lif_forward_state_default_429 = torch.ops.snn_custom.lif_forward_state.default(linear_442, v_next_396, 1.0, 0.0, 2.0, False);  linear_442 = v_next_396 = None
+    spike_429 = lif_forward_state_default_429[0]
+    v_next_429 = lif_forward_state_default_429[1];  lif_forward_state_default_429 = None
+    y_520 = torch.nn.functional.layer_norm(spike_429, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_312 = torch._C._nn.linear(y_520, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_520 = None
+    qkv_313 = qkv_312.reshape(4, 256, 3, 8, 32);  qkv_312 = None
+    movedim_104 = qkv_313.movedim(-3, 0);  qkv_313 = None
+    qkv_314 = movedim_104.transpose(-3, -2);  movedim_104 = None
+    q_104 = qkv_314[0]
+    k_104 = qkv_314[1]
+    v_104 = qkv_314[2];  qkv_314 = None
+    _sdpa_capture_safe_104 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_104, k_104, v_104, scale = 0.1767766952966369);  q_104 = k_104 = v_104 = None
+    transpose_314 = _sdpa_capture_safe_104.transpose(-3, -2);  _sdpa_capture_safe_104 = None
+    y_522 = transpose_314.reshape(4, 256, 256);  transpose_314 = None
+    y_523 = torch._C._nn.linear(y_522, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_522 = None
+    add_221 = spike_429 + y_523;  spike_429 = y_523 = None
+    lif_forward_state_default_430 = torch.ops.snn_custom.lif_forward_state.default(add_221, v_next_397, 1.0, 0.0, 2.0, False);  add_221 = v_next_397 = None
+    spike_430 = lif_forward_state_default_430[0]
+    v_next_430 = lif_forward_state_default_430[1];  lif_forward_state_default_430 = None
+    y_524 = torch.nn.functional.layer_norm(spike_430, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_445 = torch._C._nn.linear(y_524, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_524 = None
+    lif_forward_state_default_431 = torch.ops.snn_custom.lif_forward_state.default(linear_445, v_next_398, 1.0, 0.0, 2.0, False);  linear_445 = v_next_398 = None
+    spike_431 = lif_forward_state_default_431[0]
+    v_next_431 = lif_forward_state_default_431[1];  lif_forward_state_default_431 = None
+    linear_446 = torch._C._nn.linear(spike_431, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_431 = None
+    lif_forward_state_default_432 = torch.ops.snn_custom.lif_forward_state.default(linear_446, v_next_399, 1.0, 0.0, 2.0, False);  linear_446 = v_next_399 = None
+    spike_432 = lif_forward_state_default_432[0]
+    v_next_432 = lif_forward_state_default_432[1];  lif_forward_state_default_432 = None
+    add_222 = spike_430 + spike_432;  spike_430 = spike_432 = None
+    lif_forward_state_default_433 = torch.ops.snn_custom.lif_forward_state.default(add_222, v_next_400, 1.0, 0.0, 2.0, False);  add_222 = v_next_400 = None
+    spike_433 = lif_forward_state_default_433[0]
+    v_next_433 = lif_forward_state_default_433[1];  lif_forward_state_default_433 = None
+    y_525 = torch.nn.functional.layer_norm(spike_433, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_315 = torch._C._nn.linear(y_525, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_525 = None
+    qkv_316 = qkv_315.reshape(4, 256, 3, 8, 32);  qkv_315 = None
+    movedim_105 = qkv_316.movedim(-3, 0);  qkv_316 = None
+    qkv_317 = movedim_105.transpose(-3, -2);  movedim_105 = None
+    q_105 = qkv_317[0]
+    k_105 = qkv_317[1]
+    v_105 = qkv_317[2];  qkv_317 = None
+    _sdpa_capture_safe_105 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_105, k_105, v_105, scale = 0.1767766952966369);  q_105 = k_105 = v_105 = None
+    transpose_317 = _sdpa_capture_safe_105.transpose(-3, -2);  _sdpa_capture_safe_105 = None
+    y_527 = transpose_317.reshape(4, 256, 256);  transpose_317 = None
+    y_528 = torch._C._nn.linear(y_527, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_527 = None
+    add_223 = spike_433 + y_528;  spike_433 = y_528 = None
+    lif_forward_state_default_434 = torch.ops.snn_custom.lif_forward_state.default(add_223, v_next_401, 1.0, 0.0, 2.0, False);  add_223 = v_next_401 = None
+    spike_434 = lif_forward_state_default_434[0]
+    v_next_434 = lif_forward_state_default_434[1];  lif_forward_state_default_434 = None
+    y_529 = torch.nn.functional.layer_norm(spike_434, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_449 = torch._C._nn.linear(y_529, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_529 = None
+    lif_forward_state_default_435 = torch.ops.snn_custom.lif_forward_state.default(linear_449, v_next_402, 1.0, 0.0, 2.0, False);  linear_449 = v_next_402 = None
+    spike_435 = lif_forward_state_default_435[0]
+    v_next_435 = lif_forward_state_default_435[1];  lif_forward_state_default_435 = None
+    linear_450 = torch._C._nn.linear(spike_435, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_435 = None
+    lif_forward_state_default_436 = torch.ops.snn_custom.lif_forward_state.default(linear_450, v_next_403, 1.0, 0.0, 2.0, False);  linear_450 = v_next_403 = None
+    spike_436 = lif_forward_state_default_436[0]
+    v_next_436 = lif_forward_state_default_436[1];  lif_forward_state_default_436 = None
+    add_224 = spike_434 + spike_436;  spike_434 = spike_436 = None
+    lif_forward_state_default_437 = torch.ops.snn_custom.lif_forward_state.default(add_224, v_next_404, 1.0, 0.0, 2.0, False);  add_224 = v_next_404 = None
+    spike_437 = lif_forward_state_default_437[0]
+    v_next_437 = lif_forward_state_default_437[1];  lif_forward_state_default_437 = None
+    y_530 = torch.nn.functional.layer_norm(spike_437, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_318 = torch._C._nn.linear(y_530, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_530 = None
+    qkv_319 = qkv_318.reshape(4, 256, 3, 8, 32);  qkv_318 = None
+    movedim_106 = qkv_319.movedim(-3, 0);  qkv_319 = None
+    qkv_320 = movedim_106.transpose(-3, -2);  movedim_106 = None
+    q_106 = qkv_320[0]
+    k_106 = qkv_320[1]
+    v_106 = qkv_320[2];  qkv_320 = None
+    _sdpa_capture_safe_106 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_106, k_106, v_106, scale = 0.1767766952966369);  q_106 = k_106 = v_106 = None
+    transpose_320 = _sdpa_capture_safe_106.transpose(-3, -2);  _sdpa_capture_safe_106 = None
+    y_532 = transpose_320.reshape(4, 256, 256);  transpose_320 = None
+    y_533 = torch._C._nn.linear(y_532, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_532 = None
+    add_225 = spike_437 + y_533;  spike_437 = y_533 = None
+    lif_forward_state_default_438 = torch.ops.snn_custom.lif_forward_state.default(add_225, v_next_405, 1.0, 0.0, 2.0, False);  add_225 = v_next_405 = None
+    spike_438 = lif_forward_state_default_438[0]
+    v_next_438 = lif_forward_state_default_438[1];  lif_forward_state_default_438 = None
+    y_534 = torch.nn.functional.layer_norm(spike_438, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_453 = torch._C._nn.linear(y_534, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_534 = None
+    lif_forward_state_default_439 = torch.ops.snn_custom.lif_forward_state.default(linear_453, v_next_406, 1.0, 0.0, 2.0, False);  linear_453 = v_next_406 = None
+    spike_439 = lif_forward_state_default_439[0]
+    v_next_439 = lif_forward_state_default_439[1];  lif_forward_state_default_439 = None
+    linear_454 = torch._C._nn.linear(spike_439, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_439 = None
+    lif_forward_state_default_440 = torch.ops.snn_custom.lif_forward_state.default(linear_454, v_next_407, 1.0, 0.0, 2.0, False);  linear_454 = v_next_407 = None
+    spike_440 = lif_forward_state_default_440[0]
+    v_next_440 = lif_forward_state_default_440[1];  lif_forward_state_default_440 = None
+    add_226 = spike_438 + spike_440;  spike_438 = spike_440 = None
+    lif_forward_state_default_441 = torch.ops.snn_custom.lif_forward_state.default(add_226, v_next_408, 1.0, 0.0, 2.0, False);  add_226 = v_next_408 = None
+    spike_441 = lif_forward_state_default_441[0]
+    v_next_441 = lif_forward_state_default_441[1];  lif_forward_state_default_441 = None
+    y_535 = torch.nn.functional.layer_norm(spike_441, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_321 = torch._C._nn.linear(y_535, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_535 = None
+    qkv_322 = qkv_321.reshape(4, 256, 3, 8, 32);  qkv_321 = None
+    movedim_107 = qkv_322.movedim(-3, 0);  qkv_322 = None
+    qkv_323 = movedim_107.transpose(-3, -2);  movedim_107 = None
+    q_107 = qkv_323[0]
+    k_107 = qkv_323[1]
+    v_107 = qkv_323[2];  qkv_323 = None
+    _sdpa_capture_safe_107 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_107, k_107, v_107, scale = 0.1767766952966369);  q_107 = k_107 = v_107 = None
+    transpose_323 = _sdpa_capture_safe_107.transpose(-3, -2);  _sdpa_capture_safe_107 = None
+    y_537 = transpose_323.reshape(4, 256, 256);  transpose_323 = None
+    y_538 = torch._C._nn.linear(y_537, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_537 = None
+    add_227 = spike_441 + y_538;  spike_441 = y_538 = None
+    lif_forward_state_default_442 = torch.ops.snn_custom.lif_forward_state.default(add_227, v_next_409, 1.0, 0.0, 2.0, False);  add_227 = v_next_409 = None
+    spike_442 = lif_forward_state_default_442[0]
+    v_next_442 = lif_forward_state_default_442[1];  lif_forward_state_default_442 = None
+    y_539 = torch.nn.functional.layer_norm(spike_442, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_457 = torch._C._nn.linear(y_539, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_539 = None
+    lif_forward_state_default_443 = torch.ops.snn_custom.lif_forward_state.default(linear_457, v_next_410, 1.0, 0.0, 2.0, False);  linear_457 = v_next_410 = None
+    spike_443 = lif_forward_state_default_443[0]
+    v_next_443 = lif_forward_state_default_443[1];  lif_forward_state_default_443 = None
+    linear_458 = torch._C._nn.linear(spike_443, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_443 = None
+    lif_forward_state_default_444 = torch.ops.snn_custom.lif_forward_state.default(linear_458, v_next_411, 1.0, 0.0, 2.0, False);  linear_458 = v_next_411 = None
+    spike_444 = lif_forward_state_default_444[0]
+    v_next_444 = lif_forward_state_default_444[1];  lif_forward_state_default_444 = None
+    add_228 = spike_442 + spike_444;  spike_442 = spike_444 = None
+    lif_forward_state_default_445 = torch.ops.snn_custom.lif_forward_state.default(add_228, v_next_412, 1.0, 0.0, 2.0, False);  add_228 = v_next_412 = None
+    spike_445 = lif_forward_state_default_445[0]
+    v_next_445 = lif_forward_state_default_445[1];  lif_forward_state_default_445 = None
+    y_540 = torch.nn.functional.layer_norm(spike_445, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_324 = torch._C._nn.linear(y_540, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_540 = None
+    qkv_325 = qkv_324.reshape(4, 256, 3, 8, 32);  qkv_324 = None
+    movedim_108 = qkv_325.movedim(-3, 0);  qkv_325 = None
+    qkv_326 = movedim_108.transpose(-3, -2);  movedim_108 = None
+    q_108 = qkv_326[0]
+    k_108 = qkv_326[1]
+    v_108 = qkv_326[2];  qkv_326 = None
+    _sdpa_capture_safe_108 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_108, k_108, v_108, scale = 0.1767766952966369);  q_108 = k_108 = v_108 = None
+    transpose_326 = _sdpa_capture_safe_108.transpose(-3, -2);  _sdpa_capture_safe_108 = None
+    y_542 = transpose_326.reshape(4, 256, 256);  transpose_326 = None
+    y_543 = torch._C._nn.linear(y_542, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_542 = None
+    add_229 = spike_445 + y_543;  spike_445 = y_543 = None
+    lif_forward_state_default_446 = torch.ops.snn_custom.lif_forward_state.default(add_229, v_next_413, 1.0, 0.0, 2.0, False);  add_229 = v_next_413 = None
+    spike_446 = lif_forward_state_default_446[0]
+    v_next_446 = lif_forward_state_default_446[1];  lif_forward_state_default_446 = None
+    y_544 = torch.nn.functional.layer_norm(spike_446, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_461 = torch._C._nn.linear(y_544, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_544 = None
+    lif_forward_state_default_447 = torch.ops.snn_custom.lif_forward_state.default(linear_461, v_next_414, 1.0, 0.0, 2.0, False);  linear_461 = v_next_414 = None
+    spike_447 = lif_forward_state_default_447[0]
+    v_next_447 = lif_forward_state_default_447[1];  lif_forward_state_default_447 = None
+    linear_462 = torch._C._nn.linear(spike_447, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_447 = None
+    lif_forward_state_default_448 = torch.ops.snn_custom.lif_forward_state.default(linear_462, v_next_415, 1.0, 0.0, 2.0, False);  linear_462 = v_next_415 = None
+    spike_448 = lif_forward_state_default_448[0]
+    v_next_448 = lif_forward_state_default_448[1];  lif_forward_state_default_448 = None
+    add_230 = spike_446 + spike_448;  spike_446 = spike_448 = None
+    lif_forward_state_default_449 = torch.ops.snn_custom.lif_forward_state.default(add_230, v_next_416, 1.0, 0.0, 2.0, False);  add_230 = v_next_416 = None
+    spike_449 = lif_forward_state_default_449[0]
+    v_next_449 = lif_forward_state_default_449[1];  lif_forward_state_default_449 = None
+    y_545 = torch.nn.functional.layer_norm(spike_449, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_327 = torch._C._nn.linear(y_545, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_545 = None
+    qkv_328 = qkv_327.reshape(4, 256, 3, 8, 32);  qkv_327 = None
+    movedim_109 = qkv_328.movedim(-3, 0);  qkv_328 = None
+    qkv_329 = movedim_109.transpose(-3, -2);  movedim_109 = None
+    q_109 = qkv_329[0]
+    k_109 = qkv_329[1]
+    v_109 = qkv_329[2];  qkv_329 = None
+    _sdpa_capture_safe_109 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_109, k_109, v_109, scale = 0.1767766952966369);  q_109 = k_109 = v_109 = None
+    transpose_329 = _sdpa_capture_safe_109.transpose(-3, -2);  _sdpa_capture_safe_109 = None
+    y_547 = transpose_329.reshape(4, 256, 256);  transpose_329 = None
+    y_548 = torch._C._nn.linear(y_547, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_547 = None
+    add_231 = spike_449 + y_548;  spike_449 = y_548 = None
+    lif_forward_state_default_450 = torch.ops.snn_custom.lif_forward_state.default(add_231, v_next_417, 1.0, 0.0, 2.0, False);  add_231 = v_next_417 = None
+    spike_450 = lif_forward_state_default_450[0]
+    v_next_450 = lif_forward_state_default_450[1];  lif_forward_state_default_450 = None
+    y_549 = torch.nn.functional.layer_norm(spike_450, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_465 = torch._C._nn.linear(y_549, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_549 = None
+    lif_forward_state_default_451 = torch.ops.snn_custom.lif_forward_state.default(linear_465, v_next_418, 1.0, 0.0, 2.0, False);  linear_465 = v_next_418 = None
+    spike_451 = lif_forward_state_default_451[0]
+    v_next_451 = lif_forward_state_default_451[1];  lif_forward_state_default_451 = None
+    linear_466 = torch._C._nn.linear(spike_451, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_451 = None
+    lif_forward_state_default_452 = torch.ops.snn_custom.lif_forward_state.default(linear_466, v_next_419, 1.0, 0.0, 2.0, False);  linear_466 = v_next_419 = None
+    spike_452 = lif_forward_state_default_452[0]
+    v_next_452 = lif_forward_state_default_452[1];  lif_forward_state_default_452 = None
+    add_232 = spike_450 + spike_452;  spike_450 = spike_452 = None
+    lif_forward_state_default_453 = torch.ops.snn_custom.lif_forward_state.default(add_232, v_next_420, 1.0, 0.0, 2.0, False);  add_232 = v_next_420 = None
+    spike_453 = lif_forward_state_default_453[0]
+    v_next_453 = lif_forward_state_default_453[1];  lif_forward_state_default_453 = None
+    y_550 = torch.nn.functional.layer_norm(spike_453, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_330 = torch._C._nn.linear(y_550, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_550 = None
+    qkv_331 = qkv_330.reshape(4, 256, 3, 8, 32);  qkv_330 = None
+    movedim_110 = qkv_331.movedim(-3, 0);  qkv_331 = None
+    qkv_332 = movedim_110.transpose(-3, -2);  movedim_110 = None
+    q_110 = qkv_332[0]
+    k_110 = qkv_332[1]
+    v_110 = qkv_332[2];  qkv_332 = None
+    _sdpa_capture_safe_110 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_110, k_110, v_110, scale = 0.1767766952966369);  q_110 = k_110 = v_110 = None
+    transpose_332 = _sdpa_capture_safe_110.transpose(-3, -2);  _sdpa_capture_safe_110 = None
+    y_552 = transpose_332.reshape(4, 256, 256);  transpose_332 = None
+    y_553 = torch._C._nn.linear(y_552, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_552 = None
+    add_233 = spike_453 + y_553;  spike_453 = y_553 = None
+    lif_forward_state_default_454 = torch.ops.snn_custom.lif_forward_state.default(add_233, v_next_421, 1.0, 0.0, 2.0, False);  add_233 = v_next_421 = None
+    spike_454 = lif_forward_state_default_454[0]
+    v_next_454 = lif_forward_state_default_454[1];  lif_forward_state_default_454 = None
+    y_554 = torch.nn.functional.layer_norm(spike_454, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_469 = torch._C._nn.linear(y_554, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_554 = None
+    lif_forward_state_default_455 = torch.ops.snn_custom.lif_forward_state.default(linear_469, v_next_422, 1.0, 0.0, 2.0, False);  linear_469 = v_next_422 = None
+    spike_455 = lif_forward_state_default_455[0]
+    v_next_455 = lif_forward_state_default_455[1];  lif_forward_state_default_455 = None
+    linear_470 = torch._C._nn.linear(spike_455, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_455 = None
+    lif_forward_state_default_456 = torch.ops.snn_custom.lif_forward_state.default(linear_470, v_next_423, 1.0, 0.0, 2.0, False);  linear_470 = v_next_423 = None
+    spike_456 = lif_forward_state_default_456[0]
+    v_next_456 = lif_forward_state_default_456[1];  lif_forward_state_default_456 = None
+    add_234 = spike_454 + spike_456;  spike_454 = spike_456 = None
+    lif_forward_state_default_457 = torch.ops.snn_custom.lif_forward_state.default(add_234, v_next_424, 1.0, 0.0, 2.0, False);  add_234 = v_next_424 = None
+    spike_457 = lif_forward_state_default_457[0]
+    v_next_457 = lif_forward_state_default_457[1];  lif_forward_state_default_457 = None
+    y_555 = torch.nn.functional.layer_norm(spike_457, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_333 = torch._C._nn.linear(y_555, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_555 = None
+    qkv_334 = qkv_333.reshape(4, 256, 3, 8, 32);  qkv_333 = None
+    movedim_111 = qkv_334.movedim(-3, 0);  qkv_334 = None
+    qkv_335 = movedim_111.transpose(-3, -2);  movedim_111 = None
+    q_111 = qkv_335[0]
+    k_111 = qkv_335[1]
+    v_111 = qkv_335[2];  qkv_335 = None
+    _sdpa_capture_safe_111 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_111, k_111, v_111, scale = 0.1767766952966369);  q_111 = k_111 = v_111 = None
+    transpose_335 = _sdpa_capture_safe_111.transpose(-3, -2);  _sdpa_capture_safe_111 = None
+    y_557 = transpose_335.reshape(4, 256, 256);  transpose_335 = None
+    y_558 = torch._C._nn.linear(y_557, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_557 = None
+    add_235 = spike_457 + y_558;  spike_457 = y_558 = None
+    lif_forward_state_default_458 = torch.ops.snn_custom.lif_forward_state.default(add_235, v_next_425, 1.0, 0.0, 2.0, False);  add_235 = v_next_425 = None
+    spike_458 = lif_forward_state_default_458[0]
+    v_next_458 = lif_forward_state_default_458[1];  lif_forward_state_default_458 = None
+    y_559 = torch.nn.functional.layer_norm(spike_458, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_473 = torch._C._nn.linear(y_559, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_559 = None
+    lif_forward_state_default_459 = torch.ops.snn_custom.lif_forward_state.default(linear_473, v_next_426, 1.0, 0.0, 2.0, False);  linear_473 = v_next_426 = None
+    spike_459 = lif_forward_state_default_459[0]
+    v_next_459 = lif_forward_state_default_459[1];  lif_forward_state_default_459 = None
+    linear_474 = torch._C._nn.linear(spike_459, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_459 = None
+    lif_forward_state_default_460 = torch.ops.snn_custom.lif_forward_state.default(linear_474, v_next_427, 1.0, 0.0, 2.0, False);  linear_474 = v_next_427 = None
+    spike_460 = lif_forward_state_default_460[0]
+    v_next_460 = lif_forward_state_default_460[1];  lif_forward_state_default_460 = None
+    add_236 = spike_458 + spike_460;  spike_458 = spike_460 = None
+    lif_forward_state_default_461 = torch.ops.snn_custom.lif_forward_state.default(add_236, v_next_428, 1.0, 0.0, 2.0, False);  add_236 = v_next_428 = None
+    spike_461 = lif_forward_state_default_461[0]
+    v_next_461 = lif_forward_state_default_461[1];  lif_forward_state_default_461 = None
+    x_26 = torch.nn.functional.layer_norm(spike_461, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_461 = None
+    x_27 = x_26.mean(dim = -2);  x_26 = None
+    linear_475 = torch._C._nn.linear(x_27, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_27 = None
+    out_spikes_counter_13 = out_spikes_counter_12 + linear_475;  out_spikes_counter_12 = linear_475 = None
+    getitem_1274 = l_x_seq_[14]
+    linear_476 = torch._C._nn.linear(getitem_1274, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_1274 = None
+    lif_forward_state_default_462 = torch.ops.snn_custom.lif_forward_state.default(linear_476, v_next_429, 1.0, 0.0, 2.0, False);  linear_476 = v_next_429 = None
+    spike_462 = lif_forward_state_default_462[0]
+    v_next_462 = lif_forward_state_default_462[1];  lif_forward_state_default_462 = None
+    y_560 = torch.nn.functional.layer_norm(spike_462, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05)
+    qkv_336 = torch._C._nn.linear(y_560, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_560 = None
+    qkv_337 = qkv_336.reshape(4, 256, 3, 8, 32);  qkv_336 = None
+    movedim_112 = qkv_337.movedim(-3, 0);  qkv_337 = None
+    qkv_338 = movedim_112.transpose(-3, -2);  movedim_112 = None
+    q_112 = qkv_338[0]
+    k_112 = qkv_338[1]
+    v_112 = qkv_338[2];  qkv_338 = None
+    _sdpa_capture_safe_112 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_112, k_112, v_112, scale = 0.1767766952966369);  q_112 = k_112 = v_112 = None
+    transpose_338 = _sdpa_capture_safe_112.transpose(-3, -2);  _sdpa_capture_safe_112 = None
+    y_562 = transpose_338.reshape(4, 256, 256);  transpose_338 = None
+    y_563 = torch._C._nn.linear(y_562, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_562 = None
+    add_238 = spike_462 + y_563;  spike_462 = y_563 = None
+    lif_forward_state_default_463 = torch.ops.snn_custom.lif_forward_state.default(add_238, v_next_430, 1.0, 0.0, 2.0, False);  add_238 = v_next_430 = None
+    spike_463 = lif_forward_state_default_463[0]
+    v_next_463 = lif_forward_state_default_463[1];  lif_forward_state_default_463 = None
+    y_564 = torch.nn.functional.layer_norm(spike_463, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05)
+    linear_479 = torch._C._nn.linear(y_564, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_564 = None
+    lif_forward_state_default_464 = torch.ops.snn_custom.lif_forward_state.default(linear_479, v_next_431, 1.0, 0.0, 2.0, False);  linear_479 = v_next_431 = None
+    spike_464 = lif_forward_state_default_464[0]
+    v_next_464 = lif_forward_state_default_464[1];  lif_forward_state_default_464 = None
+    linear_480 = torch._C._nn.linear(spike_464, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_464 = None
+    lif_forward_state_default_465 = torch.ops.snn_custom.lif_forward_state.default(linear_480, v_next_432, 1.0, 0.0, 2.0, False);  linear_480 = v_next_432 = None
+    spike_465 = lif_forward_state_default_465[0]
+    v_next_465 = lif_forward_state_default_465[1];  lif_forward_state_default_465 = None
+    add_239 = spike_463 + spike_465;  spike_463 = spike_465 = None
+    lif_forward_state_default_466 = torch.ops.snn_custom.lif_forward_state.default(add_239, v_next_433, 1.0, 0.0, 2.0, False);  add_239 = v_next_433 = None
+    spike_466 = lif_forward_state_default_466[0]
+    v_next_466 = lif_forward_state_default_466[1];  lif_forward_state_default_466 = None
+    y_565 = torch.nn.functional.layer_norm(spike_466, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05)
+    qkv_339 = torch._C._nn.linear(y_565, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_565 = None
+    qkv_340 = qkv_339.reshape(4, 256, 3, 8, 32);  qkv_339 = None
+    movedim_113 = qkv_340.movedim(-3, 0);  qkv_340 = None
+    qkv_341 = movedim_113.transpose(-3, -2);  movedim_113 = None
+    q_113 = qkv_341[0]
+    k_113 = qkv_341[1]
+    v_113 = qkv_341[2];  qkv_341 = None
+    _sdpa_capture_safe_113 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_113, k_113, v_113, scale = 0.1767766952966369);  q_113 = k_113 = v_113 = None
+    transpose_341 = _sdpa_capture_safe_113.transpose(-3, -2);  _sdpa_capture_safe_113 = None
+    y_567 = transpose_341.reshape(4, 256, 256);  transpose_341 = None
+    y_568 = torch._C._nn.linear(y_567, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_567 = None
+    add_240 = spike_466 + y_568;  spike_466 = y_568 = None
+    lif_forward_state_default_467 = torch.ops.snn_custom.lif_forward_state.default(add_240, v_next_434, 1.0, 0.0, 2.0, False);  add_240 = v_next_434 = None
+    spike_467 = lif_forward_state_default_467[0]
+    v_next_467 = lif_forward_state_default_467[1];  lif_forward_state_default_467 = None
+    y_569 = torch.nn.functional.layer_norm(spike_467, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05)
+    linear_483 = torch._C._nn.linear(y_569, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_569 = None
+    lif_forward_state_default_468 = torch.ops.snn_custom.lif_forward_state.default(linear_483, v_next_435, 1.0, 0.0, 2.0, False);  linear_483 = v_next_435 = None
+    spike_468 = lif_forward_state_default_468[0]
+    v_next_468 = lif_forward_state_default_468[1];  lif_forward_state_default_468 = None
+    linear_484 = torch._C._nn.linear(spike_468, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_468 = None
+    lif_forward_state_default_469 = torch.ops.snn_custom.lif_forward_state.default(linear_484, v_next_436, 1.0, 0.0, 2.0, False);  linear_484 = v_next_436 = None
+    spike_469 = lif_forward_state_default_469[0]
+    v_next_469 = lif_forward_state_default_469[1];  lif_forward_state_default_469 = None
+    add_241 = spike_467 + spike_469;  spike_467 = spike_469 = None
+    lif_forward_state_default_470 = torch.ops.snn_custom.lif_forward_state.default(add_241, v_next_437, 1.0, 0.0, 2.0, False);  add_241 = v_next_437 = None
+    spike_470 = lif_forward_state_default_470[0]
+    v_next_470 = lif_forward_state_default_470[1];  lif_forward_state_default_470 = None
+    y_570 = torch.nn.functional.layer_norm(spike_470, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05)
+    qkv_342 = torch._C._nn.linear(y_570, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_570 = None
+    qkv_343 = qkv_342.reshape(4, 256, 3, 8, 32);  qkv_342 = None
+    movedim_114 = qkv_343.movedim(-3, 0);  qkv_343 = None
+    qkv_344 = movedim_114.transpose(-3, -2);  movedim_114 = None
+    q_114 = qkv_344[0]
+    k_114 = qkv_344[1]
+    v_114 = qkv_344[2];  qkv_344 = None
+    _sdpa_capture_safe_114 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_114, k_114, v_114, scale = 0.1767766952966369);  q_114 = k_114 = v_114 = None
+    transpose_344 = _sdpa_capture_safe_114.transpose(-3, -2);  _sdpa_capture_safe_114 = None
+    y_572 = transpose_344.reshape(4, 256, 256);  transpose_344 = None
+    y_573 = torch._C._nn.linear(y_572, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_572 = None
+    add_242 = spike_470 + y_573;  spike_470 = y_573 = None
+    lif_forward_state_default_471 = torch.ops.snn_custom.lif_forward_state.default(add_242, v_next_438, 1.0, 0.0, 2.0, False);  add_242 = v_next_438 = None
+    spike_471 = lif_forward_state_default_471[0]
+    v_next_471 = lif_forward_state_default_471[1];  lif_forward_state_default_471 = None
+    y_574 = torch.nn.functional.layer_norm(spike_471, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05)
+    linear_487 = torch._C._nn.linear(y_574, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_574 = None
+    lif_forward_state_default_472 = torch.ops.snn_custom.lif_forward_state.default(linear_487, v_next_439, 1.0, 0.0, 2.0, False);  linear_487 = v_next_439 = None
+    spike_472 = lif_forward_state_default_472[0]
+    v_next_472 = lif_forward_state_default_472[1];  lif_forward_state_default_472 = None
+    linear_488 = torch._C._nn.linear(spike_472, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_472 = None
+    lif_forward_state_default_473 = torch.ops.snn_custom.lif_forward_state.default(linear_488, v_next_440, 1.0, 0.0, 2.0, False);  linear_488 = v_next_440 = None
+    spike_473 = lif_forward_state_default_473[0]
+    v_next_473 = lif_forward_state_default_473[1];  lif_forward_state_default_473 = None
+    add_243 = spike_471 + spike_473;  spike_471 = spike_473 = None
+    lif_forward_state_default_474 = torch.ops.snn_custom.lif_forward_state.default(add_243, v_next_441, 1.0, 0.0, 2.0, False);  add_243 = v_next_441 = None
+    spike_474 = lif_forward_state_default_474[0]
+    v_next_474 = lif_forward_state_default_474[1];  lif_forward_state_default_474 = None
+    y_575 = torch.nn.functional.layer_norm(spike_474, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05)
+    qkv_345 = torch._C._nn.linear(y_575, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_575 = None
+    qkv_346 = qkv_345.reshape(4, 256, 3, 8, 32);  qkv_345 = None
+    movedim_115 = qkv_346.movedim(-3, 0);  qkv_346 = None
+    qkv_347 = movedim_115.transpose(-3, -2);  movedim_115 = None
+    q_115 = qkv_347[0]
+    k_115 = qkv_347[1]
+    v_115 = qkv_347[2];  qkv_347 = None
+    _sdpa_capture_safe_115 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_115, k_115, v_115, scale = 0.1767766952966369);  q_115 = k_115 = v_115 = None
+    transpose_347 = _sdpa_capture_safe_115.transpose(-3, -2);  _sdpa_capture_safe_115 = None
+    y_577 = transpose_347.reshape(4, 256, 256);  transpose_347 = None
+    y_578 = torch._C._nn.linear(y_577, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_577 = None
+    add_244 = spike_474 + y_578;  spike_474 = y_578 = None
+    lif_forward_state_default_475 = torch.ops.snn_custom.lif_forward_state.default(add_244, v_next_442, 1.0, 0.0, 2.0, False);  add_244 = v_next_442 = None
+    spike_475 = lif_forward_state_default_475[0]
+    v_next_475 = lif_forward_state_default_475[1];  lif_forward_state_default_475 = None
+    y_579 = torch.nn.functional.layer_norm(spike_475, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05)
+    linear_491 = torch._C._nn.linear(y_579, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_579 = None
+    lif_forward_state_default_476 = torch.ops.snn_custom.lif_forward_state.default(linear_491, v_next_443, 1.0, 0.0, 2.0, False);  linear_491 = v_next_443 = None
+    spike_476 = lif_forward_state_default_476[0]
+    v_next_476 = lif_forward_state_default_476[1];  lif_forward_state_default_476 = None
+    linear_492 = torch._C._nn.linear(spike_476, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_476 = None
+    lif_forward_state_default_477 = torch.ops.snn_custom.lif_forward_state.default(linear_492, v_next_444, 1.0, 0.0, 2.0, False);  linear_492 = v_next_444 = None
+    spike_477 = lif_forward_state_default_477[0]
+    v_next_477 = lif_forward_state_default_477[1];  lif_forward_state_default_477 = None
+    add_245 = spike_475 + spike_477;  spike_475 = spike_477 = None
+    lif_forward_state_default_478 = torch.ops.snn_custom.lif_forward_state.default(add_245, v_next_445, 1.0, 0.0, 2.0, False);  add_245 = v_next_445 = None
+    spike_478 = lif_forward_state_default_478[0]
+    v_next_478 = lif_forward_state_default_478[1];  lif_forward_state_default_478 = None
+    y_580 = torch.nn.functional.layer_norm(spike_478, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05)
+    qkv_348 = torch._C._nn.linear(y_580, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_580 = None
+    qkv_349 = qkv_348.reshape(4, 256, 3, 8, 32);  qkv_348 = None
+    movedim_116 = qkv_349.movedim(-3, 0);  qkv_349 = None
+    qkv_350 = movedim_116.transpose(-3, -2);  movedim_116 = None
+    q_116 = qkv_350[0]
+    k_116 = qkv_350[1]
+    v_116 = qkv_350[2];  qkv_350 = None
+    _sdpa_capture_safe_116 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_116, k_116, v_116, scale = 0.1767766952966369);  q_116 = k_116 = v_116 = None
+    transpose_350 = _sdpa_capture_safe_116.transpose(-3, -2);  _sdpa_capture_safe_116 = None
+    y_582 = transpose_350.reshape(4, 256, 256);  transpose_350 = None
+    y_583 = torch._C._nn.linear(y_582, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_582 = None
+    add_246 = spike_478 + y_583;  spike_478 = y_583 = None
+    lif_forward_state_default_479 = torch.ops.snn_custom.lif_forward_state.default(add_246, v_next_446, 1.0, 0.0, 2.0, False);  add_246 = v_next_446 = None
+    spike_479 = lif_forward_state_default_479[0]
+    v_next_479 = lif_forward_state_default_479[1];  lif_forward_state_default_479 = None
+    y_584 = torch.nn.functional.layer_norm(spike_479, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05)
+    linear_495 = torch._C._nn.linear(y_584, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_584 = None
+    lif_forward_state_default_480 = torch.ops.snn_custom.lif_forward_state.default(linear_495, v_next_447, 1.0, 0.0, 2.0, False);  linear_495 = v_next_447 = None
+    spike_480 = lif_forward_state_default_480[0]
+    v_next_480 = lif_forward_state_default_480[1];  lif_forward_state_default_480 = None
+    linear_496 = torch._C._nn.linear(spike_480, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_480 = None
+    lif_forward_state_default_481 = torch.ops.snn_custom.lif_forward_state.default(linear_496, v_next_448, 1.0, 0.0, 2.0, False);  linear_496 = v_next_448 = None
+    spike_481 = lif_forward_state_default_481[0]
+    v_next_481 = lif_forward_state_default_481[1];  lif_forward_state_default_481 = None
+    add_247 = spike_479 + spike_481;  spike_479 = spike_481 = None
+    lif_forward_state_default_482 = torch.ops.snn_custom.lif_forward_state.default(add_247, v_next_449, 1.0, 0.0, 2.0, False);  add_247 = v_next_449 = None
+    spike_482 = lif_forward_state_default_482[0]
+    v_next_482 = lif_forward_state_default_482[1];  lif_forward_state_default_482 = None
+    y_585 = torch.nn.functional.layer_norm(spike_482, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05)
+    qkv_351 = torch._C._nn.linear(y_585, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_585 = None
+    qkv_352 = qkv_351.reshape(4, 256, 3, 8, 32);  qkv_351 = None
+    movedim_117 = qkv_352.movedim(-3, 0);  qkv_352 = None
+    qkv_353 = movedim_117.transpose(-3, -2);  movedim_117 = None
+    q_117 = qkv_353[0]
+    k_117 = qkv_353[1]
+    v_117 = qkv_353[2];  qkv_353 = None
+    _sdpa_capture_safe_117 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_117, k_117, v_117, scale = 0.1767766952966369);  q_117 = k_117 = v_117 = None
+    transpose_353 = _sdpa_capture_safe_117.transpose(-3, -2);  _sdpa_capture_safe_117 = None
+    y_587 = transpose_353.reshape(4, 256, 256);  transpose_353 = None
+    y_588 = torch._C._nn.linear(y_587, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_587 = None
+    add_248 = spike_482 + y_588;  spike_482 = y_588 = None
+    lif_forward_state_default_483 = torch.ops.snn_custom.lif_forward_state.default(add_248, v_next_450, 1.0, 0.0, 2.0, False);  add_248 = v_next_450 = None
+    spike_483 = lif_forward_state_default_483[0]
+    v_next_483 = lif_forward_state_default_483[1];  lif_forward_state_default_483 = None
+    y_589 = torch.nn.functional.layer_norm(spike_483, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05)
+    linear_499 = torch._C._nn.linear(y_589, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_589 = None
+    lif_forward_state_default_484 = torch.ops.snn_custom.lif_forward_state.default(linear_499, v_next_451, 1.0, 0.0, 2.0, False);  linear_499 = v_next_451 = None
+    spike_484 = lif_forward_state_default_484[0]
+    v_next_484 = lif_forward_state_default_484[1];  lif_forward_state_default_484 = None
+    linear_500 = torch._C._nn.linear(spike_484, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_484 = None
+    lif_forward_state_default_485 = torch.ops.snn_custom.lif_forward_state.default(linear_500, v_next_452, 1.0, 0.0, 2.0, False);  linear_500 = v_next_452 = None
+    spike_485 = lif_forward_state_default_485[0]
+    v_next_485 = lif_forward_state_default_485[1];  lif_forward_state_default_485 = None
+    add_249 = spike_483 + spike_485;  spike_483 = spike_485 = None
+    lif_forward_state_default_486 = torch.ops.snn_custom.lif_forward_state.default(add_249, v_next_453, 1.0, 0.0, 2.0, False);  add_249 = v_next_453 = None
+    spike_486 = lif_forward_state_default_486[0]
+    v_next_486 = lif_forward_state_default_486[1];  lif_forward_state_default_486 = None
+    y_590 = torch.nn.functional.layer_norm(spike_486, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05)
+    qkv_354 = torch._C._nn.linear(y_590, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_590 = None
+    qkv_355 = qkv_354.reshape(4, 256, 3, 8, 32);  qkv_354 = None
+    movedim_118 = qkv_355.movedim(-3, 0);  qkv_355 = None
+    qkv_356 = movedim_118.transpose(-3, -2);  movedim_118 = None
+    q_118 = qkv_356[0]
+    k_118 = qkv_356[1]
+    v_118 = qkv_356[2];  qkv_356 = None
+    _sdpa_capture_safe_118 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_118, k_118, v_118, scale = 0.1767766952966369);  q_118 = k_118 = v_118 = None
+    transpose_356 = _sdpa_capture_safe_118.transpose(-3, -2);  _sdpa_capture_safe_118 = None
+    y_592 = transpose_356.reshape(4, 256, 256);  transpose_356 = None
+    y_593 = torch._C._nn.linear(y_592, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_592 = None
+    add_250 = spike_486 + y_593;  spike_486 = y_593 = None
+    lif_forward_state_default_487 = torch.ops.snn_custom.lif_forward_state.default(add_250, v_next_454, 1.0, 0.0, 2.0, False);  add_250 = v_next_454 = None
+    spike_487 = lif_forward_state_default_487[0]
+    v_next_487 = lif_forward_state_default_487[1];  lif_forward_state_default_487 = None
+    y_594 = torch.nn.functional.layer_norm(spike_487, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05)
+    linear_503 = torch._C._nn.linear(y_594, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_594 = None
+    lif_forward_state_default_488 = torch.ops.snn_custom.lif_forward_state.default(linear_503, v_next_455, 1.0, 0.0, 2.0, False);  linear_503 = v_next_455 = None
+    spike_488 = lif_forward_state_default_488[0]
+    v_next_488 = lif_forward_state_default_488[1];  lif_forward_state_default_488 = None
+    linear_504 = torch._C._nn.linear(spike_488, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_488 = None
+    lif_forward_state_default_489 = torch.ops.snn_custom.lif_forward_state.default(linear_504, v_next_456, 1.0, 0.0, 2.0, False);  linear_504 = v_next_456 = None
+    spike_489 = lif_forward_state_default_489[0]
+    v_next_489 = lif_forward_state_default_489[1];  lif_forward_state_default_489 = None
+    add_251 = spike_487 + spike_489;  spike_487 = spike_489 = None
+    lif_forward_state_default_490 = torch.ops.snn_custom.lif_forward_state.default(add_251, v_next_457, 1.0, 0.0, 2.0, False);  add_251 = v_next_457 = None
+    spike_490 = lif_forward_state_default_490[0]
+    v_next_490 = lif_forward_state_default_490[1];  lif_forward_state_default_490 = None
+    y_595 = torch.nn.functional.layer_norm(spike_490, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05)
+    qkv_357 = torch._C._nn.linear(y_595, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_595 = None
+    qkv_358 = qkv_357.reshape(4, 256, 3, 8, 32);  qkv_357 = None
+    movedim_119 = qkv_358.movedim(-3, 0);  qkv_358 = None
+    qkv_359 = movedim_119.transpose(-3, -2);  movedim_119 = None
+    q_119 = qkv_359[0]
+    k_119 = qkv_359[1]
+    v_119 = qkv_359[2];  qkv_359 = None
+    _sdpa_capture_safe_119 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_119, k_119, v_119, scale = 0.1767766952966369);  q_119 = k_119 = v_119 = None
+    transpose_359 = _sdpa_capture_safe_119.transpose(-3, -2);  _sdpa_capture_safe_119 = None
+    y_597 = transpose_359.reshape(4, 256, 256);  transpose_359 = None
+    y_598 = torch._C._nn.linear(y_597, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_597 = None
+    add_252 = spike_490 + y_598;  spike_490 = y_598 = None
+    lif_forward_state_default_491 = torch.ops.snn_custom.lif_forward_state.default(add_252, v_next_458, 1.0, 0.0, 2.0, False);  add_252 = v_next_458 = None
+    spike_491 = lif_forward_state_default_491[0]
+    v_next_491 = lif_forward_state_default_491[1];  lif_forward_state_default_491 = None
+    y_599 = torch.nn.functional.layer_norm(spike_491, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05)
+    linear_507 = torch._C._nn.linear(y_599, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_599 = None
+    lif_forward_state_default_492 = torch.ops.snn_custom.lif_forward_state.default(linear_507, v_next_459, 1.0, 0.0, 2.0, False);  linear_507 = v_next_459 = None
+    spike_492 = lif_forward_state_default_492[0]
+    v_next_492 = lif_forward_state_default_492[1];  lif_forward_state_default_492 = None
+    linear_508 = torch._C._nn.linear(spike_492, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_492 = None
+    lif_forward_state_default_493 = torch.ops.snn_custom.lif_forward_state.default(linear_508, v_next_460, 1.0, 0.0, 2.0, False);  linear_508 = v_next_460 = None
+    spike_493 = lif_forward_state_default_493[0]
+    v_next_493 = lif_forward_state_default_493[1];  lif_forward_state_default_493 = None
+    add_253 = spike_491 + spike_493;  spike_491 = spike_493 = None
+    lif_forward_state_default_494 = torch.ops.snn_custom.lif_forward_state.default(add_253, v_next_461, 1.0, 0.0, 2.0, False);  add_253 = v_next_461 = None
+    spike_494 = lif_forward_state_default_494[0]
+    v_next_494 = lif_forward_state_default_494[1];  lif_forward_state_default_494 = None
+    x_28 = torch.nn.functional.layer_norm(spike_494, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_494 = None
+    x_29 = x_28.mean(dim = -2);  x_28 = None
+    linear_509 = torch._C._nn.linear(x_29, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_29 = None
+    out_spikes_counter_14 = out_spikes_counter_13 + linear_509;  out_spikes_counter_13 = linear_509 = None
+    getitem_1365 = l_x_seq_[15];  l_x_seq_ = None
+    linear_510 = torch._C._nn.linear(getitem_1365, l_self_modules_layer_modules_input_proj_parameters_weight_, None);  getitem_1365 = l_self_modules_layer_modules_input_proj_parameters_weight_ = None
+    lif_forward_state_default_495 = torch.ops.snn_custom.lif_forward_state.default(linear_510, v_next_462, 1.0, 0.0, 2.0, False);  linear_510 = v_next_462 = None
+    spike_495 = lif_forward_state_default_495[0]
+    v_next_495 = lif_forward_state_default_495[1];  lif_forward_state_default_495 = None
+    y_600 = torch.nn.functional.layer_norm(spike_495, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_0_modules_norm1_parameters_bias_ = None
+    qkv_360 = torch._C._nn.linear(y_600, l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_, None);  y_600 = l_self_modules_layer_modules_blocks_modules_0_modules_qkv_parameters_weight_ = None
+    qkv_361 = qkv_360.reshape(4, 256, 3, 8, 32);  qkv_360 = None
+    movedim_120 = qkv_361.movedim(-3, 0);  qkv_361 = None
+    qkv_362 = movedim_120.transpose(-3, -2);  movedim_120 = None
+    q_120 = qkv_362[0]
+    k_120 = qkv_362[1]
+    v_120 = qkv_362[2];  qkv_362 = None
+    _sdpa_capture_safe_120 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_120, k_120, v_120, scale = 0.1767766952966369);  q_120 = k_120 = v_120 = None
+    transpose_362 = _sdpa_capture_safe_120.transpose(-3, -2);  _sdpa_capture_safe_120 = None
+    y_602 = transpose_362.reshape(4, 256, 256);  transpose_362 = None
+    y_603 = torch._C._nn.linear(y_602, l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_, None);  y_602 = l_self_modules_layer_modules_blocks_modules_0_modules_proj_parameters_weight_ = None
+    add_255 = spike_495 + y_603;  spike_495 = y_603 = None
+    lif_forward_state_default_496 = torch.ops.snn_custom.lif_forward_state.default(add_255, v_next_463, 1.0, 0.0, 2.0, False);  add_255 = v_next_463 = None
+    spike_496 = lif_forward_state_default_496[0]
+    v_next_496 = lif_forward_state_default_496[1];  lif_forward_state_default_496 = None
+    y_604 = torch.nn.functional.layer_norm(spike_496, (256,), l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_0_modules_norm2_parameters_bias_ = None
+    linear_513 = torch._C._nn.linear(y_604, l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_, None);  y_604 = l_self_modules_layer_modules_blocks_modules_0_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_497 = torch.ops.snn_custom.lif_forward_state.default(linear_513, v_next_464, 1.0, 0.0, 2.0, False);  linear_513 = v_next_464 = None
+    spike_497 = lif_forward_state_default_497[0]
+    v_next_497 = lif_forward_state_default_497[1];  lif_forward_state_default_497 = None
+    linear_514 = torch._C._nn.linear(spike_497, l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_, None);  spike_497 = l_self_modules_layer_modules_blocks_modules_0_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_498 = torch.ops.snn_custom.lif_forward_state.default(linear_514, v_next_465, 1.0, 0.0, 2.0, False);  linear_514 = v_next_465 = None
+    spike_498 = lif_forward_state_default_498[0]
+    v_next_498 = lif_forward_state_default_498[1];  lif_forward_state_default_498 = None
+    add_256 = spike_496 + spike_498;  spike_496 = spike_498 = None
+    lif_forward_state_default_499 = torch.ops.snn_custom.lif_forward_state.default(add_256, v_next_466, 1.0, 0.0, 2.0, False);  add_256 = v_next_466 = None
+    spike_499 = lif_forward_state_default_499[0]
+    v_next_499 = lif_forward_state_default_499[1];  lif_forward_state_default_499 = None
+    y_605 = torch.nn.functional.layer_norm(spike_499, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_1_modules_norm1_parameters_bias_ = None
+    qkv_363 = torch._C._nn.linear(y_605, l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_, None);  y_605 = l_self_modules_layer_modules_blocks_modules_1_modules_qkv_parameters_weight_ = None
+    qkv_364 = qkv_363.reshape(4, 256, 3, 8, 32);  qkv_363 = None
+    movedim_121 = qkv_364.movedim(-3, 0);  qkv_364 = None
+    qkv_365 = movedim_121.transpose(-3, -2);  movedim_121 = None
+    q_121 = qkv_365[0]
+    k_121 = qkv_365[1]
+    v_121 = qkv_365[2];  qkv_365 = None
+    _sdpa_capture_safe_121 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_121, k_121, v_121, scale = 0.1767766952966369);  q_121 = k_121 = v_121 = None
+    transpose_365 = _sdpa_capture_safe_121.transpose(-3, -2);  _sdpa_capture_safe_121 = None
+    y_607 = transpose_365.reshape(4, 256, 256);  transpose_365 = None
+    y_608 = torch._C._nn.linear(y_607, l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_, None);  y_607 = l_self_modules_layer_modules_blocks_modules_1_modules_proj_parameters_weight_ = None
+    add_257 = spike_499 + y_608;  spike_499 = y_608 = None
+    lif_forward_state_default_500 = torch.ops.snn_custom.lif_forward_state.default(add_257, v_next_467, 1.0, 0.0, 2.0, False);  add_257 = v_next_467 = None
+    spike_500 = lif_forward_state_default_500[0]
+    v_next_500 = lif_forward_state_default_500[1];  lif_forward_state_default_500 = None
+    y_609 = torch.nn.functional.layer_norm(spike_500, (256,), l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_1_modules_norm2_parameters_bias_ = None
+    linear_517 = torch._C._nn.linear(y_609, l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_, None);  y_609 = l_self_modules_layer_modules_blocks_modules_1_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_501 = torch.ops.snn_custom.lif_forward_state.default(linear_517, v_next_468, 1.0, 0.0, 2.0, False);  linear_517 = v_next_468 = None
+    spike_501 = lif_forward_state_default_501[0]
+    v_next_501 = lif_forward_state_default_501[1];  lif_forward_state_default_501 = None
+    linear_518 = torch._C._nn.linear(spike_501, l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_, None);  spike_501 = l_self_modules_layer_modules_blocks_modules_1_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_502 = torch.ops.snn_custom.lif_forward_state.default(linear_518, v_next_469, 1.0, 0.0, 2.0, False);  linear_518 = v_next_469 = None
+    spike_502 = lif_forward_state_default_502[0]
+    v_next_502 = lif_forward_state_default_502[1];  lif_forward_state_default_502 = None
+    add_258 = spike_500 + spike_502;  spike_500 = spike_502 = None
+    lif_forward_state_default_503 = torch.ops.snn_custom.lif_forward_state.default(add_258, v_next_470, 1.0, 0.0, 2.0, False);  add_258 = v_next_470 = None
+    spike_503 = lif_forward_state_default_503[0]
+    v_next_503 = lif_forward_state_default_503[1];  lif_forward_state_default_503 = None
+    y_610 = torch.nn.functional.layer_norm(spike_503, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_2_modules_norm1_parameters_bias_ = None
+    qkv_366 = torch._C._nn.linear(y_610, l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_, None);  y_610 = l_self_modules_layer_modules_blocks_modules_2_modules_qkv_parameters_weight_ = None
+    qkv_367 = qkv_366.reshape(4, 256, 3, 8, 32);  qkv_366 = None
+    movedim_122 = qkv_367.movedim(-3, 0);  qkv_367 = None
+    qkv_368 = movedim_122.transpose(-3, -2);  movedim_122 = None
+    q_122 = qkv_368[0]
+    k_122 = qkv_368[1]
+    v_122 = qkv_368[2];  qkv_368 = None
+    _sdpa_capture_safe_122 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_122, k_122, v_122, scale = 0.1767766952966369);  q_122 = k_122 = v_122 = None
+    transpose_368 = _sdpa_capture_safe_122.transpose(-3, -2);  _sdpa_capture_safe_122 = None
+    y_612 = transpose_368.reshape(4, 256, 256);  transpose_368 = None
+    y_613 = torch._C._nn.linear(y_612, l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_, None);  y_612 = l_self_modules_layer_modules_blocks_modules_2_modules_proj_parameters_weight_ = None
+    add_259 = spike_503 + y_613;  spike_503 = y_613 = None
+    lif_forward_state_default_504 = torch.ops.snn_custom.lif_forward_state.default(add_259, v_next_471, 1.0, 0.0, 2.0, False);  add_259 = v_next_471 = None
+    spike_504 = lif_forward_state_default_504[0]
+    v_next_504 = lif_forward_state_default_504[1];  lif_forward_state_default_504 = None
+    y_614 = torch.nn.functional.layer_norm(spike_504, (256,), l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_2_modules_norm2_parameters_bias_ = None
+    linear_521 = torch._C._nn.linear(y_614, l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_, None);  y_614 = l_self_modules_layer_modules_blocks_modules_2_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_505 = torch.ops.snn_custom.lif_forward_state.default(linear_521, v_next_472, 1.0, 0.0, 2.0, False);  linear_521 = v_next_472 = None
+    spike_505 = lif_forward_state_default_505[0]
+    v_next_505 = lif_forward_state_default_505[1];  lif_forward_state_default_505 = None
+    linear_522 = torch._C._nn.linear(spike_505, l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_, None);  spike_505 = l_self_modules_layer_modules_blocks_modules_2_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_506 = torch.ops.snn_custom.lif_forward_state.default(linear_522, v_next_473, 1.0, 0.0, 2.0, False);  linear_522 = v_next_473 = None
+    spike_506 = lif_forward_state_default_506[0]
+    v_next_506 = lif_forward_state_default_506[1];  lif_forward_state_default_506 = None
+    add_260 = spike_504 + spike_506;  spike_504 = spike_506 = None
+    lif_forward_state_default_507 = torch.ops.snn_custom.lif_forward_state.default(add_260, v_next_474, 1.0, 0.0, 2.0, False);  add_260 = v_next_474 = None
+    spike_507 = lif_forward_state_default_507[0]
+    v_next_507 = lif_forward_state_default_507[1];  lif_forward_state_default_507 = None
+    y_615 = torch.nn.functional.layer_norm(spike_507, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_3_modules_norm1_parameters_bias_ = None
+    qkv_369 = torch._C._nn.linear(y_615, l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_, None);  y_615 = l_self_modules_layer_modules_blocks_modules_3_modules_qkv_parameters_weight_ = None
+    qkv_370 = qkv_369.reshape(4, 256, 3, 8, 32);  qkv_369 = None
+    movedim_123 = qkv_370.movedim(-3, 0);  qkv_370 = None
+    qkv_371 = movedim_123.transpose(-3, -2);  movedim_123 = None
+    q_123 = qkv_371[0]
+    k_123 = qkv_371[1]
+    v_123 = qkv_371[2];  qkv_371 = None
+    _sdpa_capture_safe_123 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_123, k_123, v_123, scale = 0.1767766952966369);  q_123 = k_123 = v_123 = None
+    transpose_371 = _sdpa_capture_safe_123.transpose(-3, -2);  _sdpa_capture_safe_123 = None
+    y_617 = transpose_371.reshape(4, 256, 256);  transpose_371 = None
+    y_618 = torch._C._nn.linear(y_617, l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_, None);  y_617 = l_self_modules_layer_modules_blocks_modules_3_modules_proj_parameters_weight_ = None
+    add_261 = spike_507 + y_618;  spike_507 = y_618 = None
+    lif_forward_state_default_508 = torch.ops.snn_custom.lif_forward_state.default(add_261, v_next_475, 1.0, 0.0, 2.0, False);  add_261 = v_next_475 = None
+    spike_508 = lif_forward_state_default_508[0]
+    v_next_508 = lif_forward_state_default_508[1];  lif_forward_state_default_508 = None
+    y_619 = torch.nn.functional.layer_norm(spike_508, (256,), l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_3_modules_norm2_parameters_bias_ = None
+    linear_525 = torch._C._nn.linear(y_619, l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_, None);  y_619 = l_self_modules_layer_modules_blocks_modules_3_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_509 = torch.ops.snn_custom.lif_forward_state.default(linear_525, v_next_476, 1.0, 0.0, 2.0, False);  linear_525 = v_next_476 = None
+    spike_509 = lif_forward_state_default_509[0]
+    v_next_509 = lif_forward_state_default_509[1];  lif_forward_state_default_509 = None
+    linear_526 = torch._C._nn.linear(spike_509, l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_, None);  spike_509 = l_self_modules_layer_modules_blocks_modules_3_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_510 = torch.ops.snn_custom.lif_forward_state.default(linear_526, v_next_477, 1.0, 0.0, 2.0, False);  linear_526 = v_next_477 = None
+    spike_510 = lif_forward_state_default_510[0]
+    v_next_510 = lif_forward_state_default_510[1];  lif_forward_state_default_510 = None
+    add_262 = spike_508 + spike_510;  spike_508 = spike_510 = None
+    lif_forward_state_default_511 = torch.ops.snn_custom.lif_forward_state.default(add_262, v_next_478, 1.0, 0.0, 2.0, False);  add_262 = v_next_478 = None
+    spike_511 = lif_forward_state_default_511[0]
+    v_next_511 = lif_forward_state_default_511[1];  lif_forward_state_default_511 = None
+    y_620 = torch.nn.functional.layer_norm(spike_511, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_4_modules_norm1_parameters_bias_ = None
+    qkv_372 = torch._C._nn.linear(y_620, l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_, None);  y_620 = l_self_modules_layer_modules_blocks_modules_4_modules_qkv_parameters_weight_ = None
+    qkv_373 = qkv_372.reshape(4, 256, 3, 8, 32);  qkv_372 = None
+    movedim_124 = qkv_373.movedim(-3, 0);  qkv_373 = None
+    qkv_374 = movedim_124.transpose(-3, -2);  movedim_124 = None
+    q_124 = qkv_374[0]
+    k_124 = qkv_374[1]
+    v_124 = qkv_374[2];  qkv_374 = None
+    _sdpa_capture_safe_124 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_124, k_124, v_124, scale = 0.1767766952966369);  q_124 = k_124 = v_124 = None
+    transpose_374 = _sdpa_capture_safe_124.transpose(-3, -2);  _sdpa_capture_safe_124 = None
+    y_622 = transpose_374.reshape(4, 256, 256);  transpose_374 = None
+    y_623 = torch._C._nn.linear(y_622, l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_, None);  y_622 = l_self_modules_layer_modules_blocks_modules_4_modules_proj_parameters_weight_ = None
+    add_263 = spike_511 + y_623;  spike_511 = y_623 = None
+    lif_forward_state_default_512 = torch.ops.snn_custom.lif_forward_state.default(add_263, v_next_479, 1.0, 0.0, 2.0, False);  add_263 = v_next_479 = None
+    spike_512 = lif_forward_state_default_512[0]
+    v_next_512 = lif_forward_state_default_512[1];  lif_forward_state_default_512 = None
+    y_624 = torch.nn.functional.layer_norm(spike_512, (256,), l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_4_modules_norm2_parameters_bias_ = None
+    linear_529 = torch._C._nn.linear(y_624, l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_, None);  y_624 = l_self_modules_layer_modules_blocks_modules_4_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_513 = torch.ops.snn_custom.lif_forward_state.default(linear_529, v_next_480, 1.0, 0.0, 2.0, False);  linear_529 = v_next_480 = None
+    spike_513 = lif_forward_state_default_513[0]
+    v_next_513 = lif_forward_state_default_513[1];  lif_forward_state_default_513 = None
+    linear_530 = torch._C._nn.linear(spike_513, l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_, None);  spike_513 = l_self_modules_layer_modules_blocks_modules_4_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_514 = torch.ops.snn_custom.lif_forward_state.default(linear_530, v_next_481, 1.0, 0.0, 2.0, False);  linear_530 = v_next_481 = None
+    spike_514 = lif_forward_state_default_514[0]
+    v_next_514 = lif_forward_state_default_514[1];  lif_forward_state_default_514 = None
+    add_264 = spike_512 + spike_514;  spike_512 = spike_514 = None
+    lif_forward_state_default_515 = torch.ops.snn_custom.lif_forward_state.default(add_264, v_next_482, 1.0, 0.0, 2.0, False);  add_264 = v_next_482 = None
+    spike_515 = lif_forward_state_default_515[0]
+    v_next_515 = lif_forward_state_default_515[1];  lif_forward_state_default_515 = None
+    y_625 = torch.nn.functional.layer_norm(spike_515, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_5_modules_norm1_parameters_bias_ = None
+    qkv_375 = torch._C._nn.linear(y_625, l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_, None);  y_625 = l_self_modules_layer_modules_blocks_modules_5_modules_qkv_parameters_weight_ = None
+    qkv_376 = qkv_375.reshape(4, 256, 3, 8, 32);  qkv_375 = None
+    movedim_125 = qkv_376.movedim(-3, 0);  qkv_376 = None
+    qkv_377 = movedim_125.transpose(-3, -2);  movedim_125 = None
+    q_125 = qkv_377[0]
+    k_125 = qkv_377[1]
+    v_125 = qkv_377[2];  qkv_377 = None
+    _sdpa_capture_safe_125 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_125, k_125, v_125, scale = 0.1767766952966369);  q_125 = k_125 = v_125 = None
+    transpose_377 = _sdpa_capture_safe_125.transpose(-3, -2);  _sdpa_capture_safe_125 = None
+    y_627 = transpose_377.reshape(4, 256, 256);  transpose_377 = None
+    y_628 = torch._C._nn.linear(y_627, l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_, None);  y_627 = l_self_modules_layer_modules_blocks_modules_5_modules_proj_parameters_weight_ = None
+    add_265 = spike_515 + y_628;  spike_515 = y_628 = None
+    lif_forward_state_default_516 = torch.ops.snn_custom.lif_forward_state.default(add_265, v_next_483, 1.0, 0.0, 2.0, False);  add_265 = v_next_483 = None
+    spike_516 = lif_forward_state_default_516[0]
+    v_next_516 = lif_forward_state_default_516[1];  lif_forward_state_default_516 = None
+    y_629 = torch.nn.functional.layer_norm(spike_516, (256,), l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_5_modules_norm2_parameters_bias_ = None
+    linear_533 = torch._C._nn.linear(y_629, l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_, None);  y_629 = l_self_modules_layer_modules_blocks_modules_5_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_517 = torch.ops.snn_custom.lif_forward_state.default(linear_533, v_next_484, 1.0, 0.0, 2.0, False);  linear_533 = v_next_484 = None
+    spike_517 = lif_forward_state_default_517[0]
+    v_next_517 = lif_forward_state_default_517[1];  lif_forward_state_default_517 = None
+    linear_534 = torch._C._nn.linear(spike_517, l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_, None);  spike_517 = l_self_modules_layer_modules_blocks_modules_5_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_518 = torch.ops.snn_custom.lif_forward_state.default(linear_534, v_next_485, 1.0, 0.0, 2.0, False);  linear_534 = v_next_485 = None
+    spike_518 = lif_forward_state_default_518[0]
+    v_next_518 = lif_forward_state_default_518[1];  lif_forward_state_default_518 = None
+    add_266 = spike_516 + spike_518;  spike_516 = spike_518 = None
+    lif_forward_state_default_519 = torch.ops.snn_custom.lif_forward_state.default(add_266, v_next_486, 1.0, 0.0, 2.0, False);  add_266 = v_next_486 = None
+    spike_519 = lif_forward_state_default_519[0]
+    v_next_519 = lif_forward_state_default_519[1];  lif_forward_state_default_519 = None
+    y_630 = torch.nn.functional.layer_norm(spike_519, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_6_modules_norm1_parameters_bias_ = None
+    qkv_378 = torch._C._nn.linear(y_630, l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_, None);  y_630 = l_self_modules_layer_modules_blocks_modules_6_modules_qkv_parameters_weight_ = None
+    qkv_379 = qkv_378.reshape(4, 256, 3, 8, 32);  qkv_378 = None
+    movedim_126 = qkv_379.movedim(-3, 0);  qkv_379 = None
+    qkv_380 = movedim_126.transpose(-3, -2);  movedim_126 = None
+    q_126 = qkv_380[0]
+    k_126 = qkv_380[1]
+    v_126 = qkv_380[2];  qkv_380 = None
+    _sdpa_capture_safe_126 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_126, k_126, v_126, scale = 0.1767766952966369);  q_126 = k_126 = v_126 = None
+    transpose_380 = _sdpa_capture_safe_126.transpose(-3, -2);  _sdpa_capture_safe_126 = None
+    y_632 = transpose_380.reshape(4, 256, 256);  transpose_380 = None
+    y_633 = torch._C._nn.linear(y_632, l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_, None);  y_632 = l_self_modules_layer_modules_blocks_modules_6_modules_proj_parameters_weight_ = None
+    add_267 = spike_519 + y_633;  spike_519 = y_633 = None
+    lif_forward_state_default_520 = torch.ops.snn_custom.lif_forward_state.default(add_267, v_next_487, 1.0, 0.0, 2.0, False);  add_267 = v_next_487 = None
+    spike_520 = lif_forward_state_default_520[0]
+    v_next_520 = lif_forward_state_default_520[1];  lif_forward_state_default_520 = None
+    y_634 = torch.nn.functional.layer_norm(spike_520, (256,), l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_6_modules_norm2_parameters_bias_ = None
+    linear_537 = torch._C._nn.linear(y_634, l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_, None);  y_634 = l_self_modules_layer_modules_blocks_modules_6_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_521 = torch.ops.snn_custom.lif_forward_state.default(linear_537, v_next_488, 1.0, 0.0, 2.0, False);  linear_537 = v_next_488 = None
+    spike_521 = lif_forward_state_default_521[0]
+    v_next_521 = lif_forward_state_default_521[1];  lif_forward_state_default_521 = None
+    linear_538 = torch._C._nn.linear(spike_521, l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_, None);  spike_521 = l_self_modules_layer_modules_blocks_modules_6_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_522 = torch.ops.snn_custom.lif_forward_state.default(linear_538, v_next_489, 1.0, 0.0, 2.0, False);  linear_538 = v_next_489 = None
+    spike_522 = lif_forward_state_default_522[0]
+    v_next_522 = lif_forward_state_default_522[1];  lif_forward_state_default_522 = None
+    add_268 = spike_520 + spike_522;  spike_520 = spike_522 = None
+    lif_forward_state_default_523 = torch.ops.snn_custom.lif_forward_state.default(add_268, v_next_490, 1.0, 0.0, 2.0, False);  add_268 = v_next_490 = None
+    spike_523 = lif_forward_state_default_523[0]
+    v_next_523 = lif_forward_state_default_523[1];  lif_forward_state_default_523 = None
+    y_635 = torch.nn.functional.layer_norm(spike_523, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_7_modules_norm1_parameters_bias_ = None
+    qkv_381 = torch._C._nn.linear(y_635, l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_, None);  y_635 = l_self_modules_layer_modules_blocks_modules_7_modules_qkv_parameters_weight_ = None
+    qkv_382 = qkv_381.reshape(4, 256, 3, 8, 32);  qkv_381 = None
+    movedim_127 = qkv_382.movedim(-3, 0);  qkv_382 = None
+    qkv_383 = movedim_127.transpose(-3, -2);  movedim_127 = None
+    q_127 = qkv_383[0]
+    k_127 = qkv_383[1]
+    v_127 = qkv_383[2];  qkv_383 = None
+    _sdpa_capture_safe_127 = compiler_passes_pass_sdpa__sdpa_capture_safe(q_127, k_127, v_127, scale = 0.1767766952966369);  q_127 = k_127 = v_127 = None
+    transpose_383 = _sdpa_capture_safe_127.transpose(-3, -2);  _sdpa_capture_safe_127 = None
+    y_637 = transpose_383.reshape(4, 256, 256);  transpose_383 = None
+    y_638 = torch._C._nn.linear(y_637, l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_, None);  y_637 = l_self_modules_layer_modules_blocks_modules_7_modules_proj_parameters_weight_ = None
+    add_269 = spike_523 + y_638;  spike_523 = y_638 = None
+    lif_forward_state_default_524 = torch.ops.snn_custom.lif_forward_state.default(add_269, v_next_491, 1.0, 0.0, 2.0, False);  add_269 = v_next_491 = None
+    spike_524 = lif_forward_state_default_524[0]
+    v_next_524 = lif_forward_state_default_524[1];  lif_forward_state_default_524 = None
+    y_639 = torch.nn.functional.layer_norm(spike_524, (256,), l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_, l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_, 1e-05);  l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_weight_ = l_self_modules_layer_modules_blocks_modules_7_modules_norm2_parameters_bias_ = None
+    linear_541 = torch._C._nn.linear(y_639, l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_, None);  y_639 = l_self_modules_layer_modules_blocks_modules_7_modules_fc1_parameters_weight_ = None
+    lif_forward_state_default_525 = torch.ops.snn_custom.lif_forward_state.default(linear_541, v_next_492, 1.0, 0.0, 2.0, False);  linear_541 = v_next_492 = None
+    spike_525 = lif_forward_state_default_525[0]
+    v_next_525 = lif_forward_state_default_525[1];  lif_forward_state_default_525 = None
+    linear_542 = torch._C._nn.linear(spike_525, l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_, None);  spike_525 = l_self_modules_layer_modules_blocks_modules_7_modules_fc2_parameters_weight_ = None
+    lif_forward_state_default_526 = torch.ops.snn_custom.lif_forward_state.default(linear_542, v_next_493, 1.0, 0.0, 2.0, False);  linear_542 = v_next_493 = None
+    spike_526 = lif_forward_state_default_526[0]
+    v_next_526 = lif_forward_state_default_526[1];  lif_forward_state_default_526 = None
+    add_270 = spike_524 + spike_526;  spike_524 = spike_526 = None
+    lif_forward_state_default_527 = torch.ops.snn_custom.lif_forward_state.default(add_270, v_next_494, 1.0, 0.0, 2.0, False);  add_270 = v_next_494 = None
+    spike_527 = lif_forward_state_default_527[0]
+    v_next_527 = lif_forward_state_default_527[1];  lif_forward_state_default_527 = None
+    x_30 = torch.nn.functional.layer_norm(spike_527, (256,), l_self_modules_layer_modules_norm_parameters_weight_, l_self_modules_layer_modules_norm_parameters_bias_, 1e-05);  spike_527 = l_self_modules_layer_modules_norm_parameters_weight_ = l_self_modules_layer_modules_norm_parameters_bias_ = None
+    x_31 = x_30.mean(dim = -2);  x_30 = None
+    linear_543 = torch._C._nn.linear(x_31, l_self_modules_layer_modules_classifier_parameters_weight_, None);  x_31 = l_self_modules_layer_modules_classifier_parameters_weight_ = None
+    out_spikes_counter_15 = out_spikes_counter_14 + linear_543;  out_spikes_counter_14 = linear_543 = None
+    truediv = out_spikes_counter_15 / 16;  out_spikes_counter_15 = None
+    return (truediv, v_next_495, v_next_496, v_next_497, v_next_498, v_next_499, v_next_500, v_next_501, v_next_502, v_next_503, v_next_504, v_next_505, v_next_506, v_next_507, v_next_508, v_next_509, v_next_510, v_next_511, v_next_512, v_next_513, v_next_514, v_next_515, v_next_516, v_next_517, v_next_518, v_next_519, v_next_520, v_next_521, v_next_522, v_next_523, v_next_524, v_next_525, v_next_526, v_next_527)
+    

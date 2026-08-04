@@ -170,8 +170,25 @@ def _prune_batched_linear_configs(configs, named_args, **kwargs):
         for config in configs
         if int(config.all_kwargs()["BTILE_T"]) * int(config.all_kwargs()["REUSE_GROUPS"]) <= T_STEPS
     ]
+    forced_p = os.environ.get("KAIROS_EVAL_FORCE_BTILE_T")
+    forced_r = os.environ.get("KAIROS_EVAL_FORCE_REUSE_GROUPS")
+    if forced_p is not None:
+        window_valid = [
+            config for config in window_valid
+            if int(config.all_kwargs()["BTILE_T"]) == int(forced_p)
+        ]
+    if forced_r is not None:
+        window_valid = [
+            config for config in window_valid
+            if int(config.all_kwargs()["REUSE_GROUPS"]) == int(forced_r)
+        ]
     if not window_valid:
-        return configs[:1]
+        if forced_p is None and forced_r is None:
+            return configs[:1]
+        raise RuntimeError(
+            "No batched-linear autotune config satisfies the evaluation "
+            "BTILE_T/REUSE_GROUPS constraint"
+        )
 
     shared_budget = _shared_mem_budget()
     shared_valid = [config for config in window_valid if _config_shared_mem_estimate(config, dtype_bytes) <= shared_budget]

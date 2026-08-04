@@ -19,10 +19,22 @@ export PYTHONPATH="${TVM_COMPAT_ROOT}/python:${TVM_SITE_PACKAGES}${PYTHONPATH:+:
 export TVM_LIBRARY_PATH="${TVM_COMPAT_ROOT}/build"
 export TVM_DISABLE_EDITABLE=1
 
+# Python's tempfile.mkdtemp() -- used by MetaSchedule's LocalBuilder for every
+# build candidate, and by nvcc during CUDA compilation -- silently falls back
+# to the current working directory whenever its write-probe of /tmp fails,
+# which happens as soon as the root disk (/) fills up. That's what was
+# dropping tmpXXXXXXXX dirs into this repo. Pin TMPDIR to the much roomier
+# /data mount so build artifacts always land there instead, regardless of how
+# full / gets.
+TVM_TMPDIR=/data/tmp_tvm_metaschedule
+mkdir -p "${TVM_TMPDIR}"
+export TMPDIR="${TVM_TMPDIR}"
+
 OUT_ROOT=test/tvm_metaschedule_full_validation
 mkdir -p ${OUT_ROOT}
 
 BATCH_SIZE_OVERRIDE=""
+FUSE_MAX_DEPTH=5
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --batch-size)
@@ -33,9 +45,20 @@ while [[ $# -gt 0 ]]; do
       BATCH_SIZE_OVERRIDE="$2"
       shift 2
       ;;
+    --fuse-max-depth)
+      if [[ $# -lt 2 || ! "$2" =~ ^-?[0-9]+$ ]]; then
+        echo "--fuse-max-depth requires an integer" >&2
+        exit 2
+      fi
+      FUSE_MAX_DEPTH="$2"
+      shift 2
+      ;;
     -h|--help)
-      echo "Usage: $0 [--batch-size N]"
-      echo "  --batch-size N  use N for every model; otherwise use per-model defaults"
+      echo "Usage: $0 [--batch-size N] [--fuse-max-depth N]"
+      echo "  --batch-size N      use N for every model; otherwise use per-model defaults"
+      echo "  --fuse-max-depth N  cap on relay.FuseOps.max_depth passed to MetaSchedule"
+      echo "                      tuning/compile (default: 5; TVM's own default is 256;"
+      echo "                      use <=0 to keep TVM's built-in default)"
       exit 0
       ;;
     *)
@@ -46,10 +69,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 MODELS=(
-  "resnet18"
-  "resnet34"
-  "alexnet"
-  "zfnet"
   "vgg11"
   "vgg16"
   "mobilenetv1"
@@ -114,6 +133,7 @@ for MODEL in "${MODELS[@]}"; do
       --max-trials-global 8192 \
       --num-trials-per-iter 64 \
       --builder-timeout-sec 300 \
+      --fuse-max-depth ${FUSE_MAX_DEPTH} \
       --repeat 20 \
       --number 10 \
       --out-dir ${OUT_DIR} \

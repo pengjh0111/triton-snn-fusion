@@ -1,0 +1,56 @@
+layer_id: linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_classifier_modules_1_parameters_weight_|bias=None|input=shape=(4, 9216)|dtype=torch.float32|output=shape=(4, 4096)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=input_15, lif=lif_forward_state_default_5, spike=spike_5, v=v_next_5, v_prev=zeros_like_5
+  pattern_1: linear=input_33, lif=lif_forward_state_default_13, spike=spike_13, v=v_next_13, v_prev=v_next_5
+  pattern_2: linear=input_51, lif=lif_forward_state_default_21, spike=spike_21, v=v_next_21, v_prev=v_next_13
+  pattern_3: linear=input_69, lif=lif_forward_state_default_29, spike=spike_29, v=v_next_29, v_prev=v_next_21
+  pattern_4: linear=input_87, lif=lif_forward_state_default_37, spike=spike_37, v=v_next_37, v_prev=v_next_29
+  pattern_5: linear=input_105, lif=lif_forward_state_default_45, spike=spike_45, v=v_next_45, v_prev=v_next_37
+  pattern_6: linear=input_123, lif=lif_forward_state_default_53, spike=spike_53, v=v_next_53, v_prev=v_next_45
+  pattern_7: linear=input_141, lif=lif_forward_state_default_61, spike=spike_61, v=v_next_61, v_prev=v_next_53
+  pattern_8: linear=input_159, lif=lif_forward_state_default_69, spike=spike_69, v=v_next_69, v_prev=v_next_61
+  pattern_9: linear=input_177, lif=lif_forward_state_default_77, spike=spike_77, v=v_next_77, v_prev=v_next_69
+  pattern_10: linear=input_195, lif=lif_forward_state_default_85, spike=spike_85, v=v_next_85, v_prev=v_next_77
+  pattern_11: linear=input_213, lif=lif_forward_state_default_93, spike=spike_93, v=v_next_93, v_prev=v_next_85
+  pattern_12: linear=input_231, lif=lif_forward_state_default_101, spike=spike_101, v=v_next_101, v_prev=v_next_93
+  pattern_13: linear=input_249, lif=lif_forward_state_default_109, spike=spike_109, v=v_next_109, v_prev=v_next_101
+  pattern_14: linear=input_267, lif=lif_forward_state_default_117, spike=spike_117, v=v_next_117, v_prev=v_next_109
+  pattern_15: linear=input_285, lif=lif_forward_state_default_125, spike=spike_125, v=v_next_125, v_prev=v_next_117
+
+layer_id: linear_lif|occurrence=1|weight=placeholder:l_self_modules_layer_modules_classifier_modules_4_parameters_weight_|bias=None|input=shape=(4, 4096)|dtype=torch.float32|output=shape=(4, 4096)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=input_17, lif=lif_forward_state_default_6, spike=spike_6, v=v_next_6, v_prev=zeros_like_6
+  pattern_1: linear=input_35, lif=lif_forward_state_default_14, spike=spike_14, v=v_next_14, v_prev=v_next_6
+  pattern_2: linear=input_53, lif=lif_forward_state_default_22, spike=spike_22, v=v_next_22, v_prev=v_next_14
+  pattern_3: linear=input_71, lif=lif_forward_state_default_30, spike=spike_30, v=v_next_30, v_prev=v_next_22
+  pattern_4: linear=input_89, lif=lif_forward_state_default_38, spike=spike_38, v=v_next_38, v_prev=v_next_30
+  pattern_5: linear=input_107, lif=lif_forward_state_default_46, spike=spike_46, v=v_next_46, v_prev=v_next_38
+  pattern_6: linear=input_125, lif=lif_forward_state_default_54, spike=spike_54, v=v_next_54, v_prev=v_next_46
+  pattern_7: linear=input_143, lif=lif_forward_state_default_62, spike=spike_62, v=v_next_62, v_prev=v_next_54
+  pattern_8: linear=input_161, lif=lif_forward_state_default_70, spike=spike_70, v=v_next_70, v_prev=v_next_62
+  pattern_9: linear=input_179, lif=lif_forward_state_default_78, spike=spike_78, v=v_next_78, v_prev=v_next_70
+  pattern_10: linear=input_197, lif=lif_forward_state_default_86, spike=spike_86, v=v_next_86, v_prev=v_next_78
+  pattern_11: linear=input_215, lif=lif_forward_state_default_94, spike=spike_94, v=v_next_94, v_prev=v_next_86
+  pattern_12: linear=input_233, lif=lif_forward_state_default_102, spike=spike_102, v=v_next_102, v_prev=v_next_94
+  pattern_13: linear=input_251, lif=lif_forward_state_default_110, spike=spike_110, v=v_next_110, v_prev=v_next_102
+  pattern_14: linear=input_269, lif=lif_forward_state_default_118, spike=spike_118, v=v_next_118, v_prev=v_next_110
+  pattern_15: linear=input_287, lif=lif_forward_state_default_126, spike=spike_126, v=v_next_126, v_prev=v_next_118
+
+layer_id: linear_lif|occurrence=2|weight=placeholder:l_self_modules_layer_modules_classifier_modules_6_parameters_weight_|bias=None|input=shape=(4, 4096)|dtype=torch.float32|output=shape=(4, 10)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: linear=input_18, lif=lif_forward_state_default_7, spike=spike_7, v=v_next_7, v_prev=zeros_like_7
+  pattern_1: linear=input_36, lif=lif_forward_state_default_15, spike=spike_15, v=v_next_15, v_prev=v_next_7
+  pattern_2: linear=input_54, lif=lif_forward_state_default_23, spike=spike_23, v=v_next_23, v_prev=v_next_15
+  pattern_3: linear=input_72, lif=lif_forward_state_default_31, spike=spike_31, v=v_next_31, v_prev=v_next_23
+  pattern_4: linear=input_90, lif=lif_forward_state_default_39, spike=spike_39, v=v_next_39, v_prev=v_next_31
+  pattern_5: linear=input_108, lif=lif_forward_state_default_47, spike=spike_47, v=v_next_47, v_prev=v_next_39
+  pattern_6: linear=input_126, lif=lif_forward_state_default_55, spike=spike_55, v=v_next_55, v_prev=v_next_47
+  pattern_7: linear=input_144, lif=lif_forward_state_default_63, spike=spike_63, v=v_next_63, v_prev=v_next_55
+  pattern_8: linear=input_162, lif=lif_forward_state_default_71, spike=spike_71, v=v_next_71, v_prev=v_next_63
+  pattern_9: linear=input_180, lif=lif_forward_state_default_79, spike=spike_79, v=v_next_79, v_prev=v_next_71
+  pattern_10: linear=input_198, lif=lif_forward_state_default_87, spike=spike_87, v=v_next_87, v_prev=v_next_79
+  pattern_11: linear=input_216, lif=lif_forward_state_default_95, spike=spike_95, v=v_next_95, v_prev=v_next_87
+  pattern_12: linear=input_234, lif=lif_forward_state_default_103, spike=spike_103, v=v_next_103, v_prev=v_next_95
+  pattern_13: linear=input_252, lif=lif_forward_state_default_111, spike=spike_111, v=v_next_111, v_prev=v_next_103
+  pattern_14: linear=input_270, lif=lif_forward_state_default_119, spike=spike_119, v=v_next_119, v_prev=v_next_111
+  pattern_15: linear=input_288, lif=lif_forward_state_default_127, spike=spike_127, v=v_next_127, v_prev=v_next_119

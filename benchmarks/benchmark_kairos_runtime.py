@@ -724,12 +724,14 @@ def parse_args():
         "--spatial-batching-ops",
         nargs="+",
         default=["conv", "bn", "add", "maxpool", "avgpool", "flatten", "linear", "elementwise", "view"],
-        choices=["conv", "bn", "add", "maxpool", "linear", "flatten", "avgpool", "elementwise", "view"],
+        choices=["conv", "bn", "add", "mul", "maxpool", "linear", "flatten", "avgpool", "elementwise", "view", "layer_norm"],
     )
 
     parser.add_argument("--spatial-batching-dump", action="store_true")
 
     parser.add_argument("--spatial-batching-strict", action="store_true")
+
+    parser.add_argument("--spatial-batching-max-iter", type=int, default=8)
 
     parser.add_argument("--disable-spatial-batching-chain", action="store_true", help=argparse.SUPPRESS)
 

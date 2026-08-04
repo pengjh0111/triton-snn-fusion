@@ -1,0 +1,1427 @@
+
+
+
+def forward(self, L_x_seq_ : torch.Tensor, L_self_modules_layer_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_1_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_1_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_1_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_1_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_1_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_1_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_0_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_0_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_1_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_1_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_1_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_1_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_1_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_1_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_0_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_0_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_1_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_1_modules_conv1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_ : torch.Tensor, L_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_fc_parameters_weight_ : torch.nn.parameter.Parameter, L_self_modules_layer_modules_fc_parameters_bias_ : torch.nn.parameter.Parameter):
+    l_x_seq_ = L_x_seq_
+    l_self_modules_layer_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_layer1_modules_1_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_1_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer1_modules_1_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_1_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_layer2_modules_0_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_0_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer2_modules_0_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_0_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_ = L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_
+    l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_ = L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_
+    l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_ = L_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_
+    l_self_modules_layer_modules_layer2_modules_1_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_1_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer2_modules_1_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_1_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_layer3_modules_0_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_0_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer3_modules_0_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_0_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_ = L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_
+    l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_ = L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_
+    l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_ = L_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_
+    l_self_modules_layer_modules_layer3_modules_1_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_1_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_layer4_modules_0_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_0_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_ = L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_
+    l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_ = L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_
+    l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_ = L_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_
+    l_self_modules_layer_modules_layer4_modules_1_modules_conv1_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_1_modules_conv1_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_mean_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_mean_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_var_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_var_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_bias_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_bias_
+    l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_
+    l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_ = L_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_
+    l_self_modules_layer_modules_fc_parameters_weight_ = L_self_modules_layer_modules_fc_parameters_weight_
+    l_self_modules_layer_modules_fc_parameters_bias_ = L_self_modules_layer_modules_fc_parameters_bias_
+    getitem = l_x_seq_[0]
+    x = torch.conv2d(getitem, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1)
+    x_1 = torch.nn.functional.batch_norm(x, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x = None
+    zeros_like = torch.zeros_like(x_1);  x_1 = None
+    _fx_folded_conv_bn_weight_15 = self._fx_folded_conv_bn_weight_15
+    _fx_folded_conv_bn_bias_16 = self._fx_folded_conv_bn_bias_16
+    x_bn_fused_conv_lif_state = torch.ops.snn_custom.fused_conv_lif_state.default(getitem, _fx_folded_conv_bn_weight_15, _fx_folded_conv_bn_bias_16, zeros_like, [2, 2], [3, 3], [1, 1], 1, 1.0, 0.0, 2.0, False);  getitem = _fx_folded_conv_bn_weight_15 = _fx_folded_conv_bn_bias_16 = zeros_like = None
+    x_bn_fused_conv_lif_state_v_next = x_bn_fused_conv_lif_state[1]
+    x_bn_fused_conv_lif_state_spike = x_bn_fused_conv_lif_state[0];  x_bn_fused_conv_lif_state = None
+    x_2 = torch.nn.functional.max_pool2d(x_bn_fused_conv_lif_state_spike, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  x_bn_fused_conv_lif_state_spike = None
+    x_3 = torch.conv2d(x_2, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    out = torch.nn.functional.batch_norm(x_3, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_3 = None
+    zeros_like_1 = torch.zeros_like(out);  out = None
+    _fx_folded_conv_bn_weight_17 = self._fx_folded_conv_bn_weight_17
+    _fx_folded_conv_bn_bias_18 = self._fx_folded_conv_bn_bias_18
+    x_3_bn_fused_conv_lif_state = torch.ops.snn_custom.fused_conv_lif_state.default(x_2, _fx_folded_conv_bn_weight_17, _fx_folded_conv_bn_bias_18, zeros_like_1, [1, 1], [1, 1], [1, 1], 1, 1.0, 0.0, 2.0, False);  _fx_folded_conv_bn_weight_17 = _fx_folded_conv_bn_bias_18 = zeros_like_1 = None
+    x_3_bn_fused_conv_lif_state_v_next = x_3_bn_fused_conv_lif_state[1]
+    x_3_bn_fused_conv_lif_state_spike = x_3_bn_fused_conv_lif_state[0];  x_3_bn_fused_conv_lif_state = None
+    x_4 = torch.conv2d(x_3_bn_fused_conv_lif_state_spike, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  x_3_bn_fused_conv_lif_state_spike = None
+    out_1 = torch.nn.functional.batch_norm(x_4, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_4 = None
+    out_1 += x_2;  out_2 = out_1;  out_1 = x_2 = None
+    zeros_like_2 = torch.zeros_like(out_2)
+    lif_forward_state_default_2 = torch.ops.snn_custom.lif_forward_state.default(out_2, zeros_like_2, 1.0, 0.0, 2.0, False);  out_2 = zeros_like_2 = None
+    spike_2 = lif_forward_state_default_2[0]
+    v_next_2 = lif_forward_state_default_2[1];  lif_forward_state_default_2 = None
+    getitem_70 = l_x_seq_[2]
+    getitem_105 = l_x_seq_[3]
+    getitem_140 = l_x_seq_[4]
+    x_100 = torch.conv2d(getitem_140, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_140 = None
+    x_101 = torch.nn.functional.batch_norm(x_100, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_100 = None
+    getitem_175 = l_x_seq_[5]
+    x_125 = torch.conv2d(getitem_175, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_175 = None
+    x_126 = torch.nn.functional.batch_norm(x_125, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_125 = None
+    getitem_210 = l_x_seq_[6]
+    x_150 = torch.conv2d(getitem_210, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_210 = None
+    x_151 = torch.nn.functional.batch_norm(x_150, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_150 = None
+    getitem_245 = l_x_seq_[7]
+    x_175 = torch.conv2d(getitem_245, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_245 = None
+    x_176 = torch.nn.functional.batch_norm(x_175, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_175 = None
+    getitem_280 = l_x_seq_[8]
+    x_200 = torch.conv2d(getitem_280, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_280 = None
+    x_201 = torch.nn.functional.batch_norm(x_200, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_200 = None
+    getitem_315 = l_x_seq_[9]
+    x_225 = torch.conv2d(getitem_315, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_315 = None
+    x_226 = torch.nn.functional.batch_norm(x_225, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_225 = None
+    getitem_350 = l_x_seq_[10]
+    x_250 = torch.conv2d(getitem_350, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_350 = None
+    x_251 = torch.nn.functional.batch_norm(x_250, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_250 = None
+    getitem_385 = l_x_seq_[11]
+    x_275 = torch.conv2d(getitem_385, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_385 = None
+    x_276 = torch.nn.functional.batch_norm(x_275, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_275 = None
+    getitem_420 = l_x_seq_[12]
+    x_300 = torch.conv2d(getitem_420, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_420 = None
+    x_301 = torch.nn.functional.batch_norm(x_300, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_300 = None
+    getitem_455 = l_x_seq_[13]
+    x_325 = torch.conv2d(getitem_455, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_455 = None
+    x_326 = torch.nn.functional.batch_norm(x_325, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_325 = None
+    getitem_490 = l_x_seq_[14]
+    x_350 = torch.conv2d(getitem_490, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_490 = None
+    x_351 = torch.nn.functional.batch_norm(x_350, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_350 = None
+    getitem_525 = l_x_seq_[15]
+    x_375 = torch.conv2d(getitem_525, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_525 = None
+    x_376 = torch.nn.functional.batch_norm(x_375, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_375 = None
+    getitem_35 = l_x_seq_[1];  l_x_seq_ = None
+    x_25 = torch.conv2d(getitem_35, l_self_modules_layer_modules_conv1_parameters_weight_, None, (2, 2), (3, 3), (1, 1), 1);  getitem_35 = l_self_modules_layer_modules_conv1_parameters_weight_ = None
+    x_26 = torch.nn.functional.batch_norm(x_25, l_self_modules_layer_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_bn1_parameters_weight_, l_self_modules_layer_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_25 = l_self_modules_layer_modules_bn1_buffers_running_mean_ = l_self_modules_layer_modules_bn1_buffers_running_var_ = l_self_modules_layer_modules_bn1_parameters_weight_ = l_self_modules_layer_modules_bn1_parameters_bias_ = None
+    lif_forward_state_default_17 = torch.ops.snn_custom.lif_forward_state.default(x_26, x_bn_fused_conv_lif_state_v_next, 1.0, 0.0, 2.0, False);  x_26 = x_bn_fused_conv_lif_state_v_next = None
+    v_next_17 = lif_forward_state_default_17[1]
+    _fx_folded_conv_bn_weight_19 = self._fx_folded_conv_bn_weight_19
+    _fx_folded_conv_bn_bias_20 = self._fx_folded_conv_bn_bias_20
+    x_50_bn_fused_conv_lif_state = torch.ops.snn_custom.fused_conv_lif_state.default(getitem_70, _fx_folded_conv_bn_weight_19, _fx_folded_conv_bn_bias_20, v_next_17, [2, 2], [3, 3], [1, 1], 1, 1.0, 0.0, 2.0, False);  getitem_70 = _fx_folded_conv_bn_weight_19 = _fx_folded_conv_bn_bias_20 = v_next_17 = None
+    x_50_bn_fused_conv_lif_state_v_next = x_50_bn_fused_conv_lif_state[1]
+    _fx_folded_conv_bn_weight_21 = self._fx_folded_conv_bn_weight_21
+    _fx_folded_conv_bn_bias_22 = self._fx_folded_conv_bn_bias_22
+    x_75_bn_fused_conv_lif_state = torch.ops.snn_custom.fused_conv_lif_state.default(getitem_105, _fx_folded_conv_bn_weight_21, _fx_folded_conv_bn_bias_22, x_50_bn_fused_conv_lif_state_v_next, [2, 2], [3, 3], [1, 1], 1, 1.0, 0.0, 2.0, False);  getitem_105 = _fx_folded_conv_bn_weight_21 = _fx_folded_conv_bn_bias_22 = x_50_bn_fused_conv_lif_state_v_next = None
+    x_75_bn_fused_conv_lif_state_v_next = x_75_bn_fused_conv_lif_state[1]
+    lif_forward_state_default_68 = torch.ops.snn_custom.lif_forward_state.default(x_101, x_75_bn_fused_conv_lif_state_v_next, 1.0, 0.0, 2.0, False);  x_101 = x_75_bn_fused_conv_lif_state_v_next = None
+    v_next_68 = lif_forward_state_default_68[1]
+    lif_forward_state_default_85 = torch.ops.snn_custom.lif_forward_state.default(x_126, v_next_68, 1.0, 0.0, 2.0, False);  x_126 = v_next_68 = None
+    v_next_85 = lif_forward_state_default_85[1]
+    lif_forward_state_default_102 = torch.ops.snn_custom.lif_forward_state.default(x_151, v_next_85, 1.0, 0.0, 2.0, False);  x_151 = v_next_85 = None
+    v_next_102 = lif_forward_state_default_102[1]
+    lif_forward_state_default_119 = torch.ops.snn_custom.lif_forward_state.default(x_176, v_next_102, 1.0, 0.0, 2.0, False);  x_176 = v_next_102 = None
+    v_next_119 = lif_forward_state_default_119[1]
+    lif_forward_state_default_136 = torch.ops.snn_custom.lif_forward_state.default(x_201, v_next_119, 1.0, 0.0, 2.0, False);  x_201 = v_next_119 = None
+    v_next_136 = lif_forward_state_default_136[1]
+    lif_forward_state_default_153 = torch.ops.snn_custom.lif_forward_state.default(x_226, v_next_136, 1.0, 0.0, 2.0, False);  x_226 = v_next_136 = None
+    v_next_153 = lif_forward_state_default_153[1]
+    lif_forward_state_default_170 = torch.ops.snn_custom.lif_forward_state.default(x_251, v_next_153, 1.0, 0.0, 2.0, False);  x_251 = v_next_153 = None
+    v_next_170 = lif_forward_state_default_170[1]
+    lif_forward_state_default_187 = torch.ops.snn_custom.lif_forward_state.default(x_276, v_next_170, 1.0, 0.0, 2.0, False);  x_276 = v_next_170 = None
+    v_next_187 = lif_forward_state_default_187[1]
+    lif_forward_state_default_204 = torch.ops.snn_custom.lif_forward_state.default(x_301, v_next_187, 1.0, 0.0, 2.0, False);  x_301 = v_next_187 = None
+    v_next_204 = lif_forward_state_default_204[1]
+    lif_forward_state_default_221 = torch.ops.snn_custom.lif_forward_state.default(x_326, v_next_204, 1.0, 0.0, 2.0, False);  x_326 = v_next_204 = None
+    v_next_221 = lif_forward_state_default_221[1]
+    lif_forward_state_default_238 = torch.ops.snn_custom.lif_forward_state.default(x_351, v_next_221, 1.0, 0.0, 2.0, False);  x_351 = v_next_221 = None
+    v_next_238 = lif_forward_state_default_238[1]
+    lif_forward_state_default_255 = torch.ops.snn_custom.lif_forward_state.default(x_376, v_next_238, 1.0, 0.0, 2.0, False);  x_376 = v_next_238 = None
+    spike_17 = lif_forward_state_default_17[0];  lif_forward_state_default_17 = None
+    x_50_bn_fused_conv_lif_state_spike = x_50_bn_fused_conv_lif_state[0];  x_50_bn_fused_conv_lif_state = None
+    x_75_bn_fused_conv_lif_state_spike = x_75_bn_fused_conv_lif_state[0];  x_75_bn_fused_conv_lif_state = None
+    spike_68 = lif_forward_state_default_68[0];  lif_forward_state_default_68 = None
+    spike_85 = lif_forward_state_default_85[0];  lif_forward_state_default_85 = None
+    spike_102 = lif_forward_state_default_102[0];  lif_forward_state_default_102 = None
+    spike_119 = lif_forward_state_default_119[0];  lif_forward_state_default_119 = None
+    spike_136 = lif_forward_state_default_136[0];  lif_forward_state_default_136 = None
+    spike_153 = lif_forward_state_default_153[0];  lif_forward_state_default_153 = None
+    spike_170 = lif_forward_state_default_170[0];  lif_forward_state_default_170 = None
+    spike_187 = lif_forward_state_default_187[0];  lif_forward_state_default_187 = None
+    spike_204 = lif_forward_state_default_204[0];  lif_forward_state_default_204 = None
+    spike_221 = lif_forward_state_default_221[0];  lif_forward_state_default_221 = None
+    spike_238 = lif_forward_state_default_238[0];  lif_forward_state_default_238 = None
+    spike_255 = lif_forward_state_default_255[0]
+    v_next_255 = lif_forward_state_default_255[1];  lif_forward_state_default_255 = None
+    x_27 = torch.nn.functional.max_pool2d(spike_17, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_17 = None
+    x_52 = torch.nn.functional.max_pool2d(x_50_bn_fused_conv_lif_state_spike, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  x_50_bn_fused_conv_lif_state_spike = None
+    x_77 = torch.nn.functional.max_pool2d(x_75_bn_fused_conv_lif_state_spike, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  x_75_bn_fused_conv_lif_state_spike = None
+    x_102 = torch.nn.functional.max_pool2d(spike_68, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_68 = None
+    x_127 = torch.nn.functional.max_pool2d(spike_85, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_85 = None
+    x_152 = torch.nn.functional.max_pool2d(spike_102, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_102 = None
+    x_177 = torch.nn.functional.max_pool2d(spike_119, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_119 = None
+    x_202 = torch.nn.functional.max_pool2d(spike_136, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_136 = None
+    x_227 = torch.nn.functional.max_pool2d(spike_153, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_153 = None
+    x_252 = torch.nn.functional.max_pool2d(spike_170, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_170 = None
+    x_277 = torch.nn.functional.max_pool2d(spike_187, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_187 = None
+    x_302 = torch.nn.functional.max_pool2d(spike_204, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_204 = None
+    x_327 = torch.nn.functional.max_pool2d(spike_221, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_221 = None
+    x_352 = torch.nn.functional.max_pool2d(spike_238, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_238 = None
+    x_377 = torch.nn.functional.max_pool2d(spike_255, 3, 2, 1, 1, ceil_mode = False, return_indices = False);  spike_255 = None
+    x_28 = torch.conv2d(x_27, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_53 = torch.conv2d(x_52, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_78 = torch.conv2d(x_77, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_103 = torch.conv2d(x_102, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_128 = torch.conv2d(x_127, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_153 = torch.conv2d(x_152, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_178 = torch.conv2d(x_177, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_203 = torch.conv2d(x_202, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_228 = torch.conv2d(x_227, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_253 = torch.conv2d(x_252, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_278 = torch.conv2d(x_277, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_303 = torch.conv2d(x_302, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_328 = torch.conv2d(x_327, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_353 = torch.conv2d(x_352, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1)
+    x_378 = torch.conv2d(x_377, l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  l_self_modules_layer_modules_layer1_modules_0_modules_conv1_parameters_weight_ = None
+    out_24 = torch.nn.functional.batch_norm(x_28, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_28 = None
+    out_48 = torch.nn.functional.batch_norm(x_53, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_53 = None
+    out_72 = torch.nn.functional.batch_norm(x_78, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_78 = None
+    out_96 = torch.nn.functional.batch_norm(x_103, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_103 = None
+    out_120 = torch.nn.functional.batch_norm(x_128, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_128 = None
+    out_144 = torch.nn.functional.batch_norm(x_153, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_153 = None
+    out_168 = torch.nn.functional.batch_norm(x_178, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_178 = None
+    out_192 = torch.nn.functional.batch_norm(x_203, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_203 = None
+    out_216 = torch.nn.functional.batch_norm(x_228, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_228 = None
+    out_240 = torch.nn.functional.batch_norm(x_253, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_253 = None
+    out_264 = torch.nn.functional.batch_norm(x_278, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_278 = None
+    out_288 = torch.nn.functional.batch_norm(x_303, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_303 = None
+    out_312 = torch.nn.functional.batch_norm(x_328, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_328 = None
+    out_336 = torch.nn.functional.batch_norm(x_353, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_353 = None
+    out_360 = torch.nn.functional.batch_norm(x_378, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_378 = l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_mean_ = l_self_modules_layer_modules_layer1_modules_0_modules_bn1_buffers_running_var_ = l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_weight_ = l_self_modules_layer_modules_layer1_modules_0_modules_bn1_parameters_bias_ = None
+    lif_forward_state_default_18 = torch.ops.snn_custom.lif_forward_state.default(out_24, x_3_bn_fused_conv_lif_state_v_next, 1.0, 0.0, 2.0, False);  out_24 = x_3_bn_fused_conv_lif_state_v_next = None
+    v_next_18 = lif_forward_state_default_18[1]
+    lif_forward_state_default_35 = torch.ops.snn_custom.lif_forward_state.default(out_48, v_next_18, 1.0, 0.0, 2.0, False);  out_48 = v_next_18 = None
+    v_next_35 = lif_forward_state_default_35[1]
+    lif_forward_state_default_52 = torch.ops.snn_custom.lif_forward_state.default(out_72, v_next_35, 1.0, 0.0, 2.0, False);  out_72 = v_next_35 = None
+    v_next_52 = lif_forward_state_default_52[1]
+    lif_forward_state_default_69 = torch.ops.snn_custom.lif_forward_state.default(out_96, v_next_52, 1.0, 0.0, 2.0, False);  out_96 = v_next_52 = None
+    v_next_69 = lif_forward_state_default_69[1]
+    lif_forward_state_default_86 = torch.ops.snn_custom.lif_forward_state.default(out_120, v_next_69, 1.0, 0.0, 2.0, False);  out_120 = v_next_69 = None
+    v_next_86 = lif_forward_state_default_86[1]
+    lif_forward_state_default_103 = torch.ops.snn_custom.lif_forward_state.default(out_144, v_next_86, 1.0, 0.0, 2.0, False);  out_144 = v_next_86 = None
+    v_next_103 = lif_forward_state_default_103[1]
+    lif_forward_state_default_120 = torch.ops.snn_custom.lif_forward_state.default(out_168, v_next_103, 1.0, 0.0, 2.0, False);  out_168 = v_next_103 = None
+    v_next_120 = lif_forward_state_default_120[1]
+    lif_forward_state_default_137 = torch.ops.snn_custom.lif_forward_state.default(out_192, v_next_120, 1.0, 0.0, 2.0, False);  out_192 = v_next_120 = None
+    v_next_137 = lif_forward_state_default_137[1]
+    lif_forward_state_default_154 = torch.ops.snn_custom.lif_forward_state.default(out_216, v_next_137, 1.0, 0.0, 2.0, False);  out_216 = v_next_137 = None
+    v_next_154 = lif_forward_state_default_154[1]
+    lif_forward_state_default_171 = torch.ops.snn_custom.lif_forward_state.default(out_240, v_next_154, 1.0, 0.0, 2.0, False);  out_240 = v_next_154 = None
+    v_next_171 = lif_forward_state_default_171[1]
+    lif_forward_state_default_188 = torch.ops.snn_custom.lif_forward_state.default(out_264, v_next_171, 1.0, 0.0, 2.0, False);  out_264 = v_next_171 = None
+    v_next_188 = lif_forward_state_default_188[1]
+    lif_forward_state_default_205 = torch.ops.snn_custom.lif_forward_state.default(out_288, v_next_188, 1.0, 0.0, 2.0, False);  out_288 = v_next_188 = None
+    v_next_205 = lif_forward_state_default_205[1]
+    lif_forward_state_default_222 = torch.ops.snn_custom.lif_forward_state.default(out_312, v_next_205, 1.0, 0.0, 2.0, False);  out_312 = v_next_205 = None
+    v_next_222 = lif_forward_state_default_222[1]
+    lif_forward_state_default_239 = torch.ops.snn_custom.lif_forward_state.default(out_336, v_next_222, 1.0, 0.0, 2.0, False);  out_336 = v_next_222 = None
+    v_next_239 = lif_forward_state_default_239[1]
+    lif_forward_state_default_256 = torch.ops.snn_custom.lif_forward_state.default(out_360, v_next_239, 1.0, 0.0, 2.0, False);  out_360 = v_next_239 = None
+    spike_18 = lif_forward_state_default_18[0];  lif_forward_state_default_18 = None
+    x_29 = torch.conv2d(spike_18, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_18 = None
+    out_25 = torch.nn.functional.batch_norm(x_29, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_29 = None
+    out_25 += x_27;  out_26 = out_25;  out_25 = x_27 = None
+    lif_forward_state_default_19 = torch.ops.snn_custom.lif_forward_state.default(out_26, v_next_2, 1.0, 0.0, 2.0, False);  out_26 = v_next_2 = None
+    spike_19 = lif_forward_state_default_19[0]
+    v_next_19 = lif_forward_state_default_19[1];  lif_forward_state_default_19 = None
+    spike_35 = lif_forward_state_default_35[0];  lif_forward_state_default_35 = None
+    x_54 = torch.conv2d(spike_35, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_35 = None
+    out_49 = torch.nn.functional.batch_norm(x_54, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_54 = None
+    out_49 += x_52;  out_50 = out_49;  out_49 = x_52 = None
+    lif_forward_state_default_36 = torch.ops.snn_custom.lif_forward_state.default(out_50, v_next_19, 1.0, 0.0, 2.0, False);  out_50 = v_next_19 = None
+    spike_36 = lif_forward_state_default_36[0]
+    v_next_36 = lif_forward_state_default_36[1];  lif_forward_state_default_36 = None
+    spike_52 = lif_forward_state_default_52[0];  lif_forward_state_default_52 = None
+    x_79 = torch.conv2d(spike_52, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_52 = None
+    out_73 = torch.nn.functional.batch_norm(x_79, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_79 = None
+    out_73 += x_77;  out_74 = out_73;  out_73 = x_77 = None
+    lif_forward_state_default_53 = torch.ops.snn_custom.lif_forward_state.default(out_74, v_next_36, 1.0, 0.0, 2.0, False);  out_74 = v_next_36 = None
+    spike_53 = lif_forward_state_default_53[0]
+    v_next_53 = lif_forward_state_default_53[1];  lif_forward_state_default_53 = None
+    spike_69 = lif_forward_state_default_69[0];  lif_forward_state_default_69 = None
+    x_104 = torch.conv2d(spike_69, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_69 = None
+    out_97 = torch.nn.functional.batch_norm(x_104, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_104 = None
+    out_97 += x_102;  out_98 = out_97;  out_97 = x_102 = None
+    lif_forward_state_default_70 = torch.ops.snn_custom.lif_forward_state.default(out_98, v_next_53, 1.0, 0.0, 2.0, False);  out_98 = v_next_53 = None
+    spike_70 = lif_forward_state_default_70[0]
+    v_next_70 = lif_forward_state_default_70[1];  lif_forward_state_default_70 = None
+    spike_86 = lif_forward_state_default_86[0];  lif_forward_state_default_86 = None
+    x_129 = torch.conv2d(spike_86, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_86 = None
+    out_121 = torch.nn.functional.batch_norm(x_129, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_129 = None
+    out_121 += x_127;  out_122 = out_121;  out_121 = x_127 = None
+    lif_forward_state_default_87 = torch.ops.snn_custom.lif_forward_state.default(out_122, v_next_70, 1.0, 0.0, 2.0, False);  out_122 = v_next_70 = None
+    spike_87 = lif_forward_state_default_87[0]
+    v_next_87 = lif_forward_state_default_87[1];  lif_forward_state_default_87 = None
+    spike_103 = lif_forward_state_default_103[0];  lif_forward_state_default_103 = None
+    x_154 = torch.conv2d(spike_103, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_103 = None
+    out_145 = torch.nn.functional.batch_norm(x_154, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_154 = None
+    out_145 += x_152;  out_146 = out_145;  out_145 = x_152 = None
+    lif_forward_state_default_104 = torch.ops.snn_custom.lif_forward_state.default(out_146, v_next_87, 1.0, 0.0, 2.0, False);  out_146 = v_next_87 = None
+    spike_104 = lif_forward_state_default_104[0]
+    v_next_104 = lif_forward_state_default_104[1];  lif_forward_state_default_104 = None
+    spike_120 = lif_forward_state_default_120[0];  lif_forward_state_default_120 = None
+    x_179 = torch.conv2d(spike_120, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_120 = None
+    out_169 = torch.nn.functional.batch_norm(x_179, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_179 = None
+    out_169 += x_177;  out_170 = out_169;  out_169 = x_177 = None
+    lif_forward_state_default_121 = torch.ops.snn_custom.lif_forward_state.default(out_170, v_next_104, 1.0, 0.0, 2.0, False);  out_170 = v_next_104 = None
+    spike_121 = lif_forward_state_default_121[0]
+    v_next_121 = lif_forward_state_default_121[1];  lif_forward_state_default_121 = None
+    spike_137 = lif_forward_state_default_137[0];  lif_forward_state_default_137 = None
+    x_204 = torch.conv2d(spike_137, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_137 = None
+    out_193 = torch.nn.functional.batch_norm(x_204, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_204 = None
+    out_193 += x_202;  out_194 = out_193;  out_193 = x_202 = None
+    lif_forward_state_default_138 = torch.ops.snn_custom.lif_forward_state.default(out_194, v_next_121, 1.0, 0.0, 2.0, False);  out_194 = v_next_121 = None
+    spike_138 = lif_forward_state_default_138[0]
+    v_next_138 = lif_forward_state_default_138[1];  lif_forward_state_default_138 = None
+    spike_154 = lif_forward_state_default_154[0];  lif_forward_state_default_154 = None
+    x_229 = torch.conv2d(spike_154, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_154 = None
+    out_217 = torch.nn.functional.batch_norm(x_229, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_229 = None
+    out_217 += x_227;  out_218 = out_217;  out_217 = x_227 = None
+    lif_forward_state_default_155 = torch.ops.snn_custom.lif_forward_state.default(out_218, v_next_138, 1.0, 0.0, 2.0, False);  out_218 = v_next_138 = None
+    spike_155 = lif_forward_state_default_155[0]
+    v_next_155 = lif_forward_state_default_155[1];  lif_forward_state_default_155 = None
+    spike_171 = lif_forward_state_default_171[0];  lif_forward_state_default_171 = None
+    x_254 = torch.conv2d(spike_171, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_171 = None
+    out_241 = torch.nn.functional.batch_norm(x_254, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_254 = None
+    out_241 += x_252;  out_242 = out_241;  out_241 = x_252 = None
+    lif_forward_state_default_172 = torch.ops.snn_custom.lif_forward_state.default(out_242, v_next_155, 1.0, 0.0, 2.0, False);  out_242 = v_next_155 = None
+    spike_172 = lif_forward_state_default_172[0]
+    v_next_172 = lif_forward_state_default_172[1];  lif_forward_state_default_172 = None
+    spike_188 = lif_forward_state_default_188[0];  lif_forward_state_default_188 = None
+    x_279 = torch.conv2d(spike_188, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_188 = None
+    out_265 = torch.nn.functional.batch_norm(x_279, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_279 = None
+    out_265 += x_277;  out_266 = out_265;  out_265 = x_277 = None
+    lif_forward_state_default_189 = torch.ops.snn_custom.lif_forward_state.default(out_266, v_next_172, 1.0, 0.0, 2.0, False);  out_266 = v_next_172 = None
+    spike_189 = lif_forward_state_default_189[0]
+    v_next_189 = lif_forward_state_default_189[1];  lif_forward_state_default_189 = None
+    spike_205 = lif_forward_state_default_205[0];  lif_forward_state_default_205 = None
+    x_304 = torch.conv2d(spike_205, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_205 = None
+    out_289 = torch.nn.functional.batch_norm(x_304, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_304 = None
+    out_289 += x_302;  out_290 = out_289;  out_289 = x_302 = None
+    lif_forward_state_default_206 = torch.ops.snn_custom.lif_forward_state.default(out_290, v_next_189, 1.0, 0.0, 2.0, False);  out_290 = v_next_189 = None
+    spike_206 = lif_forward_state_default_206[0]
+    v_next_206 = lif_forward_state_default_206[1];  lif_forward_state_default_206 = None
+    spike_222 = lif_forward_state_default_222[0];  lif_forward_state_default_222 = None
+    x_329 = torch.conv2d(spike_222, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_222 = None
+    out_313 = torch.nn.functional.batch_norm(x_329, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_329 = None
+    out_313 += x_327;  out_314 = out_313;  out_313 = x_327 = None
+    lif_forward_state_default_223 = torch.ops.snn_custom.lif_forward_state.default(out_314, v_next_206, 1.0, 0.0, 2.0, False);  out_314 = v_next_206 = None
+    spike_223 = lif_forward_state_default_223[0]
+    v_next_223 = lif_forward_state_default_223[1];  lif_forward_state_default_223 = None
+    spike_239 = lif_forward_state_default_239[0];  lif_forward_state_default_239 = None
+    x_354 = torch.conv2d(spike_239, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_239 = None
+    out_337 = torch.nn.functional.batch_norm(x_354, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_354 = None
+    out_337 += x_352;  out_338 = out_337;  out_337 = x_352 = None
+    lif_forward_state_default_240 = torch.ops.snn_custom.lif_forward_state.default(out_338, v_next_223, 1.0, 0.0, 2.0, False);  out_338 = v_next_223 = None
+    spike_240 = lif_forward_state_default_240[0]
+    v_next_240 = lif_forward_state_default_240[1];  lif_forward_state_default_240 = None
+    spike_256 = lif_forward_state_default_256[0]
+    x_379 = torch.conv2d(spike_256, l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_256 = l_self_modules_layer_modules_layer1_modules_0_modules_conv2_parameters_weight_ = None
+    out_361 = torch.nn.functional.batch_norm(x_379, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_379 = l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer1_modules_0_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer1_modules_0_modules_bn2_parameters_bias_ = None
+    out_361 += x_377;  out_362 = out_361;  out_361 = x_377 = None
+    lif_forward_state_default_257 = torch.ops.snn_custom.lif_forward_state.default(out_362, v_next_240, 1.0, 0.0, 2.0, False);  out_362 = v_next_240 = None
+    spike_257 = lif_forward_state_default_257[0]
+    v_next_257 = lif_forward_state_default_257[1];  lif_forward_state_default_257 = None
+    v_next_256 = lif_forward_state_default_256[1];  lif_forward_state_default_256 = None
+    _fx_zero_scalar_v_init_3 = self._fx_zero_scalar_v_init_3
+    _fx_temporal_folded_conv_bn_weight_4 = self._fx_temporal_folded_conv_bn_weight_4
+    _fx_temporal_folded_conv_bn_bias_5 = self._fx_temporal_folded_conv_bn_bias_5
+    x_5_temporal_fused_regular_conv_lif_state = torch.ops.snn_custom.fused_temporal_conv_lif_state.default([spike_2, spike_19, spike_36, spike_53, spike_70, spike_87, spike_104, spike_121, spike_138, spike_155, spike_172, spike_189, spike_206, spike_223, spike_240, spike_257], _fx_temporal_folded_conv_bn_weight_4, _fx_temporal_folded_conv_bn_bias_5, _fx_zero_scalar_v_init_3, [1, 1], [1, 1], [1, 1], 1, 1.0, 0.0, 2.0, False);  _fx_temporal_folded_conv_bn_weight_4 = _fx_temporal_folded_conv_bn_bias_5 = _fx_zero_scalar_v_init_3 = None
+    x_5_temporal_fused_regular_conv_lif_state_spike_stack = x_5_temporal_fused_regular_conv_lif_state[0]
+    x_5_temporal_fused_regular_conv_lif_state_v_final = x_5_temporal_fused_regular_conv_lif_state[1];  x_5_temporal_fused_regular_conv_lif_state = None
+    x_6_0_temporal_stack_flatten = torch.flatten(x_5_temporal_fused_regular_conv_lif_state_spike_stack, 0, 1);  x_5_temporal_fused_regular_conv_lif_state_spike_stack = None
+    x_6_spatial_batch_conv = torch.conv2d(x_6_0_temporal_stack_flatten, l_self_modules_layer_modules_layer1_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  x_6_0_temporal_stack_flatten = l_self_modules_layer_modules_layer1_modules_1_modules_conv2_parameters_weight_ = None
+    out_4_spatial_batch_bn = torch.nn.functional.batch_norm(x_6_spatial_batch_conv, l_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_6_spatial_batch_conv = l_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer1_modules_1_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer1_modules_1_modules_bn2_parameters_bias_ = None
+    out_4_spatial_batch_bn_chunks = torch.chunk(out_4_spatial_batch_bn, 16, 0);  out_4_spatial_batch_bn = None
+    out_4_spatial_batch_bn_t0 = out_4_spatial_batch_bn_chunks[0]
+    out_4_spatial_batch_bn_t1 = out_4_spatial_batch_bn_chunks[1]
+    out_4_spatial_batch_bn_t2 = out_4_spatial_batch_bn_chunks[2]
+    out_4_spatial_batch_bn_t3 = out_4_spatial_batch_bn_chunks[3]
+    out_4_spatial_batch_bn_t4 = out_4_spatial_batch_bn_chunks[4]
+    out_4_spatial_batch_bn_t5 = out_4_spatial_batch_bn_chunks[5]
+    out_4_spatial_batch_bn_t6 = out_4_spatial_batch_bn_chunks[6]
+    out_4_spatial_batch_bn_t7 = out_4_spatial_batch_bn_chunks[7]
+    out_4_spatial_batch_bn_t8 = out_4_spatial_batch_bn_chunks[8]
+    out_4_spatial_batch_bn_t9 = out_4_spatial_batch_bn_chunks[9]
+    out_4_spatial_batch_bn_t10 = out_4_spatial_batch_bn_chunks[10]
+    out_4_spatial_batch_bn_t11 = out_4_spatial_batch_bn_chunks[11]
+    out_4_spatial_batch_bn_t12 = out_4_spatial_batch_bn_chunks[12]
+    out_4_spatial_batch_bn_t13 = out_4_spatial_batch_bn_chunks[13]
+    out_4_spatial_batch_bn_t14 = out_4_spatial_batch_bn_chunks[14]
+    out_4_spatial_batch_bn_t15 = out_4_spatial_batch_bn_chunks[15];  out_4_spatial_batch_bn_chunks = None
+    out_4_spatial_batch_bn_t0 += spike_2;  out_5 = out_4_spatial_batch_bn_t0;  out_4_spatial_batch_bn_t0 = spike_2 = None
+    zeros_like_4 = torch.zeros_like(out_5)
+    lif_forward_state_default_4 = torch.ops.snn_custom.lif_forward_state.default(out_5, zeros_like_4, 1.0, 0.0, 2.0, False);  out_5 = zeros_like_4 = None
+    spike_4 = lif_forward_state_default_4[0]
+    v_next_4 = lif_forward_state_default_4[1];  lif_forward_state_default_4 = None
+    x_9 = torch.conv2d(spike_4, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_1 = torch.nn.functional.batch_norm(x_9, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_9 = None
+    out_4_spatial_batch_bn_t1 += spike_19;  out_29 = out_4_spatial_batch_bn_t1;  out_4_spatial_batch_bn_t1 = spike_19 = None
+    lif_forward_state_default_21 = torch.ops.snn_custom.lif_forward_state.default(out_29, v_next_4, 1.0, 0.0, 2.0, False);  out_29 = v_next_4 = None
+    spike_21 = lif_forward_state_default_21[0]
+    v_next_21 = lif_forward_state_default_21[1];  lif_forward_state_default_21 = None
+    x_34 = torch.conv2d(spike_21, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_4 = torch.nn.functional.batch_norm(x_34, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_34 = None
+    out_4_spatial_batch_bn_t2 += spike_36;  out_53 = out_4_spatial_batch_bn_t2;  out_4_spatial_batch_bn_t2 = spike_36 = None
+    lif_forward_state_default_38 = torch.ops.snn_custom.lif_forward_state.default(out_53, v_next_21, 1.0, 0.0, 2.0, False);  out_53 = v_next_21 = None
+    spike_38 = lif_forward_state_default_38[0]
+    v_next_38 = lif_forward_state_default_38[1];  lif_forward_state_default_38 = None
+    x_59 = torch.conv2d(spike_38, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_7 = torch.nn.functional.batch_norm(x_59, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_59 = None
+    out_4_spatial_batch_bn_t3 += spike_53;  out_77 = out_4_spatial_batch_bn_t3;  out_4_spatial_batch_bn_t3 = spike_53 = None
+    lif_forward_state_default_55 = torch.ops.snn_custom.lif_forward_state.default(out_77, v_next_38, 1.0, 0.0, 2.0, False);  out_77 = v_next_38 = None
+    spike_55 = lif_forward_state_default_55[0]
+    v_next_55 = lif_forward_state_default_55[1];  lif_forward_state_default_55 = None
+    x_84 = torch.conv2d(spike_55, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_10 = torch.nn.functional.batch_norm(x_84, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_84 = None
+    out_4_spatial_batch_bn_t4 += spike_70;  out_101 = out_4_spatial_batch_bn_t4;  out_4_spatial_batch_bn_t4 = spike_70 = None
+    lif_forward_state_default_72 = torch.ops.snn_custom.lif_forward_state.default(out_101, v_next_55, 1.0, 0.0, 2.0, False);  out_101 = v_next_55 = None
+    spike_72 = lif_forward_state_default_72[0]
+    v_next_72 = lif_forward_state_default_72[1];  lif_forward_state_default_72 = None
+    x_109 = torch.conv2d(spike_72, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_13 = torch.nn.functional.batch_norm(x_109, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_109 = None
+    out_4_spatial_batch_bn_t5 += spike_87;  out_125 = out_4_spatial_batch_bn_t5;  out_4_spatial_batch_bn_t5 = spike_87 = None
+    lif_forward_state_default_89 = torch.ops.snn_custom.lif_forward_state.default(out_125, v_next_72, 1.0, 0.0, 2.0, False);  out_125 = v_next_72 = None
+    spike_89 = lif_forward_state_default_89[0]
+    v_next_89 = lif_forward_state_default_89[1];  lif_forward_state_default_89 = None
+    x_134 = torch.conv2d(spike_89, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_16 = torch.nn.functional.batch_norm(x_134, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_134 = None
+    out_4_spatial_batch_bn_t6 += spike_104;  out_149 = out_4_spatial_batch_bn_t6;  out_4_spatial_batch_bn_t6 = spike_104 = None
+    lif_forward_state_default_106 = torch.ops.snn_custom.lif_forward_state.default(out_149, v_next_89, 1.0, 0.0, 2.0, False);  out_149 = v_next_89 = None
+    spike_106 = lif_forward_state_default_106[0]
+    v_next_106 = lif_forward_state_default_106[1];  lif_forward_state_default_106 = None
+    x_159 = torch.conv2d(spike_106, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_19 = torch.nn.functional.batch_norm(x_159, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_159 = None
+    out_4_spatial_batch_bn_t7 += spike_121;  out_173 = out_4_spatial_batch_bn_t7;  out_4_spatial_batch_bn_t7 = spike_121 = None
+    lif_forward_state_default_123 = torch.ops.snn_custom.lif_forward_state.default(out_173, v_next_106, 1.0, 0.0, 2.0, False);  out_173 = v_next_106 = None
+    spike_123 = lif_forward_state_default_123[0]
+    v_next_123 = lif_forward_state_default_123[1];  lif_forward_state_default_123 = None
+    x_184 = torch.conv2d(spike_123, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_22 = torch.nn.functional.batch_norm(x_184, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_184 = None
+    out_4_spatial_batch_bn_t8 += spike_138;  out_197 = out_4_spatial_batch_bn_t8;  out_4_spatial_batch_bn_t8 = spike_138 = None
+    lif_forward_state_default_140 = torch.ops.snn_custom.lif_forward_state.default(out_197, v_next_123, 1.0, 0.0, 2.0, False);  out_197 = v_next_123 = None
+    spike_140 = lif_forward_state_default_140[0]
+    v_next_140 = lif_forward_state_default_140[1];  lif_forward_state_default_140 = None
+    x_209 = torch.conv2d(spike_140, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_25 = torch.nn.functional.batch_norm(x_209, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_209 = None
+    out_4_spatial_batch_bn_t9 += spike_155;  out_221 = out_4_spatial_batch_bn_t9;  out_4_spatial_batch_bn_t9 = spike_155 = None
+    lif_forward_state_default_157 = torch.ops.snn_custom.lif_forward_state.default(out_221, v_next_140, 1.0, 0.0, 2.0, False);  out_221 = v_next_140 = None
+    spike_157 = lif_forward_state_default_157[0]
+    v_next_157 = lif_forward_state_default_157[1];  lif_forward_state_default_157 = None
+    x_234 = torch.conv2d(spike_157, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_28 = torch.nn.functional.batch_norm(x_234, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_234 = None
+    out_4_spatial_batch_bn_t10 += spike_172;  out_245 = out_4_spatial_batch_bn_t10;  out_4_spatial_batch_bn_t10 = spike_172 = None
+    lif_forward_state_default_174 = torch.ops.snn_custom.lif_forward_state.default(out_245, v_next_157, 1.0, 0.0, 2.0, False);  out_245 = v_next_157 = None
+    spike_174 = lif_forward_state_default_174[0]
+    v_next_174 = lif_forward_state_default_174[1];  lif_forward_state_default_174 = None
+    x_259 = torch.conv2d(spike_174, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_31 = torch.nn.functional.batch_norm(x_259, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_259 = None
+    out_4_spatial_batch_bn_t11 += spike_189;  out_269 = out_4_spatial_batch_bn_t11;  out_4_spatial_batch_bn_t11 = spike_189 = None
+    lif_forward_state_default_191 = torch.ops.snn_custom.lif_forward_state.default(out_269, v_next_174, 1.0, 0.0, 2.0, False);  out_269 = v_next_174 = None
+    spike_191 = lif_forward_state_default_191[0]
+    v_next_191 = lif_forward_state_default_191[1];  lif_forward_state_default_191 = None
+    x_284 = torch.conv2d(spike_191, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_34 = torch.nn.functional.batch_norm(x_284, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_284 = None
+    out_4_spatial_batch_bn_t12 += spike_206;  out_293 = out_4_spatial_batch_bn_t12;  out_4_spatial_batch_bn_t12 = spike_206 = None
+    lif_forward_state_default_208 = torch.ops.snn_custom.lif_forward_state.default(out_293, v_next_191, 1.0, 0.0, 2.0, False);  out_293 = v_next_191 = None
+    spike_208 = lif_forward_state_default_208[0]
+    v_next_208 = lif_forward_state_default_208[1];  lif_forward_state_default_208 = None
+    x_309 = torch.conv2d(spike_208, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_37 = torch.nn.functional.batch_norm(x_309, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_309 = None
+    out_4_spatial_batch_bn_t13 += spike_223;  out_317 = out_4_spatial_batch_bn_t13;  out_4_spatial_batch_bn_t13 = spike_223 = None
+    lif_forward_state_default_225 = torch.ops.snn_custom.lif_forward_state.default(out_317, v_next_208, 1.0, 0.0, 2.0, False);  out_317 = v_next_208 = None
+    spike_225 = lif_forward_state_default_225[0]
+    v_next_225 = lif_forward_state_default_225[1];  lif_forward_state_default_225 = None
+    x_334 = torch.conv2d(spike_225, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_40 = torch.nn.functional.batch_norm(x_334, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_334 = None
+    out_4_spatial_batch_bn_t14 += spike_240;  out_341 = out_4_spatial_batch_bn_t14;  out_4_spatial_batch_bn_t14 = spike_240 = None
+    lif_forward_state_default_242 = torch.ops.snn_custom.lif_forward_state.default(out_341, v_next_225, 1.0, 0.0, 2.0, False);  out_341 = v_next_225 = None
+    spike_242 = lif_forward_state_default_242[0]
+    v_next_242 = lif_forward_state_default_242[1];  lif_forward_state_default_242 = None
+    x_359 = torch.conv2d(spike_242, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_43 = torch.nn.functional.batch_norm(x_359, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_359 = None
+    out_4_spatial_batch_bn_t15 += spike_257;  out_365 = out_4_spatial_batch_bn_t15;  out_4_spatial_batch_bn_t15 = spike_257 = None
+    lif_forward_state_default_259 = torch.ops.snn_custom.lif_forward_state.default(out_365, v_next_242, 1.0, 0.0, 2.0, False);  out_365 = v_next_242 = None
+    spike_259 = lif_forward_state_default_259[0]
+    v_next_259 = lif_forward_state_default_259[1];  lif_forward_state_default_259 = None
+    x_384 = torch.conv2d(spike_259, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1);  l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_0_parameters_weight_ = None
+    input_46 = torch.nn.functional.batch_norm(x_384, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_384 = l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_mean_ = l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_buffers_running_var_ = l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_weight_ = l_self_modules_layer_modules_layer2_modules_0_modules_downsample_modules_1_parameters_bias_ = None
+    _fx_zero_scalar_v_init_6 = self._fx_zero_scalar_v_init_6
+    _fx_temporal_folded_conv_bn_weight_7 = self._fx_temporal_folded_conv_bn_weight_7
+    _fx_temporal_folded_conv_bn_bias_8 = self._fx_temporal_folded_conv_bn_bias_8
+    x_7_temporal_fused_regular_conv_lif_state = torch.ops.snn_custom.fused_temporal_conv_lif_state.default([spike_4, spike_21, spike_38, spike_55, spike_72, spike_89, spike_106, spike_123, spike_140, spike_157, spike_174, spike_191, spike_208, spike_225, spike_242, spike_259], _fx_temporal_folded_conv_bn_weight_7, _fx_temporal_folded_conv_bn_bias_8, _fx_zero_scalar_v_init_6, [2, 2], [1, 1], [1, 1], 1, 1.0, 0.0, 2.0, False);  spike_4 = spike_21 = spike_38 = spike_55 = spike_72 = spike_89 = spike_106 = spike_123 = spike_140 = spike_157 = spike_174 = spike_191 = spike_208 = spike_225 = spike_242 = spike_259 = _fx_temporal_folded_conv_bn_weight_7 = _fx_temporal_folded_conv_bn_bias_8 = _fx_zero_scalar_v_init_6 = None
+    x_7_temporal_fused_regular_conv_lif_state_spike_stack = x_7_temporal_fused_regular_conv_lif_state[0]
+    x_7_temporal_fused_regular_conv_lif_state_v_final = x_7_temporal_fused_regular_conv_lif_state[1];  x_7_temporal_fused_regular_conv_lif_state = None
+    x_8_0_temporal_stack_flatten = torch.flatten(x_7_temporal_fused_regular_conv_lif_state_spike_stack, 0, 1);  x_7_temporal_fused_regular_conv_lif_state_spike_stack = None
+    x_8_spatial_batch_conv = torch.conv2d(x_8_0_temporal_stack_flatten, l_self_modules_layer_modules_layer2_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  x_8_0_temporal_stack_flatten = l_self_modules_layer_modules_layer2_modules_0_modules_conv2_parameters_weight_ = None
+    out_7_spatial_batch_bn = torch.nn.functional.batch_norm(x_8_spatial_batch_conv, l_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_8_spatial_batch_conv = l_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer2_modules_0_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer2_modules_0_modules_bn2_parameters_bias_ = None
+    out_7_spatial_batch_bn_chunks = torch.chunk(out_7_spatial_batch_bn, 16, 0);  out_7_spatial_batch_bn = None
+    out_7_spatial_batch_bn_t0 = out_7_spatial_batch_bn_chunks[0]
+    out_7_spatial_batch_bn_t1 = out_7_spatial_batch_bn_chunks[1]
+    out_7_spatial_batch_bn_t2 = out_7_spatial_batch_bn_chunks[2]
+    out_7_spatial_batch_bn_t3 = out_7_spatial_batch_bn_chunks[3]
+    out_7_spatial_batch_bn_t4 = out_7_spatial_batch_bn_chunks[4]
+    out_7_spatial_batch_bn_t5 = out_7_spatial_batch_bn_chunks[5]
+    out_7_spatial_batch_bn_t6 = out_7_spatial_batch_bn_chunks[6]
+    out_7_spatial_batch_bn_t7 = out_7_spatial_batch_bn_chunks[7]
+    out_7_spatial_batch_bn_t8 = out_7_spatial_batch_bn_chunks[8]
+    out_7_spatial_batch_bn_t9 = out_7_spatial_batch_bn_chunks[9]
+    out_7_spatial_batch_bn_t10 = out_7_spatial_batch_bn_chunks[10]
+    out_7_spatial_batch_bn_t11 = out_7_spatial_batch_bn_chunks[11]
+    out_7_spatial_batch_bn_t12 = out_7_spatial_batch_bn_chunks[12]
+    out_7_spatial_batch_bn_t13 = out_7_spatial_batch_bn_chunks[13]
+    out_7_spatial_batch_bn_t14 = out_7_spatial_batch_bn_chunks[14]
+    out_7_spatial_batch_bn_t15 = out_7_spatial_batch_bn_chunks[15];  out_7_spatial_batch_bn_chunks = None
+    out_7_spatial_batch_bn_t0 += input_1;  out_8 = out_7_spatial_batch_bn_t0;  out_7_spatial_batch_bn_t0 = input_1 = None
+    zeros_like_6 = torch.zeros_like(out_8)
+    lif_forward_state_default_6 = torch.ops.snn_custom.lif_forward_state.default(out_8, zeros_like_6, 1.0, 0.0, 2.0, False);  out_8 = zeros_like_6 = None
+    spike_6 = lif_forward_state_default_6[0]
+    v_next_6 = lif_forward_state_default_6[1];  lif_forward_state_default_6 = None
+    out_7_spatial_batch_bn_t1 += input_4;  out_32 = out_7_spatial_batch_bn_t1;  out_7_spatial_batch_bn_t1 = input_4 = None
+    lif_forward_state_default_23 = torch.ops.snn_custom.lif_forward_state.default(out_32, v_next_6, 1.0, 0.0, 2.0, False);  out_32 = v_next_6 = None
+    spike_23 = lif_forward_state_default_23[0]
+    v_next_23 = lif_forward_state_default_23[1];  lif_forward_state_default_23 = None
+    out_7_spatial_batch_bn_t2 += input_7;  out_56 = out_7_spatial_batch_bn_t2;  out_7_spatial_batch_bn_t2 = input_7 = None
+    lif_forward_state_default_40 = torch.ops.snn_custom.lif_forward_state.default(out_56, v_next_23, 1.0, 0.0, 2.0, False);  out_56 = v_next_23 = None
+    spike_40 = lif_forward_state_default_40[0]
+    v_next_40 = lif_forward_state_default_40[1];  lif_forward_state_default_40 = None
+    out_7_spatial_batch_bn_t3 += input_10;  out_80 = out_7_spatial_batch_bn_t3;  out_7_spatial_batch_bn_t3 = input_10 = None
+    lif_forward_state_default_57 = torch.ops.snn_custom.lif_forward_state.default(out_80, v_next_40, 1.0, 0.0, 2.0, False);  out_80 = v_next_40 = None
+    spike_57 = lif_forward_state_default_57[0]
+    v_next_57 = lif_forward_state_default_57[1];  lif_forward_state_default_57 = None
+    out_7_spatial_batch_bn_t4 += input_13;  out_104 = out_7_spatial_batch_bn_t4;  out_7_spatial_batch_bn_t4 = input_13 = None
+    lif_forward_state_default_74 = torch.ops.snn_custom.lif_forward_state.default(out_104, v_next_57, 1.0, 0.0, 2.0, False);  out_104 = v_next_57 = None
+    spike_74 = lif_forward_state_default_74[0]
+    v_next_74 = lif_forward_state_default_74[1];  lif_forward_state_default_74 = None
+    out_7_spatial_batch_bn_t5 += input_16;  out_128 = out_7_spatial_batch_bn_t5;  out_7_spatial_batch_bn_t5 = input_16 = None
+    lif_forward_state_default_91 = torch.ops.snn_custom.lif_forward_state.default(out_128, v_next_74, 1.0, 0.0, 2.0, False);  out_128 = v_next_74 = None
+    spike_91 = lif_forward_state_default_91[0]
+    v_next_91 = lif_forward_state_default_91[1];  lif_forward_state_default_91 = None
+    out_7_spatial_batch_bn_t6 += input_19;  out_152 = out_7_spatial_batch_bn_t6;  out_7_spatial_batch_bn_t6 = input_19 = None
+    lif_forward_state_default_108 = torch.ops.snn_custom.lif_forward_state.default(out_152, v_next_91, 1.0, 0.0, 2.0, False);  out_152 = v_next_91 = None
+    spike_108 = lif_forward_state_default_108[0]
+    v_next_108 = lif_forward_state_default_108[1];  lif_forward_state_default_108 = None
+    out_7_spatial_batch_bn_t7 += input_22;  out_176 = out_7_spatial_batch_bn_t7;  out_7_spatial_batch_bn_t7 = input_22 = None
+    lif_forward_state_default_125 = torch.ops.snn_custom.lif_forward_state.default(out_176, v_next_108, 1.0, 0.0, 2.0, False);  out_176 = v_next_108 = None
+    spike_125 = lif_forward_state_default_125[0]
+    v_next_125 = lif_forward_state_default_125[1];  lif_forward_state_default_125 = None
+    out_7_spatial_batch_bn_t8 += input_25;  out_200 = out_7_spatial_batch_bn_t8;  out_7_spatial_batch_bn_t8 = input_25 = None
+    lif_forward_state_default_142 = torch.ops.snn_custom.lif_forward_state.default(out_200, v_next_125, 1.0, 0.0, 2.0, False);  out_200 = v_next_125 = None
+    spike_142 = lif_forward_state_default_142[0]
+    v_next_142 = lif_forward_state_default_142[1];  lif_forward_state_default_142 = None
+    out_7_spatial_batch_bn_t9 += input_28;  out_224 = out_7_spatial_batch_bn_t9;  out_7_spatial_batch_bn_t9 = input_28 = None
+    lif_forward_state_default_159 = torch.ops.snn_custom.lif_forward_state.default(out_224, v_next_142, 1.0, 0.0, 2.0, False);  out_224 = v_next_142 = None
+    spike_159 = lif_forward_state_default_159[0]
+    v_next_159 = lif_forward_state_default_159[1];  lif_forward_state_default_159 = None
+    out_7_spatial_batch_bn_t10 += input_31;  out_248 = out_7_spatial_batch_bn_t10;  out_7_spatial_batch_bn_t10 = input_31 = None
+    lif_forward_state_default_176 = torch.ops.snn_custom.lif_forward_state.default(out_248, v_next_159, 1.0, 0.0, 2.0, False);  out_248 = v_next_159 = None
+    spike_176 = lif_forward_state_default_176[0]
+    v_next_176 = lif_forward_state_default_176[1];  lif_forward_state_default_176 = None
+    out_7_spatial_batch_bn_t11 += input_34;  out_272 = out_7_spatial_batch_bn_t11;  out_7_spatial_batch_bn_t11 = input_34 = None
+    lif_forward_state_default_193 = torch.ops.snn_custom.lif_forward_state.default(out_272, v_next_176, 1.0, 0.0, 2.0, False);  out_272 = v_next_176 = None
+    spike_193 = lif_forward_state_default_193[0]
+    v_next_193 = lif_forward_state_default_193[1];  lif_forward_state_default_193 = None
+    out_7_spatial_batch_bn_t12 += input_37;  out_296 = out_7_spatial_batch_bn_t12;  out_7_spatial_batch_bn_t12 = input_37 = None
+    lif_forward_state_default_210 = torch.ops.snn_custom.lif_forward_state.default(out_296, v_next_193, 1.0, 0.0, 2.0, False);  out_296 = v_next_193 = None
+    spike_210 = lif_forward_state_default_210[0]
+    v_next_210 = lif_forward_state_default_210[1];  lif_forward_state_default_210 = None
+    out_7_spatial_batch_bn_t13 += input_40;  out_320 = out_7_spatial_batch_bn_t13;  out_7_spatial_batch_bn_t13 = input_40 = None
+    lif_forward_state_default_227 = torch.ops.snn_custom.lif_forward_state.default(out_320, v_next_210, 1.0, 0.0, 2.0, False);  out_320 = v_next_210 = None
+    spike_227 = lif_forward_state_default_227[0]
+    v_next_227 = lif_forward_state_default_227[1];  lif_forward_state_default_227 = None
+    out_7_spatial_batch_bn_t14 += input_43;  out_344 = out_7_spatial_batch_bn_t14;  out_7_spatial_batch_bn_t14 = input_43 = None
+    lif_forward_state_default_244 = torch.ops.snn_custom.lif_forward_state.default(out_344, v_next_227, 1.0, 0.0, 2.0, False);  out_344 = v_next_227 = None
+    spike_244 = lif_forward_state_default_244[0]
+    v_next_244 = lif_forward_state_default_244[1];  lif_forward_state_default_244 = None
+    out_7_spatial_batch_bn_t15 += input_46;  out_368 = out_7_spatial_batch_bn_t15;  out_7_spatial_batch_bn_t15 = input_46 = None
+    lif_forward_state_default_261 = torch.ops.snn_custom.lif_forward_state.default(out_368, v_next_244, 1.0, 0.0, 2.0, False);  out_368 = v_next_244 = None
+    spike_261 = lif_forward_state_default_261[0]
+    v_next_261 = lif_forward_state_default_261[1];  lif_forward_state_default_261 = None
+    _fx_zero_scalar_v_init_9 = self._fx_zero_scalar_v_init_9
+    _fx_temporal_folded_conv_bn_weight_10 = self._fx_temporal_folded_conv_bn_weight_10
+    _fx_temporal_folded_conv_bn_bias_11 = self._fx_temporal_folded_conv_bn_bias_11
+    x_10_temporal_fused_regular_conv_lif_state = torch.ops.snn_custom.fused_temporal_conv_lif_state.default([spike_6, spike_23, spike_40, spike_57, spike_74, spike_91, spike_108, spike_125, spike_142, spike_159, spike_176, spike_193, spike_210, spike_227, spike_244, spike_261], _fx_temporal_folded_conv_bn_weight_10, _fx_temporal_folded_conv_bn_bias_11, _fx_zero_scalar_v_init_9, [1, 1], [1, 1], [1, 1], 1, 1.0, 0.0, 2.0, False);  _fx_temporal_folded_conv_bn_weight_10 = _fx_temporal_folded_conv_bn_bias_11 = _fx_zero_scalar_v_init_9 = None
+    x_10_temporal_fused_regular_conv_lif_state_spike_stack = x_10_temporal_fused_regular_conv_lif_state[0]
+    x_10_temporal_fused_regular_conv_lif_state_v_final = x_10_temporal_fused_regular_conv_lif_state[1];  x_10_temporal_fused_regular_conv_lif_state = None
+    x_11_0_temporal_stack_flatten = torch.flatten(x_10_temporal_fused_regular_conv_lif_state_spike_stack, 0, 1);  x_10_temporal_fused_regular_conv_lif_state_spike_stack = None
+    x_11_spatial_batch_conv = torch.conv2d(x_11_0_temporal_stack_flatten, l_self_modules_layer_modules_layer2_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  x_11_0_temporal_stack_flatten = l_self_modules_layer_modules_layer2_modules_1_modules_conv2_parameters_weight_ = None
+    out_10_spatial_batch_bn = torch.nn.functional.batch_norm(x_11_spatial_batch_conv, l_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_11_spatial_batch_conv = l_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer2_modules_1_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer2_modules_1_modules_bn2_parameters_bias_ = None
+    out_10_spatial_batch_bn_chunks = torch.chunk(out_10_spatial_batch_bn, 16, 0);  out_10_spatial_batch_bn = None
+    out_10_spatial_batch_bn_t0 = out_10_spatial_batch_bn_chunks[0]
+    out_10_spatial_batch_bn_t1 = out_10_spatial_batch_bn_chunks[1]
+    out_10_spatial_batch_bn_t2 = out_10_spatial_batch_bn_chunks[2]
+    out_10_spatial_batch_bn_t3 = out_10_spatial_batch_bn_chunks[3]
+    out_10_spatial_batch_bn_t4 = out_10_spatial_batch_bn_chunks[4]
+    out_10_spatial_batch_bn_t5 = out_10_spatial_batch_bn_chunks[5]
+    out_10_spatial_batch_bn_t6 = out_10_spatial_batch_bn_chunks[6]
+    out_10_spatial_batch_bn_t7 = out_10_spatial_batch_bn_chunks[7]
+    out_10_spatial_batch_bn_t8 = out_10_spatial_batch_bn_chunks[8]
+    out_10_spatial_batch_bn_t9 = out_10_spatial_batch_bn_chunks[9]
+    out_10_spatial_batch_bn_t10 = out_10_spatial_batch_bn_chunks[10]
+    out_10_spatial_batch_bn_t11 = out_10_spatial_batch_bn_chunks[11]
+    out_10_spatial_batch_bn_t12 = out_10_spatial_batch_bn_chunks[12]
+    out_10_spatial_batch_bn_t13 = out_10_spatial_batch_bn_chunks[13]
+    out_10_spatial_batch_bn_t14 = out_10_spatial_batch_bn_chunks[14]
+    out_10_spatial_batch_bn_t15 = out_10_spatial_batch_bn_chunks[15];  out_10_spatial_batch_bn_chunks = None
+    out_10_spatial_batch_bn_t0 += spike_6;  out_11 = out_10_spatial_batch_bn_t0;  out_10_spatial_batch_bn_t0 = spike_6 = None
+    zeros_like_8 = torch.zeros_like(out_11)
+    lif_forward_state_default_8 = torch.ops.snn_custom.lif_forward_state.default(out_11, zeros_like_8, 1.0, 0.0, 2.0, False);  out_11 = zeros_like_8 = None
+    spike_8 = lif_forward_state_default_8[0]
+    v_next_8 = lif_forward_state_default_8[1];  lif_forward_state_default_8 = None
+    x_14 = torch.conv2d(spike_8, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_2 = torch.nn.functional.batch_norm(x_14, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_14 = None
+    out_10_spatial_batch_bn_t1 += spike_23;  out_35 = out_10_spatial_batch_bn_t1;  out_10_spatial_batch_bn_t1 = spike_23 = None
+    lif_forward_state_default_25 = torch.ops.snn_custom.lif_forward_state.default(out_35, v_next_8, 1.0, 0.0, 2.0, False);  out_35 = v_next_8 = None
+    spike_25 = lif_forward_state_default_25[0]
+    v_next_25 = lif_forward_state_default_25[1];  lif_forward_state_default_25 = None
+    x_39 = torch.conv2d(spike_25, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_5 = torch.nn.functional.batch_norm(x_39, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_39 = None
+    out_10_spatial_batch_bn_t2 += spike_40;  out_59 = out_10_spatial_batch_bn_t2;  out_10_spatial_batch_bn_t2 = spike_40 = None
+    lif_forward_state_default_42 = torch.ops.snn_custom.lif_forward_state.default(out_59, v_next_25, 1.0, 0.0, 2.0, False);  out_59 = v_next_25 = None
+    spike_42 = lif_forward_state_default_42[0]
+    v_next_42 = lif_forward_state_default_42[1];  lif_forward_state_default_42 = None
+    x_64 = torch.conv2d(spike_42, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_8 = torch.nn.functional.batch_norm(x_64, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_64 = None
+    out_10_spatial_batch_bn_t3 += spike_57;  out_83 = out_10_spatial_batch_bn_t3;  out_10_spatial_batch_bn_t3 = spike_57 = None
+    lif_forward_state_default_59 = torch.ops.snn_custom.lif_forward_state.default(out_83, v_next_42, 1.0, 0.0, 2.0, False);  out_83 = v_next_42 = None
+    spike_59 = lif_forward_state_default_59[0]
+    v_next_59 = lif_forward_state_default_59[1];  lif_forward_state_default_59 = None
+    x_89 = torch.conv2d(spike_59, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_11 = torch.nn.functional.batch_norm(x_89, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_89 = None
+    out_10_spatial_batch_bn_t4 += spike_74;  out_107 = out_10_spatial_batch_bn_t4;  out_10_spatial_batch_bn_t4 = spike_74 = None
+    lif_forward_state_default_76 = torch.ops.snn_custom.lif_forward_state.default(out_107, v_next_59, 1.0, 0.0, 2.0, False);  out_107 = v_next_59 = None
+    spike_76 = lif_forward_state_default_76[0]
+    v_next_76 = lif_forward_state_default_76[1];  lif_forward_state_default_76 = None
+    x_114 = torch.conv2d(spike_76, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_14 = torch.nn.functional.batch_norm(x_114, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_114 = None
+    out_10_spatial_batch_bn_t5 += spike_91;  out_131 = out_10_spatial_batch_bn_t5;  out_10_spatial_batch_bn_t5 = spike_91 = None
+    lif_forward_state_default_93 = torch.ops.snn_custom.lif_forward_state.default(out_131, v_next_76, 1.0, 0.0, 2.0, False);  out_131 = v_next_76 = None
+    spike_93 = lif_forward_state_default_93[0]
+    v_next_93 = lif_forward_state_default_93[1];  lif_forward_state_default_93 = None
+    x_139 = torch.conv2d(spike_93, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_17 = torch.nn.functional.batch_norm(x_139, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_139 = None
+    out_10_spatial_batch_bn_t6 += spike_108;  out_155 = out_10_spatial_batch_bn_t6;  out_10_spatial_batch_bn_t6 = spike_108 = None
+    lif_forward_state_default_110 = torch.ops.snn_custom.lif_forward_state.default(out_155, v_next_93, 1.0, 0.0, 2.0, False);  out_155 = v_next_93 = None
+    spike_110 = lif_forward_state_default_110[0]
+    v_next_110 = lif_forward_state_default_110[1];  lif_forward_state_default_110 = None
+    x_164 = torch.conv2d(spike_110, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_20 = torch.nn.functional.batch_norm(x_164, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_164 = None
+    out_10_spatial_batch_bn_t7 += spike_125;  out_179 = out_10_spatial_batch_bn_t7;  out_10_spatial_batch_bn_t7 = spike_125 = None
+    lif_forward_state_default_127 = torch.ops.snn_custom.lif_forward_state.default(out_179, v_next_110, 1.0, 0.0, 2.0, False);  out_179 = v_next_110 = None
+    spike_127 = lif_forward_state_default_127[0]
+    v_next_127 = lif_forward_state_default_127[1];  lif_forward_state_default_127 = None
+    x_189 = torch.conv2d(spike_127, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_23 = torch.nn.functional.batch_norm(x_189, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_189 = None
+    out_10_spatial_batch_bn_t8 += spike_142;  out_203 = out_10_spatial_batch_bn_t8;  out_10_spatial_batch_bn_t8 = spike_142 = None
+    lif_forward_state_default_144 = torch.ops.snn_custom.lif_forward_state.default(out_203, v_next_127, 1.0, 0.0, 2.0, False);  out_203 = v_next_127 = None
+    spike_144 = lif_forward_state_default_144[0]
+    v_next_144 = lif_forward_state_default_144[1];  lif_forward_state_default_144 = None
+    x_214 = torch.conv2d(spike_144, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_26 = torch.nn.functional.batch_norm(x_214, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_214 = None
+    out_10_spatial_batch_bn_t9 += spike_159;  out_227 = out_10_spatial_batch_bn_t9;  out_10_spatial_batch_bn_t9 = spike_159 = None
+    lif_forward_state_default_161 = torch.ops.snn_custom.lif_forward_state.default(out_227, v_next_144, 1.0, 0.0, 2.0, False);  out_227 = v_next_144 = None
+    spike_161 = lif_forward_state_default_161[0]
+    v_next_161 = lif_forward_state_default_161[1];  lif_forward_state_default_161 = None
+    x_239 = torch.conv2d(spike_161, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_29 = torch.nn.functional.batch_norm(x_239, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_239 = None
+    out_10_spatial_batch_bn_t10 += spike_176;  out_251 = out_10_spatial_batch_bn_t10;  out_10_spatial_batch_bn_t10 = spike_176 = None
+    lif_forward_state_default_178 = torch.ops.snn_custom.lif_forward_state.default(out_251, v_next_161, 1.0, 0.0, 2.0, False);  out_251 = v_next_161 = None
+    spike_178 = lif_forward_state_default_178[0]
+    v_next_178 = lif_forward_state_default_178[1];  lif_forward_state_default_178 = None
+    x_264 = torch.conv2d(spike_178, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_32 = torch.nn.functional.batch_norm(x_264, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_264 = None
+    out_10_spatial_batch_bn_t11 += spike_193;  out_275 = out_10_spatial_batch_bn_t11;  out_10_spatial_batch_bn_t11 = spike_193 = None
+    lif_forward_state_default_195 = torch.ops.snn_custom.lif_forward_state.default(out_275, v_next_178, 1.0, 0.0, 2.0, False);  out_275 = v_next_178 = None
+    spike_195 = lif_forward_state_default_195[0]
+    v_next_195 = lif_forward_state_default_195[1];  lif_forward_state_default_195 = None
+    x_289 = torch.conv2d(spike_195, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_35 = torch.nn.functional.batch_norm(x_289, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_289 = None
+    out_10_spatial_batch_bn_t12 += spike_210;  out_299 = out_10_spatial_batch_bn_t12;  out_10_spatial_batch_bn_t12 = spike_210 = None
+    lif_forward_state_default_212 = torch.ops.snn_custom.lif_forward_state.default(out_299, v_next_195, 1.0, 0.0, 2.0, False);  out_299 = v_next_195 = None
+    spike_212 = lif_forward_state_default_212[0]
+    v_next_212 = lif_forward_state_default_212[1];  lif_forward_state_default_212 = None
+    x_314 = torch.conv2d(spike_212, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_38 = torch.nn.functional.batch_norm(x_314, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_314 = None
+    out_10_spatial_batch_bn_t13 += spike_227;  out_323 = out_10_spatial_batch_bn_t13;  out_10_spatial_batch_bn_t13 = spike_227 = None
+    lif_forward_state_default_229 = torch.ops.snn_custom.lif_forward_state.default(out_323, v_next_212, 1.0, 0.0, 2.0, False);  out_323 = v_next_212 = None
+    spike_229 = lif_forward_state_default_229[0]
+    v_next_229 = lif_forward_state_default_229[1];  lif_forward_state_default_229 = None
+    x_339 = torch.conv2d(spike_229, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_41 = torch.nn.functional.batch_norm(x_339, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_339 = None
+    out_10_spatial_batch_bn_t14 += spike_244;  out_347 = out_10_spatial_batch_bn_t14;  out_10_spatial_batch_bn_t14 = spike_244 = None
+    lif_forward_state_default_246 = torch.ops.snn_custom.lif_forward_state.default(out_347, v_next_229, 1.0, 0.0, 2.0, False);  out_347 = v_next_229 = None
+    spike_246 = lif_forward_state_default_246[0]
+    v_next_246 = lif_forward_state_default_246[1];  lif_forward_state_default_246 = None
+    x_364 = torch.conv2d(spike_246, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_44 = torch.nn.functional.batch_norm(x_364, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_364 = None
+    out_10_spatial_batch_bn_t15 += spike_261;  out_371 = out_10_spatial_batch_bn_t15;  out_10_spatial_batch_bn_t15 = spike_261 = None
+    lif_forward_state_default_263 = torch.ops.snn_custom.lif_forward_state.default(out_371, v_next_246, 1.0, 0.0, 2.0, False);  out_371 = v_next_246 = None
+    spike_263 = lif_forward_state_default_263[0]
+    v_next_263 = lif_forward_state_default_263[1];  lif_forward_state_default_263 = None
+    x_389 = torch.conv2d(spike_263, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1);  l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_0_parameters_weight_ = None
+    input_47 = torch.nn.functional.batch_norm(x_389, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_389 = l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_mean_ = l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_buffers_running_var_ = l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_weight_ = l_self_modules_layer_modules_layer3_modules_0_modules_downsample_modules_1_parameters_bias_ = None
+    _fx_zero_scalar_v_init_12 = self._fx_zero_scalar_v_init_12
+    _fx_temporal_folded_conv_bn_weight_13 = self._fx_temporal_folded_conv_bn_weight_13
+    _fx_temporal_folded_conv_bn_bias_14 = self._fx_temporal_folded_conv_bn_bias_14
+    x_12_temporal_fused_regular_conv_lif_state = torch.ops.snn_custom.fused_temporal_conv_lif_state.default([spike_8, spike_25, spike_42, spike_59, spike_76, spike_93, spike_110, spike_127, spike_144, spike_161, spike_178, spike_195, spike_212, spike_229, spike_246, spike_263], _fx_temporal_folded_conv_bn_weight_13, _fx_temporal_folded_conv_bn_bias_14, _fx_zero_scalar_v_init_12, [2, 2], [1, 1], [1, 1], 1, 1.0, 0.0, 2.0, False);  spike_8 = spike_25 = spike_42 = spike_59 = spike_76 = spike_93 = spike_110 = spike_127 = spike_144 = spike_161 = spike_178 = spike_195 = spike_212 = spike_229 = spike_246 = spike_263 = _fx_temporal_folded_conv_bn_weight_13 = _fx_temporal_folded_conv_bn_bias_14 = _fx_zero_scalar_v_init_12 = None
+    x_12_temporal_fused_regular_conv_lif_state_spike_stack = x_12_temporal_fused_regular_conv_lif_state[0]
+    x_12_temporal_fused_regular_conv_lif_state_v_final = x_12_temporal_fused_regular_conv_lif_state[1];  x_12_temporal_fused_regular_conv_lif_state = None
+    x_13_0_temporal_stack_flatten = torch.flatten(x_12_temporal_fused_regular_conv_lif_state_spike_stack, 0, 1);  x_12_temporal_fused_regular_conv_lif_state_spike_stack = None
+    x_13_spatial_batch_conv = torch.conv2d(x_13_0_temporal_stack_flatten, l_self_modules_layer_modules_layer3_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  x_13_0_temporal_stack_flatten = l_self_modules_layer_modules_layer3_modules_0_modules_conv2_parameters_weight_ = None
+    out_13_spatial_batch_bn = torch.nn.functional.batch_norm(x_13_spatial_batch_conv, l_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_13_spatial_batch_conv = l_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer3_modules_0_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer3_modules_0_modules_bn2_parameters_bias_ = None
+    out_13_spatial_batch_bn_chunks = torch.chunk(out_13_spatial_batch_bn, 16, 0);  out_13_spatial_batch_bn = None
+    out_13_spatial_batch_bn_t0 = out_13_spatial_batch_bn_chunks[0]
+    out_13_spatial_batch_bn_t1 = out_13_spatial_batch_bn_chunks[1]
+    out_13_spatial_batch_bn_t2 = out_13_spatial_batch_bn_chunks[2]
+    out_13_spatial_batch_bn_t3 = out_13_spatial_batch_bn_chunks[3]
+    out_13_spatial_batch_bn_t4 = out_13_spatial_batch_bn_chunks[4]
+    out_13_spatial_batch_bn_t5 = out_13_spatial_batch_bn_chunks[5]
+    out_13_spatial_batch_bn_t6 = out_13_spatial_batch_bn_chunks[6]
+    out_13_spatial_batch_bn_t7 = out_13_spatial_batch_bn_chunks[7]
+    out_13_spatial_batch_bn_t8 = out_13_spatial_batch_bn_chunks[8]
+    out_13_spatial_batch_bn_t9 = out_13_spatial_batch_bn_chunks[9]
+    out_13_spatial_batch_bn_t10 = out_13_spatial_batch_bn_chunks[10]
+    out_13_spatial_batch_bn_t11 = out_13_spatial_batch_bn_chunks[11]
+    out_13_spatial_batch_bn_t12 = out_13_spatial_batch_bn_chunks[12]
+    out_13_spatial_batch_bn_t13 = out_13_spatial_batch_bn_chunks[13]
+    out_13_spatial_batch_bn_t14 = out_13_spatial_batch_bn_chunks[14]
+    out_13_spatial_batch_bn_t15 = out_13_spatial_batch_bn_chunks[15];  out_13_spatial_batch_bn_chunks = None
+    out_13_spatial_batch_bn_t0 += input_2;  out_14 = out_13_spatial_batch_bn_t0;  out_13_spatial_batch_bn_t0 = input_2 = None
+    zeros_like_10 = torch.zeros_like(out_14)
+    lif_forward_state_default_10 = torch.ops.snn_custom.lif_forward_state.default(out_14, zeros_like_10, 1.0, 0.0, 2.0, False);  out_14 = zeros_like_10 = None
+    spike_10 = lif_forward_state_default_10[0]
+    v_next_10 = lif_forward_state_default_10[1];  lif_forward_state_default_10 = None
+    out_13_spatial_batch_bn_t1 += input_5;  out_38 = out_13_spatial_batch_bn_t1;  out_13_spatial_batch_bn_t1 = input_5 = None
+    lif_forward_state_default_27 = torch.ops.snn_custom.lif_forward_state.default(out_38, v_next_10, 1.0, 0.0, 2.0, False);  out_38 = v_next_10 = None
+    spike_27 = lif_forward_state_default_27[0]
+    v_next_27 = lif_forward_state_default_27[1];  lif_forward_state_default_27 = None
+    out_13_spatial_batch_bn_t2 += input_8;  out_62 = out_13_spatial_batch_bn_t2;  out_13_spatial_batch_bn_t2 = input_8 = None
+    lif_forward_state_default_44 = torch.ops.snn_custom.lif_forward_state.default(out_62, v_next_27, 1.0, 0.0, 2.0, False);  out_62 = v_next_27 = None
+    spike_44 = lif_forward_state_default_44[0]
+    v_next_44 = lif_forward_state_default_44[1];  lif_forward_state_default_44 = None
+    out_13_spatial_batch_bn_t3 += input_11;  out_86 = out_13_spatial_batch_bn_t3;  out_13_spatial_batch_bn_t3 = input_11 = None
+    lif_forward_state_default_61 = torch.ops.snn_custom.lif_forward_state.default(out_86, v_next_44, 1.0, 0.0, 2.0, False);  out_86 = v_next_44 = None
+    spike_61 = lif_forward_state_default_61[0]
+    v_next_61 = lif_forward_state_default_61[1];  lif_forward_state_default_61 = None
+    out_13_spatial_batch_bn_t4 += input_14;  out_110 = out_13_spatial_batch_bn_t4;  out_13_spatial_batch_bn_t4 = input_14 = None
+    lif_forward_state_default_78 = torch.ops.snn_custom.lif_forward_state.default(out_110, v_next_61, 1.0, 0.0, 2.0, False);  out_110 = v_next_61 = None
+    spike_78 = lif_forward_state_default_78[0]
+    v_next_78 = lif_forward_state_default_78[1];  lif_forward_state_default_78 = None
+    out_13_spatial_batch_bn_t5 += input_17;  out_134 = out_13_spatial_batch_bn_t5;  out_13_spatial_batch_bn_t5 = input_17 = None
+    lif_forward_state_default_95 = torch.ops.snn_custom.lif_forward_state.default(out_134, v_next_78, 1.0, 0.0, 2.0, False);  out_134 = v_next_78 = None
+    spike_95 = lif_forward_state_default_95[0]
+    v_next_95 = lif_forward_state_default_95[1];  lif_forward_state_default_95 = None
+    out_13_spatial_batch_bn_t6 += input_20;  out_158 = out_13_spatial_batch_bn_t6;  out_13_spatial_batch_bn_t6 = input_20 = None
+    lif_forward_state_default_112 = torch.ops.snn_custom.lif_forward_state.default(out_158, v_next_95, 1.0, 0.0, 2.0, False);  out_158 = v_next_95 = None
+    spike_112 = lif_forward_state_default_112[0]
+    v_next_112 = lif_forward_state_default_112[1];  lif_forward_state_default_112 = None
+    out_13_spatial_batch_bn_t7 += input_23;  out_182 = out_13_spatial_batch_bn_t7;  out_13_spatial_batch_bn_t7 = input_23 = None
+    lif_forward_state_default_129 = torch.ops.snn_custom.lif_forward_state.default(out_182, v_next_112, 1.0, 0.0, 2.0, False);  out_182 = v_next_112 = None
+    spike_129 = lif_forward_state_default_129[0]
+    v_next_129 = lif_forward_state_default_129[1];  lif_forward_state_default_129 = None
+    out_13_spatial_batch_bn_t8 += input_26;  out_206 = out_13_spatial_batch_bn_t8;  out_13_spatial_batch_bn_t8 = input_26 = None
+    lif_forward_state_default_146 = torch.ops.snn_custom.lif_forward_state.default(out_206, v_next_129, 1.0, 0.0, 2.0, False);  out_206 = v_next_129 = None
+    spike_146 = lif_forward_state_default_146[0]
+    v_next_146 = lif_forward_state_default_146[1];  lif_forward_state_default_146 = None
+    out_13_spatial_batch_bn_t9 += input_29;  out_230 = out_13_spatial_batch_bn_t9;  out_13_spatial_batch_bn_t9 = input_29 = None
+    lif_forward_state_default_163 = torch.ops.snn_custom.lif_forward_state.default(out_230, v_next_146, 1.0, 0.0, 2.0, False);  out_230 = v_next_146 = None
+    spike_163 = lif_forward_state_default_163[0]
+    v_next_163 = lif_forward_state_default_163[1];  lif_forward_state_default_163 = None
+    out_13_spatial_batch_bn_t10 += input_32;  out_254 = out_13_spatial_batch_bn_t10;  out_13_spatial_batch_bn_t10 = input_32 = None
+    lif_forward_state_default_180 = torch.ops.snn_custom.lif_forward_state.default(out_254, v_next_163, 1.0, 0.0, 2.0, False);  out_254 = v_next_163 = None
+    spike_180 = lif_forward_state_default_180[0]
+    v_next_180 = lif_forward_state_default_180[1];  lif_forward_state_default_180 = None
+    out_13_spatial_batch_bn_t11 += input_35;  out_278 = out_13_spatial_batch_bn_t11;  out_13_spatial_batch_bn_t11 = input_35 = None
+    lif_forward_state_default_197 = torch.ops.snn_custom.lif_forward_state.default(out_278, v_next_180, 1.0, 0.0, 2.0, False);  out_278 = v_next_180 = None
+    spike_197 = lif_forward_state_default_197[0]
+    v_next_197 = lif_forward_state_default_197[1];  lif_forward_state_default_197 = None
+    out_13_spatial_batch_bn_t12 += input_38;  out_302 = out_13_spatial_batch_bn_t12;  out_13_spatial_batch_bn_t12 = input_38 = None
+    lif_forward_state_default_214 = torch.ops.snn_custom.lif_forward_state.default(out_302, v_next_197, 1.0, 0.0, 2.0, False);  out_302 = v_next_197 = None
+    spike_214 = lif_forward_state_default_214[0]
+    v_next_214 = lif_forward_state_default_214[1];  lif_forward_state_default_214 = None
+    out_13_spatial_batch_bn_t13 += input_41;  out_326 = out_13_spatial_batch_bn_t13;  out_13_spatial_batch_bn_t13 = input_41 = None
+    lif_forward_state_default_231 = torch.ops.snn_custom.lif_forward_state.default(out_326, v_next_214, 1.0, 0.0, 2.0, False);  out_326 = v_next_214 = None
+    spike_231 = lif_forward_state_default_231[0]
+    v_next_231 = lif_forward_state_default_231[1];  lif_forward_state_default_231 = None
+    out_13_spatial_batch_bn_t14 += input_44;  out_350 = out_13_spatial_batch_bn_t14;  out_13_spatial_batch_bn_t14 = input_44 = None
+    lif_forward_state_default_248 = torch.ops.snn_custom.lif_forward_state.default(out_350, v_next_231, 1.0, 0.0, 2.0, False);  out_350 = v_next_231 = None
+    spike_248 = lif_forward_state_default_248[0]
+    v_next_248 = lif_forward_state_default_248[1];  lif_forward_state_default_248 = None
+    out_13_spatial_batch_bn_t15 += input_47;  out_374 = out_13_spatial_batch_bn_t15;  out_13_spatial_batch_bn_t15 = input_47 = None
+    lif_forward_state_default_265 = torch.ops.snn_custom.lif_forward_state.default(out_374, v_next_248, 1.0, 0.0, 2.0, False);  out_374 = v_next_248 = None
+    spike_265 = lif_forward_state_default_265[0]
+    v_next_265 = lif_forward_state_default_265[1];  lif_forward_state_default_265 = None
+    x_15_spatial_batch_cat = torch.cat([spike_10, spike_27, spike_44, spike_61, spike_78, spike_95, spike_112, spike_129, spike_146, spike_163, spike_180, spike_197, spike_214, spike_231, spike_248, spike_265], 0)
+    x_15_spatial_batch_conv = torch.conv2d(x_15_spatial_batch_cat, l_self_modules_layer_modules_layer3_modules_1_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  x_15_spatial_batch_cat = l_self_modules_layer_modules_layer3_modules_1_modules_conv1_parameters_weight_ = None
+    out_15_spatial_batch_bn = torch.nn.functional.batch_norm(x_15_spatial_batch_conv, l_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_15_spatial_batch_conv = l_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_mean_ = l_self_modules_layer_modules_layer3_modules_1_modules_bn1_buffers_running_var_ = l_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_weight_ = l_self_modules_layer_modules_layer3_modules_1_modules_bn1_parameters_bias_ = None
+    out_15_spatial_batch_bn_chunks = torch.chunk(out_15_spatial_batch_bn, 16, 0);  out_15_spatial_batch_bn = None
+    out_15_spatial_batch_bn_t0 = out_15_spatial_batch_bn_chunks[0]
+    out_15_spatial_batch_bn_t1 = out_15_spatial_batch_bn_chunks[1]
+    out_15_spatial_batch_bn_t2 = out_15_spatial_batch_bn_chunks[2]
+    out_15_spatial_batch_bn_t3 = out_15_spatial_batch_bn_chunks[3]
+    out_15_spatial_batch_bn_t4 = out_15_spatial_batch_bn_chunks[4]
+    out_15_spatial_batch_bn_t5 = out_15_spatial_batch_bn_chunks[5]
+    out_15_spatial_batch_bn_t6 = out_15_spatial_batch_bn_chunks[6]
+    out_15_spatial_batch_bn_t7 = out_15_spatial_batch_bn_chunks[7]
+    out_15_spatial_batch_bn_t8 = out_15_spatial_batch_bn_chunks[8]
+    out_15_spatial_batch_bn_t9 = out_15_spatial_batch_bn_chunks[9]
+    out_15_spatial_batch_bn_t10 = out_15_spatial_batch_bn_chunks[10]
+    out_15_spatial_batch_bn_t11 = out_15_spatial_batch_bn_chunks[11]
+    out_15_spatial_batch_bn_t12 = out_15_spatial_batch_bn_chunks[12]
+    out_15_spatial_batch_bn_t13 = out_15_spatial_batch_bn_chunks[13]
+    out_15_spatial_batch_bn_t14 = out_15_spatial_batch_bn_chunks[14]
+    out_15_spatial_batch_bn_t15 = out_15_spatial_batch_bn_chunks[15];  out_15_spatial_batch_bn_chunks = None
+    zeros_like_11 = torch.zeros_like(out_15_spatial_batch_bn_t0)
+    lif_forward_state_default_11 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t0, zeros_like_11, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t0 = zeros_like_11 = None
+    v_next_11 = lif_forward_state_default_11[1]
+    lif_forward_state_default_28 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t1, v_next_11, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t1 = v_next_11 = None
+    v_next_28 = lif_forward_state_default_28[1]
+    lif_forward_state_default_45 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t2, v_next_28, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t2 = v_next_28 = None
+    v_next_45 = lif_forward_state_default_45[1]
+    lif_forward_state_default_62 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t3, v_next_45, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t3 = v_next_45 = None
+    v_next_62 = lif_forward_state_default_62[1]
+    lif_forward_state_default_79 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t4, v_next_62, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t4 = v_next_62 = None
+    v_next_79 = lif_forward_state_default_79[1]
+    lif_forward_state_default_96 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t5, v_next_79, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t5 = v_next_79 = None
+    v_next_96 = lif_forward_state_default_96[1]
+    lif_forward_state_default_113 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t6, v_next_96, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t6 = v_next_96 = None
+    v_next_113 = lif_forward_state_default_113[1]
+    lif_forward_state_default_130 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t7, v_next_113, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t7 = v_next_113 = None
+    v_next_130 = lif_forward_state_default_130[1]
+    lif_forward_state_default_147 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t8, v_next_130, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t8 = v_next_130 = None
+    v_next_147 = lif_forward_state_default_147[1]
+    lif_forward_state_default_164 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t9, v_next_147, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t9 = v_next_147 = None
+    v_next_164 = lif_forward_state_default_164[1]
+    lif_forward_state_default_181 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t10, v_next_164, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t10 = v_next_164 = None
+    v_next_181 = lif_forward_state_default_181[1]
+    lif_forward_state_default_198 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t11, v_next_181, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t11 = v_next_181 = None
+    v_next_198 = lif_forward_state_default_198[1]
+    lif_forward_state_default_215 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t12, v_next_198, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t12 = v_next_198 = None
+    v_next_215 = lif_forward_state_default_215[1]
+    lif_forward_state_default_232 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t13, v_next_215, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t13 = v_next_215 = None
+    v_next_232 = lif_forward_state_default_232[1]
+    lif_forward_state_default_249 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t14, v_next_232, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t14 = v_next_232 = None
+    v_next_249 = lif_forward_state_default_249[1]
+    lif_forward_state_default_266 = torch.ops.snn_custom.lif_forward_state.default(out_15_spatial_batch_bn_t15, v_next_249, 1.0, 0.0, 2.0, False);  out_15_spatial_batch_bn_t15 = v_next_249 = None
+    spike_11 = lif_forward_state_default_11[0];  lif_forward_state_default_11 = None
+    x_16 = torch.conv2d(spike_11, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_11 = None
+    out_16 = torch.nn.functional.batch_norm(x_16, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_16 = None
+    out_16 += spike_10;  out_17 = out_16;  out_16 = spike_10 = None
+    zeros_like_12 = torch.zeros_like(out_17)
+    lif_forward_state_default_12 = torch.ops.snn_custom.lif_forward_state.default(out_17, zeros_like_12, 1.0, 0.0, 2.0, False);  out_17 = zeros_like_12 = None
+    spike_12 = lif_forward_state_default_12[0]
+    v_next_12 = lif_forward_state_default_12[1];  lif_forward_state_default_12 = None
+    x_19 = torch.conv2d(spike_12, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_3 = torch.nn.functional.batch_norm(x_19, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_19 = None
+    spike_28 = lif_forward_state_default_28[0];  lif_forward_state_default_28 = None
+    x_41 = torch.conv2d(spike_28, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_28 = None
+    out_40 = torch.nn.functional.batch_norm(x_41, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_41 = None
+    out_40 += spike_27;  out_41 = out_40;  out_40 = spike_27 = None
+    lif_forward_state_default_29 = torch.ops.snn_custom.lif_forward_state.default(out_41, v_next_12, 1.0, 0.0, 2.0, False);  out_41 = v_next_12 = None
+    spike_29 = lif_forward_state_default_29[0]
+    v_next_29 = lif_forward_state_default_29[1];  lif_forward_state_default_29 = None
+    x_44 = torch.conv2d(spike_29, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_6 = torch.nn.functional.batch_norm(x_44, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_44 = None
+    spike_45 = lif_forward_state_default_45[0];  lif_forward_state_default_45 = None
+    x_66 = torch.conv2d(spike_45, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_45 = None
+    out_64 = torch.nn.functional.batch_norm(x_66, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_66 = None
+    out_64 += spike_44;  out_65 = out_64;  out_64 = spike_44 = None
+    lif_forward_state_default_46 = torch.ops.snn_custom.lif_forward_state.default(out_65, v_next_29, 1.0, 0.0, 2.0, False);  out_65 = v_next_29 = None
+    spike_46 = lif_forward_state_default_46[0]
+    v_next_46 = lif_forward_state_default_46[1];  lif_forward_state_default_46 = None
+    x_69 = torch.conv2d(spike_46, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_9 = torch.nn.functional.batch_norm(x_69, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_69 = None
+    spike_62 = lif_forward_state_default_62[0];  lif_forward_state_default_62 = None
+    x_91 = torch.conv2d(spike_62, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_62 = None
+    out_88 = torch.nn.functional.batch_norm(x_91, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_91 = None
+    out_88 += spike_61;  out_89 = out_88;  out_88 = spike_61 = None
+    lif_forward_state_default_63 = torch.ops.snn_custom.lif_forward_state.default(out_89, v_next_46, 1.0, 0.0, 2.0, False);  out_89 = v_next_46 = None
+    spike_63 = lif_forward_state_default_63[0]
+    v_next_63 = lif_forward_state_default_63[1];  lif_forward_state_default_63 = None
+    x_94 = torch.conv2d(spike_63, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_12 = torch.nn.functional.batch_norm(x_94, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_94 = None
+    spike_79 = lif_forward_state_default_79[0];  lif_forward_state_default_79 = None
+    x_116 = torch.conv2d(spike_79, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_79 = None
+    out_112 = torch.nn.functional.batch_norm(x_116, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_116 = None
+    out_112 += spike_78;  out_113 = out_112;  out_112 = spike_78 = None
+    lif_forward_state_default_80 = torch.ops.snn_custom.lif_forward_state.default(out_113, v_next_63, 1.0, 0.0, 2.0, False);  out_113 = v_next_63 = None
+    spike_80 = lif_forward_state_default_80[0]
+    v_next_80 = lif_forward_state_default_80[1];  lif_forward_state_default_80 = None
+    x_119 = torch.conv2d(spike_80, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_15 = torch.nn.functional.batch_norm(x_119, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_119 = None
+    spike_96 = lif_forward_state_default_96[0];  lif_forward_state_default_96 = None
+    x_141 = torch.conv2d(spike_96, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_96 = None
+    out_136 = torch.nn.functional.batch_norm(x_141, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_141 = None
+    out_136 += spike_95;  out_137 = out_136;  out_136 = spike_95 = None
+    lif_forward_state_default_97 = torch.ops.snn_custom.lif_forward_state.default(out_137, v_next_80, 1.0, 0.0, 2.0, False);  out_137 = v_next_80 = None
+    spike_97 = lif_forward_state_default_97[0]
+    v_next_97 = lif_forward_state_default_97[1];  lif_forward_state_default_97 = None
+    x_144 = torch.conv2d(spike_97, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_18 = torch.nn.functional.batch_norm(x_144, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_144 = None
+    spike_113 = lif_forward_state_default_113[0];  lif_forward_state_default_113 = None
+    x_166 = torch.conv2d(spike_113, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_113 = None
+    out_160 = torch.nn.functional.batch_norm(x_166, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_166 = None
+    out_160 += spike_112;  out_161 = out_160;  out_160 = spike_112 = None
+    lif_forward_state_default_114 = torch.ops.snn_custom.lif_forward_state.default(out_161, v_next_97, 1.0, 0.0, 2.0, False);  out_161 = v_next_97 = None
+    spike_114 = lif_forward_state_default_114[0]
+    v_next_114 = lif_forward_state_default_114[1];  lif_forward_state_default_114 = None
+    x_169 = torch.conv2d(spike_114, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_21 = torch.nn.functional.batch_norm(x_169, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_169 = None
+    spike_130 = lif_forward_state_default_130[0];  lif_forward_state_default_130 = None
+    x_191 = torch.conv2d(spike_130, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_130 = None
+    out_184 = torch.nn.functional.batch_norm(x_191, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_191 = None
+    out_184 += spike_129;  out_185 = out_184;  out_184 = spike_129 = None
+    lif_forward_state_default_131 = torch.ops.snn_custom.lif_forward_state.default(out_185, v_next_114, 1.0, 0.0, 2.0, False);  out_185 = v_next_114 = None
+    spike_131 = lif_forward_state_default_131[0]
+    v_next_131 = lif_forward_state_default_131[1];  lif_forward_state_default_131 = None
+    x_194 = torch.conv2d(spike_131, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_24 = torch.nn.functional.batch_norm(x_194, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_194 = None
+    spike_147 = lif_forward_state_default_147[0];  lif_forward_state_default_147 = None
+    x_216 = torch.conv2d(spike_147, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_147 = None
+    out_208 = torch.nn.functional.batch_norm(x_216, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_216 = None
+    out_208 += spike_146;  out_209 = out_208;  out_208 = spike_146 = None
+    lif_forward_state_default_148 = torch.ops.snn_custom.lif_forward_state.default(out_209, v_next_131, 1.0, 0.0, 2.0, False);  out_209 = v_next_131 = None
+    spike_148 = lif_forward_state_default_148[0]
+    v_next_148 = lif_forward_state_default_148[1];  lif_forward_state_default_148 = None
+    x_219 = torch.conv2d(spike_148, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_27 = torch.nn.functional.batch_norm(x_219, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_219 = None
+    spike_164 = lif_forward_state_default_164[0];  lif_forward_state_default_164 = None
+    x_241 = torch.conv2d(spike_164, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_164 = None
+    out_232 = torch.nn.functional.batch_norm(x_241, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_241 = None
+    out_232 += spike_163;  out_233 = out_232;  out_232 = spike_163 = None
+    lif_forward_state_default_165 = torch.ops.snn_custom.lif_forward_state.default(out_233, v_next_148, 1.0, 0.0, 2.0, False);  out_233 = v_next_148 = None
+    spike_165 = lif_forward_state_default_165[0]
+    v_next_165 = lif_forward_state_default_165[1];  lif_forward_state_default_165 = None
+    x_244 = torch.conv2d(spike_165, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_30 = torch.nn.functional.batch_norm(x_244, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_244 = None
+    spike_181 = lif_forward_state_default_181[0];  lif_forward_state_default_181 = None
+    x_266 = torch.conv2d(spike_181, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_181 = None
+    out_256 = torch.nn.functional.batch_norm(x_266, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_266 = None
+    out_256 += spike_180;  out_257 = out_256;  out_256 = spike_180 = None
+    lif_forward_state_default_182 = torch.ops.snn_custom.lif_forward_state.default(out_257, v_next_165, 1.0, 0.0, 2.0, False);  out_257 = v_next_165 = None
+    spike_182 = lif_forward_state_default_182[0]
+    v_next_182 = lif_forward_state_default_182[1];  lif_forward_state_default_182 = None
+    x_269 = torch.conv2d(spike_182, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_33 = torch.nn.functional.batch_norm(x_269, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_269 = None
+    spike_198 = lif_forward_state_default_198[0];  lif_forward_state_default_198 = None
+    x_291 = torch.conv2d(spike_198, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_198 = None
+    out_280 = torch.nn.functional.batch_norm(x_291, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_291 = None
+    out_280 += spike_197;  out_281 = out_280;  out_280 = spike_197 = None
+    lif_forward_state_default_199 = torch.ops.snn_custom.lif_forward_state.default(out_281, v_next_182, 1.0, 0.0, 2.0, False);  out_281 = v_next_182 = None
+    spike_199 = lif_forward_state_default_199[0]
+    v_next_199 = lif_forward_state_default_199[1];  lif_forward_state_default_199 = None
+    x_294 = torch.conv2d(spike_199, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_36 = torch.nn.functional.batch_norm(x_294, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_294 = None
+    spike_215 = lif_forward_state_default_215[0];  lif_forward_state_default_215 = None
+    x_316 = torch.conv2d(spike_215, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_215 = None
+    out_304 = torch.nn.functional.batch_norm(x_316, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_316 = None
+    out_304 += spike_214;  out_305 = out_304;  out_304 = spike_214 = None
+    lif_forward_state_default_216 = torch.ops.snn_custom.lif_forward_state.default(out_305, v_next_199, 1.0, 0.0, 2.0, False);  out_305 = v_next_199 = None
+    spike_216 = lif_forward_state_default_216[0]
+    v_next_216 = lif_forward_state_default_216[1];  lif_forward_state_default_216 = None
+    x_319 = torch.conv2d(spike_216, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_39 = torch.nn.functional.batch_norm(x_319, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_319 = None
+    spike_232 = lif_forward_state_default_232[0];  lif_forward_state_default_232 = None
+    x_341 = torch.conv2d(spike_232, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_232 = None
+    out_328 = torch.nn.functional.batch_norm(x_341, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_341 = None
+    out_328 += spike_231;  out_329 = out_328;  out_328 = spike_231 = None
+    lif_forward_state_default_233 = torch.ops.snn_custom.lif_forward_state.default(out_329, v_next_216, 1.0, 0.0, 2.0, False);  out_329 = v_next_216 = None
+    spike_233 = lif_forward_state_default_233[0]
+    v_next_233 = lif_forward_state_default_233[1];  lif_forward_state_default_233 = None
+    x_344 = torch.conv2d(spike_233, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_42 = torch.nn.functional.batch_norm(x_344, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_344 = None
+    spike_249 = lif_forward_state_default_249[0];  lif_forward_state_default_249 = None
+    x_366 = torch.conv2d(spike_249, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_249 = None
+    out_352 = torch.nn.functional.batch_norm(x_366, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_366 = None
+    out_352 += spike_248;  out_353 = out_352;  out_352 = spike_248 = None
+    lif_forward_state_default_250 = torch.ops.snn_custom.lif_forward_state.default(out_353, v_next_233, 1.0, 0.0, 2.0, False);  out_353 = v_next_233 = None
+    spike_250 = lif_forward_state_default_250[0]
+    v_next_250 = lif_forward_state_default_250[1];  lif_forward_state_default_250 = None
+    x_369 = torch.conv2d(spike_250, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1)
+    input_45 = torch.nn.functional.batch_norm(x_369, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_369 = None
+    spike_266 = lif_forward_state_default_266[0]
+    x_391 = torch.conv2d(spike_266, l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_266 = l_self_modules_layer_modules_layer3_modules_1_modules_conv2_parameters_weight_ = None
+    out_376 = torch.nn.functional.batch_norm(x_391, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_391 = l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer3_modules_1_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer3_modules_1_modules_bn2_parameters_bias_ = None
+    out_376 += spike_265;  out_377 = out_376;  out_376 = spike_265 = None
+    lif_forward_state_default_267 = torch.ops.snn_custom.lif_forward_state.default(out_377, v_next_250, 1.0, 0.0, 2.0, False);  out_377 = v_next_250 = None
+    spike_267 = lif_forward_state_default_267[0]
+    v_next_267 = lif_forward_state_default_267[1];  lif_forward_state_default_267 = None
+    x_394 = torch.conv2d(spike_267, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_, None, (2, 2), (0, 0), (1, 1), 1);  l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_0_parameters_weight_ = None
+    input_48 = torch.nn.functional.batch_norm(x_394, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_, False, 0.1, 1e-05);  x_394 = l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_mean_ = l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_buffers_running_var_ = l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_weight_ = l_self_modules_layer_modules_layer4_modules_0_modules_downsample_modules_1_parameters_bias_ = None
+    v_next_266 = lif_forward_state_default_266[1];  lif_forward_state_default_266 = None
+    x_17_spatial_batch_cat = torch.cat([spike_12, spike_29, spike_46, spike_63, spike_80, spike_97, spike_114, spike_131, spike_148, spike_165, spike_182, spike_199, spike_216, spike_233, spike_250, spike_267], 0);  spike_12 = spike_29 = spike_46 = spike_63 = spike_80 = spike_97 = spike_114 = spike_131 = spike_148 = spike_165 = spike_182 = spike_199 = spike_216 = spike_233 = spike_250 = spike_267 = None
+    x_17_spatial_batch_conv = torch.conv2d(x_17_spatial_batch_cat, l_self_modules_layer_modules_layer4_modules_0_modules_conv1_parameters_weight_, None, (2, 2), (1, 1), (1, 1), 1);  x_17_spatial_batch_cat = l_self_modules_layer_modules_layer4_modules_0_modules_conv1_parameters_weight_ = None
+    out_18_spatial_batch_bn = torch.nn.functional.batch_norm(x_17_spatial_batch_conv, l_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_17_spatial_batch_conv = l_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_mean_ = l_self_modules_layer_modules_layer4_modules_0_modules_bn1_buffers_running_var_ = l_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_weight_ = l_self_modules_layer_modules_layer4_modules_0_modules_bn1_parameters_bias_ = None
+    out_18_spatial_batch_bn_chunks = torch.chunk(out_18_spatial_batch_bn, 16, 0);  out_18_spatial_batch_bn = None
+    out_18_spatial_batch_bn_t0 = out_18_spatial_batch_bn_chunks[0]
+    out_18_spatial_batch_bn_t1 = out_18_spatial_batch_bn_chunks[1]
+    out_18_spatial_batch_bn_t2 = out_18_spatial_batch_bn_chunks[2]
+    out_18_spatial_batch_bn_t3 = out_18_spatial_batch_bn_chunks[3]
+    out_18_spatial_batch_bn_t4 = out_18_spatial_batch_bn_chunks[4]
+    out_18_spatial_batch_bn_t5 = out_18_spatial_batch_bn_chunks[5]
+    out_18_spatial_batch_bn_t6 = out_18_spatial_batch_bn_chunks[6]
+    out_18_spatial_batch_bn_t7 = out_18_spatial_batch_bn_chunks[7]
+    out_18_spatial_batch_bn_t8 = out_18_spatial_batch_bn_chunks[8]
+    out_18_spatial_batch_bn_t9 = out_18_spatial_batch_bn_chunks[9]
+    out_18_spatial_batch_bn_t10 = out_18_spatial_batch_bn_chunks[10]
+    out_18_spatial_batch_bn_t11 = out_18_spatial_batch_bn_chunks[11]
+    out_18_spatial_batch_bn_t12 = out_18_spatial_batch_bn_chunks[12]
+    out_18_spatial_batch_bn_t13 = out_18_spatial_batch_bn_chunks[13]
+    out_18_spatial_batch_bn_t14 = out_18_spatial_batch_bn_chunks[14]
+    out_18_spatial_batch_bn_t15 = out_18_spatial_batch_bn_chunks[15];  out_18_spatial_batch_bn_chunks = None
+    zeros_like_13 = torch.zeros_like(out_18_spatial_batch_bn_t0)
+    lif_forward_state_default_13 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t0, zeros_like_13, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t0 = zeros_like_13 = None
+    v_next_13 = lif_forward_state_default_13[1]
+    lif_forward_state_default_30 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t1, v_next_13, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t1 = v_next_13 = None
+    v_next_30 = lif_forward_state_default_30[1]
+    lif_forward_state_default_47 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t2, v_next_30, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t2 = v_next_30 = None
+    v_next_47 = lif_forward_state_default_47[1]
+    lif_forward_state_default_64 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t3, v_next_47, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t3 = v_next_47 = None
+    v_next_64 = lif_forward_state_default_64[1]
+    lif_forward_state_default_81 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t4, v_next_64, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t4 = v_next_64 = None
+    v_next_81 = lif_forward_state_default_81[1]
+    lif_forward_state_default_98 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t5, v_next_81, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t5 = v_next_81 = None
+    v_next_98 = lif_forward_state_default_98[1]
+    lif_forward_state_default_115 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t6, v_next_98, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t6 = v_next_98 = None
+    v_next_115 = lif_forward_state_default_115[1]
+    lif_forward_state_default_132 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t7, v_next_115, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t7 = v_next_115 = None
+    v_next_132 = lif_forward_state_default_132[1]
+    lif_forward_state_default_149 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t8, v_next_132, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t8 = v_next_132 = None
+    v_next_149 = lif_forward_state_default_149[1]
+    lif_forward_state_default_166 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t9, v_next_149, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t9 = v_next_149 = None
+    v_next_166 = lif_forward_state_default_166[1]
+    lif_forward_state_default_183 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t10, v_next_166, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t10 = v_next_166 = None
+    v_next_183 = lif_forward_state_default_183[1]
+    lif_forward_state_default_200 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t11, v_next_183, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t11 = v_next_183 = None
+    v_next_200 = lif_forward_state_default_200[1]
+    lif_forward_state_default_217 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t12, v_next_200, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t12 = v_next_200 = None
+    v_next_217 = lif_forward_state_default_217[1]
+    lif_forward_state_default_234 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t13, v_next_217, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t13 = v_next_217 = None
+    v_next_234 = lif_forward_state_default_234[1]
+    lif_forward_state_default_251 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t14, v_next_234, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t14 = v_next_234 = None
+    v_next_251 = lif_forward_state_default_251[1]
+    lif_forward_state_default_268 = torch.ops.snn_custom.lif_forward_state.default(out_18_spatial_batch_bn_t15, v_next_251, 1.0, 0.0, 2.0, False);  out_18_spatial_batch_bn_t15 = v_next_251 = None
+    spike_13 = lif_forward_state_default_13[0];  lif_forward_state_default_13 = None
+    x_18 = torch.conv2d(spike_13, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_13 = None
+    out_19 = torch.nn.functional.batch_norm(x_18, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_18 = None
+    out_19 += input_3;  out_20 = out_19;  out_19 = input_3 = None
+    zeros_like_14 = torch.zeros_like(out_20)
+    lif_forward_state_default_14 = torch.ops.snn_custom.lif_forward_state.default(out_20, zeros_like_14, 1.0, 0.0, 2.0, False);  out_20 = zeros_like_14 = None
+    spike_14 = lif_forward_state_default_14[0]
+    v_next_14 = lif_forward_state_default_14[1];  lif_forward_state_default_14 = None
+    spike_30 = lif_forward_state_default_30[0];  lif_forward_state_default_30 = None
+    x_43 = torch.conv2d(spike_30, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_30 = None
+    out_43 = torch.nn.functional.batch_norm(x_43, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_43 = None
+    out_43 += input_6;  out_44 = out_43;  out_43 = input_6 = None
+    lif_forward_state_default_31 = torch.ops.snn_custom.lif_forward_state.default(out_44, v_next_14, 1.0, 0.0, 2.0, False);  out_44 = v_next_14 = None
+    spike_31 = lif_forward_state_default_31[0]
+    v_next_31 = lif_forward_state_default_31[1];  lif_forward_state_default_31 = None
+    spike_47 = lif_forward_state_default_47[0];  lif_forward_state_default_47 = None
+    x_68 = torch.conv2d(spike_47, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_47 = None
+    out_67 = torch.nn.functional.batch_norm(x_68, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_68 = None
+    out_67 += input_9;  out_68 = out_67;  out_67 = input_9 = None
+    lif_forward_state_default_48 = torch.ops.snn_custom.lif_forward_state.default(out_68, v_next_31, 1.0, 0.0, 2.0, False);  out_68 = v_next_31 = None
+    spike_48 = lif_forward_state_default_48[0]
+    v_next_48 = lif_forward_state_default_48[1];  lif_forward_state_default_48 = None
+    spike_64 = lif_forward_state_default_64[0];  lif_forward_state_default_64 = None
+    x_93 = torch.conv2d(spike_64, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_64 = None
+    out_91 = torch.nn.functional.batch_norm(x_93, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_93 = None
+    out_91 += input_12;  out_92 = out_91;  out_91 = input_12 = None
+    lif_forward_state_default_65 = torch.ops.snn_custom.lif_forward_state.default(out_92, v_next_48, 1.0, 0.0, 2.0, False);  out_92 = v_next_48 = None
+    spike_65 = lif_forward_state_default_65[0]
+    v_next_65 = lif_forward_state_default_65[1];  lif_forward_state_default_65 = None
+    spike_81 = lif_forward_state_default_81[0];  lif_forward_state_default_81 = None
+    x_118 = torch.conv2d(spike_81, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_81 = None
+    out_115 = torch.nn.functional.batch_norm(x_118, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_118 = None
+    out_115 += input_15;  out_116 = out_115;  out_115 = input_15 = None
+    lif_forward_state_default_82 = torch.ops.snn_custom.lif_forward_state.default(out_116, v_next_65, 1.0, 0.0, 2.0, False);  out_116 = v_next_65 = None
+    spike_82 = lif_forward_state_default_82[0]
+    v_next_82 = lif_forward_state_default_82[1];  lif_forward_state_default_82 = None
+    spike_98 = lif_forward_state_default_98[0];  lif_forward_state_default_98 = None
+    x_143 = torch.conv2d(spike_98, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_98 = None
+    out_139 = torch.nn.functional.batch_norm(x_143, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_143 = None
+    out_139 += input_18;  out_140 = out_139;  out_139 = input_18 = None
+    lif_forward_state_default_99 = torch.ops.snn_custom.lif_forward_state.default(out_140, v_next_82, 1.0, 0.0, 2.0, False);  out_140 = v_next_82 = None
+    spike_99 = lif_forward_state_default_99[0]
+    v_next_99 = lif_forward_state_default_99[1];  lif_forward_state_default_99 = None
+    spike_115 = lif_forward_state_default_115[0];  lif_forward_state_default_115 = None
+    x_168 = torch.conv2d(spike_115, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_115 = None
+    out_163 = torch.nn.functional.batch_norm(x_168, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_168 = None
+    out_163 += input_21;  out_164 = out_163;  out_163 = input_21 = None
+    lif_forward_state_default_116 = torch.ops.snn_custom.lif_forward_state.default(out_164, v_next_99, 1.0, 0.0, 2.0, False);  out_164 = v_next_99 = None
+    spike_116 = lif_forward_state_default_116[0]
+    v_next_116 = lif_forward_state_default_116[1];  lif_forward_state_default_116 = None
+    spike_132 = lif_forward_state_default_132[0];  lif_forward_state_default_132 = None
+    x_193 = torch.conv2d(spike_132, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_132 = None
+    out_187 = torch.nn.functional.batch_norm(x_193, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_193 = None
+    out_187 += input_24;  out_188 = out_187;  out_187 = input_24 = None
+    lif_forward_state_default_133 = torch.ops.snn_custom.lif_forward_state.default(out_188, v_next_116, 1.0, 0.0, 2.0, False);  out_188 = v_next_116 = None
+    spike_133 = lif_forward_state_default_133[0]
+    v_next_133 = lif_forward_state_default_133[1];  lif_forward_state_default_133 = None
+    spike_149 = lif_forward_state_default_149[0];  lif_forward_state_default_149 = None
+    x_218 = torch.conv2d(spike_149, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_149 = None
+    out_211 = torch.nn.functional.batch_norm(x_218, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_218 = None
+    out_211 += input_27;  out_212 = out_211;  out_211 = input_27 = None
+    lif_forward_state_default_150 = torch.ops.snn_custom.lif_forward_state.default(out_212, v_next_133, 1.0, 0.0, 2.0, False);  out_212 = v_next_133 = None
+    spike_150 = lif_forward_state_default_150[0]
+    v_next_150 = lif_forward_state_default_150[1];  lif_forward_state_default_150 = None
+    spike_166 = lif_forward_state_default_166[0];  lif_forward_state_default_166 = None
+    x_243 = torch.conv2d(spike_166, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_166 = None
+    out_235 = torch.nn.functional.batch_norm(x_243, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_243 = None
+    out_235 += input_30;  out_236 = out_235;  out_235 = input_30 = None
+    lif_forward_state_default_167 = torch.ops.snn_custom.lif_forward_state.default(out_236, v_next_150, 1.0, 0.0, 2.0, False);  out_236 = v_next_150 = None
+    spike_167 = lif_forward_state_default_167[0]
+    v_next_167 = lif_forward_state_default_167[1];  lif_forward_state_default_167 = None
+    spike_183 = lif_forward_state_default_183[0];  lif_forward_state_default_183 = None
+    x_268 = torch.conv2d(spike_183, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_183 = None
+    out_259 = torch.nn.functional.batch_norm(x_268, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_268 = None
+    out_259 += input_33;  out_260 = out_259;  out_259 = input_33 = None
+    lif_forward_state_default_184 = torch.ops.snn_custom.lif_forward_state.default(out_260, v_next_167, 1.0, 0.0, 2.0, False);  out_260 = v_next_167 = None
+    spike_184 = lif_forward_state_default_184[0]
+    v_next_184 = lif_forward_state_default_184[1];  lif_forward_state_default_184 = None
+    spike_200 = lif_forward_state_default_200[0];  lif_forward_state_default_200 = None
+    x_293 = torch.conv2d(spike_200, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_200 = None
+    out_283 = torch.nn.functional.batch_norm(x_293, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_293 = None
+    out_283 += input_36;  out_284 = out_283;  out_283 = input_36 = None
+    lif_forward_state_default_201 = torch.ops.snn_custom.lif_forward_state.default(out_284, v_next_184, 1.0, 0.0, 2.0, False);  out_284 = v_next_184 = None
+    spike_201 = lif_forward_state_default_201[0]
+    v_next_201 = lif_forward_state_default_201[1];  lif_forward_state_default_201 = None
+    spike_217 = lif_forward_state_default_217[0];  lif_forward_state_default_217 = None
+    x_318 = torch.conv2d(spike_217, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_217 = None
+    out_307 = torch.nn.functional.batch_norm(x_318, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_318 = None
+    out_307 += input_39;  out_308 = out_307;  out_307 = input_39 = None
+    lif_forward_state_default_218 = torch.ops.snn_custom.lif_forward_state.default(out_308, v_next_201, 1.0, 0.0, 2.0, False);  out_308 = v_next_201 = None
+    spike_218 = lif_forward_state_default_218[0]
+    v_next_218 = lif_forward_state_default_218[1];  lif_forward_state_default_218 = None
+    spike_234 = lif_forward_state_default_234[0];  lif_forward_state_default_234 = None
+    x_343 = torch.conv2d(spike_234, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_234 = None
+    out_331 = torch.nn.functional.batch_norm(x_343, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_343 = None
+    out_331 += input_42;  out_332 = out_331;  out_331 = input_42 = None
+    lif_forward_state_default_235 = torch.ops.snn_custom.lif_forward_state.default(out_332, v_next_218, 1.0, 0.0, 2.0, False);  out_332 = v_next_218 = None
+    spike_235 = lif_forward_state_default_235[0]
+    v_next_235 = lif_forward_state_default_235[1];  lif_forward_state_default_235 = None
+    spike_251 = lif_forward_state_default_251[0];  lif_forward_state_default_251 = None
+    x_368 = torch.conv2d(spike_251, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_251 = None
+    out_355 = torch.nn.functional.batch_norm(x_368, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_368 = None
+    out_355 += input_45;  out_356 = out_355;  out_355 = input_45 = None
+    lif_forward_state_default_252 = torch.ops.snn_custom.lif_forward_state.default(out_356, v_next_235, 1.0, 0.0, 2.0, False);  out_356 = v_next_235 = None
+    spike_252 = lif_forward_state_default_252[0]
+    v_next_252 = lif_forward_state_default_252[1];  lif_forward_state_default_252 = None
+    spike_268 = lif_forward_state_default_268[0]
+    x_393 = torch.conv2d(spike_268, l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_268 = l_self_modules_layer_modules_layer4_modules_0_modules_conv2_parameters_weight_ = None
+    out_379 = torch.nn.functional.batch_norm(x_393, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_393 = l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer4_modules_0_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer4_modules_0_modules_bn2_parameters_bias_ = None
+    out_379 += input_48;  out_380 = out_379;  out_379 = input_48 = None
+    lif_forward_state_default_269 = torch.ops.snn_custom.lif_forward_state.default(out_380, v_next_252, 1.0, 0.0, 2.0, False);  out_380 = v_next_252 = None
+    spike_269 = lif_forward_state_default_269[0]
+    v_next_269 = lif_forward_state_default_269[1];  lif_forward_state_default_269 = None
+    v_next_268 = lif_forward_state_default_268[1];  lif_forward_state_default_268 = None
+    x_20_spatial_batch_cat = torch.cat([spike_14, spike_31, spike_48, spike_65, spike_82, spike_99, spike_116, spike_133, spike_150, spike_167, spike_184, spike_201, spike_218, spike_235, spike_252, spike_269], 0)
+    x_20_spatial_batch_conv = torch.conv2d(x_20_spatial_batch_cat, l_self_modules_layer_modules_layer4_modules_1_modules_conv1_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  x_20_spatial_batch_cat = l_self_modules_layer_modules_layer4_modules_1_modules_conv1_parameters_weight_ = None
+    out_21_spatial_batch_bn = torch.nn.functional.batch_norm(x_20_spatial_batch_conv, l_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_bias_, False, 0.1, 1e-05);  x_20_spatial_batch_conv = l_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_mean_ = l_self_modules_layer_modules_layer4_modules_1_modules_bn1_buffers_running_var_ = l_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_weight_ = l_self_modules_layer_modules_layer4_modules_1_modules_bn1_parameters_bias_ = None
+    out_21_spatial_batch_bn_chunks = torch.chunk(out_21_spatial_batch_bn, 16, 0);  out_21_spatial_batch_bn = None
+    out_21_spatial_batch_bn_t0 = out_21_spatial_batch_bn_chunks[0]
+    out_21_spatial_batch_bn_t1 = out_21_spatial_batch_bn_chunks[1]
+    out_21_spatial_batch_bn_t2 = out_21_spatial_batch_bn_chunks[2]
+    out_21_spatial_batch_bn_t3 = out_21_spatial_batch_bn_chunks[3]
+    out_21_spatial_batch_bn_t4 = out_21_spatial_batch_bn_chunks[4]
+    out_21_spatial_batch_bn_t5 = out_21_spatial_batch_bn_chunks[5]
+    out_21_spatial_batch_bn_t6 = out_21_spatial_batch_bn_chunks[6]
+    out_21_spatial_batch_bn_t7 = out_21_spatial_batch_bn_chunks[7]
+    out_21_spatial_batch_bn_t8 = out_21_spatial_batch_bn_chunks[8]
+    out_21_spatial_batch_bn_t9 = out_21_spatial_batch_bn_chunks[9]
+    out_21_spatial_batch_bn_t10 = out_21_spatial_batch_bn_chunks[10]
+    out_21_spatial_batch_bn_t11 = out_21_spatial_batch_bn_chunks[11]
+    out_21_spatial_batch_bn_t12 = out_21_spatial_batch_bn_chunks[12]
+    out_21_spatial_batch_bn_t13 = out_21_spatial_batch_bn_chunks[13]
+    out_21_spatial_batch_bn_t14 = out_21_spatial_batch_bn_chunks[14]
+    out_21_spatial_batch_bn_t15 = out_21_spatial_batch_bn_chunks[15];  out_21_spatial_batch_bn_chunks = None
+    zeros_like_15 = torch.zeros_like(out_21_spatial_batch_bn_t0)
+    lif_forward_state_default_15 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t0, zeros_like_15, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t0 = zeros_like_15 = None
+    v_next_15 = lif_forward_state_default_15[1]
+    lif_forward_state_default_32 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t1, v_next_15, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t1 = v_next_15 = None
+    v_next_32 = lif_forward_state_default_32[1]
+    lif_forward_state_default_49 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t2, v_next_32, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t2 = v_next_32 = None
+    v_next_49 = lif_forward_state_default_49[1]
+    lif_forward_state_default_66 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t3, v_next_49, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t3 = v_next_49 = None
+    v_next_66 = lif_forward_state_default_66[1]
+    lif_forward_state_default_83 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t4, v_next_66, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t4 = v_next_66 = None
+    v_next_83 = lif_forward_state_default_83[1]
+    lif_forward_state_default_100 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t5, v_next_83, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t5 = v_next_83 = None
+    v_next_100 = lif_forward_state_default_100[1]
+    lif_forward_state_default_117 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t6, v_next_100, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t6 = v_next_100 = None
+    v_next_117 = lif_forward_state_default_117[1]
+    lif_forward_state_default_134 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t7, v_next_117, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t7 = v_next_117 = None
+    v_next_134 = lif_forward_state_default_134[1]
+    lif_forward_state_default_151 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t8, v_next_134, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t8 = v_next_134 = None
+    v_next_151 = lif_forward_state_default_151[1]
+    lif_forward_state_default_168 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t9, v_next_151, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t9 = v_next_151 = None
+    v_next_168 = lif_forward_state_default_168[1]
+    lif_forward_state_default_185 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t10, v_next_168, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t10 = v_next_168 = None
+    v_next_185 = lif_forward_state_default_185[1]
+    lif_forward_state_default_202 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t11, v_next_185, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t11 = v_next_185 = None
+    v_next_202 = lif_forward_state_default_202[1]
+    lif_forward_state_default_219 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t12, v_next_202, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t12 = v_next_202 = None
+    v_next_219 = lif_forward_state_default_219[1]
+    lif_forward_state_default_236 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t13, v_next_219, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t13 = v_next_219 = None
+    v_next_236 = lif_forward_state_default_236[1]
+    lif_forward_state_default_253 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t14, v_next_236, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t14 = v_next_236 = None
+    v_next_253 = lif_forward_state_default_253[1]
+    lif_forward_state_default_270 = torch.ops.snn_custom.lif_forward_state.default(out_21_spatial_batch_bn_t15, v_next_253, 1.0, 0.0, 2.0, False);  out_21_spatial_batch_bn_t15 = v_next_253 = None
+    spike_15 = lif_forward_state_default_15[0];  lif_forward_state_default_15 = None
+    x_21 = torch.conv2d(spike_15, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_15 = None
+    out_22 = torch.nn.functional.batch_norm(x_21, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_21 = None
+    out_22 += spike_14;  out_23 = out_22;  out_22 = spike_14 = None
+    zeros_like_16 = torch.zeros_like(out_23)
+    lif_forward_state_default_16 = torch.ops.snn_custom.lif_forward_state.default(out_23, zeros_like_16, 1.0, 0.0, 2.0, False);  out_23 = zeros_like_16 = None
+    spike_16 = lif_forward_state_default_16[0]
+    v_next_16 = lif_forward_state_default_16[1];  lif_forward_state_default_16 = None
+    x_22 = torch.nn.functional.adaptive_avg_pool2d(spike_16, (1, 1));  spike_16 = None
+    x_23 = torch.flatten(x_22, 1);  x_22 = None
+    x_24 = torch._C._nn.linear(x_23, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_23 = None
+    out_spikes_counter = 0 + x_24;  x_24 = None
+    spike_32 = lif_forward_state_default_32[0];  lif_forward_state_default_32 = None
+    x_46 = torch.conv2d(spike_32, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_32 = None
+    out_46 = torch.nn.functional.batch_norm(x_46, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_46 = None
+    out_46 += spike_31;  out_47 = out_46;  out_46 = spike_31 = None
+    lif_forward_state_default_33 = torch.ops.snn_custom.lif_forward_state.default(out_47, v_next_16, 1.0, 0.0, 2.0, False);  out_47 = v_next_16 = None
+    spike_33 = lif_forward_state_default_33[0]
+    v_next_33 = lif_forward_state_default_33[1];  lif_forward_state_default_33 = None
+    x_47 = torch.nn.functional.adaptive_avg_pool2d(spike_33, (1, 1));  spike_33 = None
+    x_48 = torch.flatten(x_47, 1);  x_47 = None
+    x_49 = torch._C._nn.linear(x_48, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_48 = None
+    out_spikes_counter_1 = out_spikes_counter + x_49;  out_spikes_counter = x_49 = None
+    spike_49 = lif_forward_state_default_49[0];  lif_forward_state_default_49 = None
+    x_71 = torch.conv2d(spike_49, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_49 = None
+    out_70 = torch.nn.functional.batch_norm(x_71, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_71 = None
+    out_70 += spike_48;  out_71 = out_70;  out_70 = spike_48 = None
+    lif_forward_state_default_50 = torch.ops.snn_custom.lif_forward_state.default(out_71, v_next_33, 1.0, 0.0, 2.0, False);  out_71 = v_next_33 = None
+    spike_50 = lif_forward_state_default_50[0]
+    v_next_50 = lif_forward_state_default_50[1];  lif_forward_state_default_50 = None
+    x_72 = torch.nn.functional.adaptive_avg_pool2d(spike_50, (1, 1));  spike_50 = None
+    x_73 = torch.flatten(x_72, 1);  x_72 = None
+    x_74 = torch._C._nn.linear(x_73, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_73 = None
+    out_spikes_counter_2 = out_spikes_counter_1 + x_74;  out_spikes_counter_1 = x_74 = None
+    spike_66 = lif_forward_state_default_66[0];  lif_forward_state_default_66 = None
+    x_96 = torch.conv2d(spike_66, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_66 = None
+    out_94 = torch.nn.functional.batch_norm(x_96, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_96 = None
+    out_94 += spike_65;  out_95 = out_94;  out_94 = spike_65 = None
+    lif_forward_state_default_67 = torch.ops.snn_custom.lif_forward_state.default(out_95, v_next_50, 1.0, 0.0, 2.0, False);  out_95 = v_next_50 = None
+    spike_67 = lif_forward_state_default_67[0]
+    v_next_67 = lif_forward_state_default_67[1];  lif_forward_state_default_67 = None
+    x_97 = torch.nn.functional.adaptive_avg_pool2d(spike_67, (1, 1));  spike_67 = None
+    x_98 = torch.flatten(x_97, 1);  x_97 = None
+    x_99 = torch._C._nn.linear(x_98, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_98 = None
+    out_spikes_counter_3 = out_spikes_counter_2 + x_99;  out_spikes_counter_2 = x_99 = None
+    spike_83 = lif_forward_state_default_83[0];  lif_forward_state_default_83 = None
+    x_121 = torch.conv2d(spike_83, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_83 = None
+    out_118 = torch.nn.functional.batch_norm(x_121, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_121 = None
+    out_118 += spike_82;  out_119 = out_118;  out_118 = spike_82 = None
+    lif_forward_state_default_84 = torch.ops.snn_custom.lif_forward_state.default(out_119, v_next_67, 1.0, 0.0, 2.0, False);  out_119 = v_next_67 = None
+    spike_84 = lif_forward_state_default_84[0]
+    v_next_84 = lif_forward_state_default_84[1];  lif_forward_state_default_84 = None
+    x_122 = torch.nn.functional.adaptive_avg_pool2d(spike_84, (1, 1));  spike_84 = None
+    x_123 = torch.flatten(x_122, 1);  x_122 = None
+    x_124 = torch._C._nn.linear(x_123, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_123 = None
+    out_spikes_counter_4 = out_spikes_counter_3 + x_124;  out_spikes_counter_3 = x_124 = None
+    spike_100 = lif_forward_state_default_100[0];  lif_forward_state_default_100 = None
+    x_146 = torch.conv2d(spike_100, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_100 = None
+    out_142 = torch.nn.functional.batch_norm(x_146, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_146 = None
+    out_142 += spike_99;  out_143 = out_142;  out_142 = spike_99 = None
+    lif_forward_state_default_101 = torch.ops.snn_custom.lif_forward_state.default(out_143, v_next_84, 1.0, 0.0, 2.0, False);  out_143 = v_next_84 = None
+    spike_101 = lif_forward_state_default_101[0]
+    v_next_101 = lif_forward_state_default_101[1];  lif_forward_state_default_101 = None
+    x_147 = torch.nn.functional.adaptive_avg_pool2d(spike_101, (1, 1));  spike_101 = None
+    x_148 = torch.flatten(x_147, 1);  x_147 = None
+    x_149 = torch._C._nn.linear(x_148, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_148 = None
+    out_spikes_counter_5 = out_spikes_counter_4 + x_149;  out_spikes_counter_4 = x_149 = None
+    spike_117 = lif_forward_state_default_117[0];  lif_forward_state_default_117 = None
+    x_171 = torch.conv2d(spike_117, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_117 = None
+    out_166 = torch.nn.functional.batch_norm(x_171, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_171 = None
+    out_166 += spike_116;  out_167 = out_166;  out_166 = spike_116 = None
+    lif_forward_state_default_118 = torch.ops.snn_custom.lif_forward_state.default(out_167, v_next_101, 1.0, 0.0, 2.0, False);  out_167 = v_next_101 = None
+    spike_118 = lif_forward_state_default_118[0]
+    v_next_118 = lif_forward_state_default_118[1];  lif_forward_state_default_118 = None
+    x_172 = torch.nn.functional.adaptive_avg_pool2d(spike_118, (1, 1));  spike_118 = None
+    x_173 = torch.flatten(x_172, 1);  x_172 = None
+    x_174 = torch._C._nn.linear(x_173, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_173 = None
+    out_spikes_counter_6 = out_spikes_counter_5 + x_174;  out_spikes_counter_5 = x_174 = None
+    spike_134 = lif_forward_state_default_134[0];  lif_forward_state_default_134 = None
+    x_196 = torch.conv2d(spike_134, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_134 = None
+    out_190 = torch.nn.functional.batch_norm(x_196, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_196 = None
+    out_190 += spike_133;  out_191 = out_190;  out_190 = spike_133 = None
+    lif_forward_state_default_135 = torch.ops.snn_custom.lif_forward_state.default(out_191, v_next_118, 1.0, 0.0, 2.0, False);  out_191 = v_next_118 = None
+    spike_135 = lif_forward_state_default_135[0]
+    v_next_135 = lif_forward_state_default_135[1];  lif_forward_state_default_135 = None
+    x_197 = torch.nn.functional.adaptive_avg_pool2d(spike_135, (1, 1));  spike_135 = None
+    x_198 = torch.flatten(x_197, 1);  x_197 = None
+    x_199 = torch._C._nn.linear(x_198, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_198 = None
+    out_spikes_counter_7 = out_spikes_counter_6 + x_199;  out_spikes_counter_6 = x_199 = None
+    spike_151 = lif_forward_state_default_151[0];  lif_forward_state_default_151 = None
+    x_221 = torch.conv2d(spike_151, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_151 = None
+    out_214 = torch.nn.functional.batch_norm(x_221, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_221 = None
+    out_214 += spike_150;  out_215 = out_214;  out_214 = spike_150 = None
+    lif_forward_state_default_152 = torch.ops.snn_custom.lif_forward_state.default(out_215, v_next_135, 1.0, 0.0, 2.0, False);  out_215 = v_next_135 = None
+    spike_152 = lif_forward_state_default_152[0]
+    v_next_152 = lif_forward_state_default_152[1];  lif_forward_state_default_152 = None
+    x_222 = torch.nn.functional.adaptive_avg_pool2d(spike_152, (1, 1));  spike_152 = None
+    x_223 = torch.flatten(x_222, 1);  x_222 = None
+    x_224 = torch._C._nn.linear(x_223, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_223 = None
+    out_spikes_counter_8 = out_spikes_counter_7 + x_224;  out_spikes_counter_7 = x_224 = None
+    spike_168 = lif_forward_state_default_168[0];  lif_forward_state_default_168 = None
+    x_246 = torch.conv2d(spike_168, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_168 = None
+    out_238 = torch.nn.functional.batch_norm(x_246, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_246 = None
+    out_238 += spike_167;  out_239 = out_238;  out_238 = spike_167 = None
+    lif_forward_state_default_169 = torch.ops.snn_custom.lif_forward_state.default(out_239, v_next_152, 1.0, 0.0, 2.0, False);  out_239 = v_next_152 = None
+    spike_169 = lif_forward_state_default_169[0]
+    v_next_169 = lif_forward_state_default_169[1];  lif_forward_state_default_169 = None
+    x_247 = torch.nn.functional.adaptive_avg_pool2d(spike_169, (1, 1));  spike_169 = None
+    x_248 = torch.flatten(x_247, 1);  x_247 = None
+    x_249 = torch._C._nn.linear(x_248, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_248 = None
+    out_spikes_counter_9 = out_spikes_counter_8 + x_249;  out_spikes_counter_8 = x_249 = None
+    spike_185 = lif_forward_state_default_185[0];  lif_forward_state_default_185 = None
+    x_271 = torch.conv2d(spike_185, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_185 = None
+    out_262 = torch.nn.functional.batch_norm(x_271, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_271 = None
+    out_262 += spike_184;  out_263 = out_262;  out_262 = spike_184 = None
+    lif_forward_state_default_186 = torch.ops.snn_custom.lif_forward_state.default(out_263, v_next_169, 1.0, 0.0, 2.0, False);  out_263 = v_next_169 = None
+    spike_186 = lif_forward_state_default_186[0]
+    v_next_186 = lif_forward_state_default_186[1];  lif_forward_state_default_186 = None
+    x_272 = torch.nn.functional.adaptive_avg_pool2d(spike_186, (1, 1));  spike_186 = None
+    x_273 = torch.flatten(x_272, 1);  x_272 = None
+    x_274 = torch._C._nn.linear(x_273, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_273 = None
+    out_spikes_counter_10 = out_spikes_counter_9 + x_274;  out_spikes_counter_9 = x_274 = None
+    spike_202 = lif_forward_state_default_202[0];  lif_forward_state_default_202 = None
+    x_296 = torch.conv2d(spike_202, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_202 = None
+    out_286 = torch.nn.functional.batch_norm(x_296, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_296 = None
+    out_286 += spike_201;  out_287 = out_286;  out_286 = spike_201 = None
+    lif_forward_state_default_203 = torch.ops.snn_custom.lif_forward_state.default(out_287, v_next_186, 1.0, 0.0, 2.0, False);  out_287 = v_next_186 = None
+    spike_203 = lif_forward_state_default_203[0]
+    v_next_203 = lif_forward_state_default_203[1];  lif_forward_state_default_203 = None
+    x_297 = torch.nn.functional.adaptive_avg_pool2d(spike_203, (1, 1));  spike_203 = None
+    x_298 = torch.flatten(x_297, 1);  x_297 = None
+    x_299 = torch._C._nn.linear(x_298, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_298 = None
+    out_spikes_counter_11 = out_spikes_counter_10 + x_299;  out_spikes_counter_10 = x_299 = None
+    spike_219 = lif_forward_state_default_219[0];  lif_forward_state_default_219 = None
+    x_321 = torch.conv2d(spike_219, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_219 = None
+    out_310 = torch.nn.functional.batch_norm(x_321, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_321 = None
+    out_310 += spike_218;  out_311 = out_310;  out_310 = spike_218 = None
+    lif_forward_state_default_220 = torch.ops.snn_custom.lif_forward_state.default(out_311, v_next_203, 1.0, 0.0, 2.0, False);  out_311 = v_next_203 = None
+    spike_220 = lif_forward_state_default_220[0]
+    v_next_220 = lif_forward_state_default_220[1];  lif_forward_state_default_220 = None
+    x_322 = torch.nn.functional.adaptive_avg_pool2d(spike_220, (1, 1));  spike_220 = None
+    x_323 = torch.flatten(x_322, 1);  x_322 = None
+    x_324 = torch._C._nn.linear(x_323, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_323 = None
+    out_spikes_counter_12 = out_spikes_counter_11 + x_324;  out_spikes_counter_11 = x_324 = None
+    spike_236 = lif_forward_state_default_236[0];  lif_forward_state_default_236 = None
+    x_346 = torch.conv2d(spike_236, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_236 = None
+    out_334 = torch.nn.functional.batch_norm(x_346, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_346 = None
+    out_334 += spike_235;  out_335 = out_334;  out_334 = spike_235 = None
+    lif_forward_state_default_237 = torch.ops.snn_custom.lif_forward_state.default(out_335, v_next_220, 1.0, 0.0, 2.0, False);  out_335 = v_next_220 = None
+    spike_237 = lif_forward_state_default_237[0]
+    v_next_237 = lif_forward_state_default_237[1];  lif_forward_state_default_237 = None
+    x_347 = torch.nn.functional.adaptive_avg_pool2d(spike_237, (1, 1));  spike_237 = None
+    x_348 = torch.flatten(x_347, 1);  x_347 = None
+    x_349 = torch._C._nn.linear(x_348, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_348 = None
+    out_spikes_counter_13 = out_spikes_counter_12 + x_349;  out_spikes_counter_12 = x_349 = None
+    spike_253 = lif_forward_state_default_253[0];  lif_forward_state_default_253 = None
+    x_371 = torch.conv2d(spike_253, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_253 = None
+    out_358 = torch.nn.functional.batch_norm(x_371, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_371 = None
+    out_358 += spike_252;  out_359 = out_358;  out_358 = spike_252 = None
+    lif_forward_state_default_254 = torch.ops.snn_custom.lif_forward_state.default(out_359, v_next_237, 1.0, 0.0, 2.0, False);  out_359 = v_next_237 = None
+    spike_254 = lif_forward_state_default_254[0]
+    v_next_254 = lif_forward_state_default_254[1];  lif_forward_state_default_254 = None
+    x_372 = torch.nn.functional.adaptive_avg_pool2d(spike_254, (1, 1));  spike_254 = None
+    x_373 = torch.flatten(x_372, 1);  x_372 = None
+    x_374 = torch._C._nn.linear(x_373, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_373 = None
+    out_spikes_counter_14 = out_spikes_counter_13 + x_374;  out_spikes_counter_13 = x_374 = None
+    spike_270 = lif_forward_state_default_270[0]
+    x_396 = torch.conv2d(spike_270, l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_, None, (1, 1), (1, 1), (1, 1), 1);  spike_270 = l_self_modules_layer_modules_layer4_modules_1_modules_conv2_parameters_weight_ = None
+    out_382 = torch.nn.functional.batch_norm(x_396, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_, l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_, False, 0.1, 1e-05);  x_396 = l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_mean_ = l_self_modules_layer_modules_layer4_modules_1_modules_bn2_buffers_running_var_ = l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_weight_ = l_self_modules_layer_modules_layer4_modules_1_modules_bn2_parameters_bias_ = None
+    out_382 += spike_269;  out_383 = out_382;  out_382 = spike_269 = None
+    lif_forward_state_default_271 = torch.ops.snn_custom.lif_forward_state.default(out_383, v_next_254, 1.0, 0.0, 2.0, False);  out_383 = v_next_254 = None
+    spike_271 = lif_forward_state_default_271[0]
+    v_next_271 = lif_forward_state_default_271[1];  lif_forward_state_default_271 = None
+    x_397 = torch.nn.functional.adaptive_avg_pool2d(spike_271, (1, 1));  spike_271 = None
+    x_398 = torch.flatten(x_397, 1);  x_397 = None
+    x_399 = torch._C._nn.linear(x_398, l_self_modules_layer_modules_fc_parameters_weight_, l_self_modules_layer_modules_fc_parameters_bias_);  x_398 = l_self_modules_layer_modules_fc_parameters_weight_ = l_self_modules_layer_modules_fc_parameters_bias_ = None
+    out_spikes_counter_15 = out_spikes_counter_14 + x_399;  out_spikes_counter_14 = x_399 = None
+    truediv = out_spikes_counter_15 / 16;  out_spikes_counter_15 = None
+    v_next_270 = lif_forward_state_default_270[1];  lif_forward_state_default_270 = None
+    return (truediv, v_next_255, v_next_256, v_next_257, x_5_temporal_fused_regular_conv_lif_state_v_final, v_next_259, x_7_temporal_fused_regular_conv_lif_state_v_final, v_next_261, x_10_temporal_fused_regular_conv_lif_state_v_final, v_next_263, x_12_temporal_fused_regular_conv_lif_state_v_final, v_next_265, v_next_266, v_next_267, v_next_268, v_next_269, v_next_270, v_next_271)
+    

@@ -1,0 +1,21 @@
+# 0 "/data/Triton-to-tile-IR/Tile_IR_Test/Chronos/dev_tests/.run_cache/tmpxft_0025b0c0_00000000-2.cpp"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "/usr/include/stdc-predef.h" 1 3 4
+# 0 "<command-line>" 2
+# 1 "/data/Triton-to-tile-IR/Tile_IR_Test/Chronos/dev_tests/.run_cache/tmpxft_0025b0c0_00000000-2.cpp"
+
+
+__NV_CPLUSPLUS 201703L
+
+
+__NV_GNUC__ 13
+
+__NV_GNUC_MINOR__ 1
+
+
+__NV_GNUC_PATCHLEVEL__ 0
+# 57 "/data/Triton-to-tile-IR/Tile_IR_Test/Chronos/dev_tests/.run_cache/tmpxft_0025b0c0_00000000-2.cpp"
+__NV_LINUX__
+# 74 "/data/Triton-to-tile-IR/Tile_IR_Test/Chronos/dev_tests/.run_cache/tmpxft_0025b0c0_00000000-2.cpp"
+__NV_X86_64__

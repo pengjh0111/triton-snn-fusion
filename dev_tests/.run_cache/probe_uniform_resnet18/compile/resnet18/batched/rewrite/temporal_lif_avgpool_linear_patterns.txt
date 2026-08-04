@@ -1,0 +1,18 @@
+layer_id: lif_avgpool_linear|occurrence=7|shape=(4, 512, 7, 7)|dtype=torch.float32|fc=placeholder:l_self_modules_layer_modules_fc_parameters_weight_|bias=placeholder:l_self_modules_layer_modules_fc_parameters_bias_|params=(1.0, 0.0, 2.0, False)
+  count=16
+  pattern_0: lif=lif_forward_state_default_16, pool=x_22, flatten=x_23, linear=x_24, acc=out_spikes_counter, v=v_next_16, v_prev=zeros_like_16
+  pattern_1: lif=lif_forward_state_default_33, pool=x_47, flatten=x_48, linear=x_49, acc=out_spikes_counter_1, v=v_next_33, v_prev=v_next_16
+  pattern_2: lif=lif_forward_state_default_50, pool=x_72, flatten=x_73, linear=x_74, acc=out_spikes_counter_2, v=v_next_50, v_prev=v_next_33
+  pattern_3: lif=lif_forward_state_default_67, pool=x_97, flatten=x_98, linear=x_99, acc=out_spikes_counter_3, v=v_next_67, v_prev=v_next_50
+  pattern_4: lif=lif_forward_state_default_84, pool=x_122, flatten=x_123, linear=x_124, acc=out_spikes_counter_4, v=v_next_84, v_prev=v_next_67
+  pattern_5: lif=lif_forward_state_default_101, pool=x_147, flatten=x_148, linear=x_149, acc=out_spikes_counter_5, v=v_next_101, v_prev=v_next_84
+  pattern_6: lif=lif_forward_state_default_118, pool=x_172, flatten=x_173, linear=x_174, acc=out_spikes_counter_6, v=v_next_118, v_prev=v_next_101
+  pattern_7: lif=lif_forward_state_default_135, pool=x_197, flatten=x_198, linear=x_199, acc=out_spikes_counter_7, v=v_next_135, v_prev=v_next_118
+  pattern_8: lif=lif_forward_state_default_152, pool=x_222, flatten=x_223, linear=x_224, acc=out_spikes_counter_8, v=v_next_152, v_prev=v_next_135
+  pattern_9: lif=lif_forward_state_default_169, pool=x_247, flatten=x_248, linear=x_249, acc=out_spikes_counter_9, v=v_next_169, v_prev=v_next_152
+  pattern_10: lif=lif_forward_state_default_186, pool=x_272, flatten=x_273, linear=x_274, acc=out_spikes_counter_10, v=v_next_186, v_prev=v_next_169
+  pattern_11: lif=lif_forward_state_default_203, pool=x_297, flatten=x_298, linear=x_299, acc=out_spikes_counter_11, v=v_next_203, v_prev=v_next_186
+  pattern_12: lif=lif_forward_state_default_220, pool=x_322, flatten=x_323, linear=x_324, acc=out_spikes_counter_12, v=v_next_220, v_prev=v_next_203
+  pattern_13: lif=lif_forward_state_default_237, pool=x_347, flatten=x_348, linear=x_349, acc=out_spikes_counter_13, v=v_next_237, v_prev=v_next_220
+  pattern_14: lif=lif_forward_state_default_254, pool=x_372, flatten=x_373, linear=x_374, acc=out_spikes_counter_14, v=v_next_254, v_prev=v_next_237
+  pattern_15: lif=lif_forward_state_default_271, pool=x_397, flatten=x_398, linear=x_399, acc=out_spikes_counter_15, v=v_next_271, v_prev=v_next_254

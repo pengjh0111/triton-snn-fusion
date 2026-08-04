@@ -191,11 +191,18 @@ def _make_dwconv_autotune_configs():
 
 def _prune_temporal_configs(configs, named_args, **kwargs):
     timesteps = int(named_args["T_STEPS"])
-    return [
+    valid = [
         config
         for config in configs
         if int(config.kwargs["BTILE_T"]) * int(config.kwargs["REUSE_GROUPS"]) <= timesteps
     ]
+    forced_p = os.environ.get("KAIROS_EVAL_FORCE_BTILE_T")
+    forced_r = os.environ.get("KAIROS_EVAL_FORCE_REUSE_GROUPS")
+    if forced_p is not None:
+        valid = [config for config in valid if int(config.kwargs["BTILE_T"]) == int(forced_p)]
+    if forced_r is not None:
+        valid = [config for config in valid if int(config.kwargs["REUSE_GROUPS"]) == int(forced_r)]
+    return valid
 
 
 DEFAULT_RG_K_MIN_K_TILES = 4

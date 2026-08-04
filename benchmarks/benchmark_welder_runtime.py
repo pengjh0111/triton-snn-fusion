@@ -369,6 +369,151 @@ def replace_split_sizes_input_with_attribute(onnx_path: Path) -> int:
     return replaced
 
 
+def replace_reducesum_axes_input_with_attribute(onnx_path: Path) -> int:
+    """Rewrite opset>=13 ReduceSum(data, axes) as opset<13 ReduceSum(data){axes=...}.
+
+    Same story as Unsqueeze/Split above, different op: opset>=13 moved
+    ReduceSum's axes from an attribute to an optional second input, but
+    NNFusion's frontend (op/reduce.hpp TranslateReduceSumOp) is registered
+    only for opset 1 and only ever reads the `axes` attribute -- it never
+    looks at a second input at all. Since torch onnx export at opset>=13
+    always emits the axes-as-input form, every ReduceSum here silently falls
+    through to nnfusion's "no axes attribute" default of reducing *all* axes
+    instead of just the intended one (mamba's SSM does `.sum(-1)` over its
+    d_state/d_conv axis only) -- corrupting the reduction shape and
+    eventually crashing graph conversion with an unrelated-looking
+    `autobroadcast_incompatible_shapes` error much further downstream. Every
+    axes input observed here traces back to a single, statically-known
+    Constant feeding exactly one ReduceSum, so this is a lossless
+    re-encoding, not a graph edit: same op, same axes values and keepdims,
+    just moved from input to attribute.
+    """
+    model = onnx.load(str(onnx_path))
+    graph = model.graph
+    initializers = {i.name: i for i in graph.initializer}
+    const_nodes = {n.output[0]: n for n in graph.node if n.op_type == "Constant"}
+
+    def resolve_axes(name: str):
+        if name in initializers:
+            return numpy_helper.to_array(initializers[name]).astype(np.int64).tolist()
+        if name in const_nodes:
+            value_attr = next(
+                (a for a in const_nodes[name].attribute if a.name == "value"), None
+            )
+            if value_attr is not None:
+                return numpy_helper.to_array(value_attr.t).astype(np.int64).tolist()
+        return None
+
+    new_nodes = []
+    replaced = 0
+    for node in graph.node:
+        if (
+            node.op_type == "ReduceSum"
+            and len(node.input) == 2
+            and not any(a.name == "axes" for a in node.attribute)
+        ):
+            axes = resolve_axes(node.input[1])
+            if axes is not None:
+                keepdims = next((a.i for a in node.attribute if a.name == "keepdims"), 1)
+                new_nodes.append(onnx_helper.make_node(
+                    "ReduceSum", inputs=[node.input[0]], outputs=list(node.output),
+                    name=node.name, axes=axes, keepdims=keepdims,
+                ))
+                replaced += 1
+                continue
+        new_nodes.append(node)
+
+    if replaced:
+        still_used = {i for n in new_nodes for i in n.input}
+        still_used.update(o.name for o in graph.output)
+        new_nodes = [
+            n for n in new_nodes
+            if not (n.op_type == "Constant" and n.output[0] not in still_used)
+        ]
+        del graph.node[:]
+        graph.node.extend(new_nodes)
+        save_onnx(model, onnx_path)
+    return replaced
+
+
+def decompose_layernorm(onnx_path: Path) -> int:
+    """Rewrite LayerNormalization nodes into their primitive-op decomposition.
+
+    NNFusion's ONNX frontend imports LayerNormalization as an opaque
+    GenericOp("LayerNorm") with no registered Antares IR translation, so
+    welder's run_compiler crashes (`AssertionError: The computing expression
+    doesn't start with proper prefix: - `) on every node the C++ import
+    stage let through unflattened (spiketransformer/spikebert use it in
+    every transformer block). Decomposing it into ReduceMean/Sub/Mul/Add/
+    Sqrt/Div -- all primitives with an existing Antares IR translation --
+    sidesteps that gap entirely. Only the single-output form (Y only, no
+    Mean/InvStdDev) is handled since that's the only form torch onnx export
+    produces here.
+    """
+    model = onnx.load(str(onnx_path))
+    graph = model.graph
+
+    new_nodes = []
+    replaced = 0
+    for node in graph.node:
+        if node.op_type != "LayerNormalization" or len(node.output) != 1:
+            new_nodes.append(node)
+            continue
+
+        x, scale, bias = node.input[0], node.input[1], node.input[2]
+        axis = next((a.i for a in node.attribute if a.name == "axis"), -1)
+        epsilon = next((a.f for a in node.attribute if a.name == "epsilon"), 1e-5)
+        base = node.output[0]
+
+        def t(suffix):
+            return f"{base}/{suffix}"
+
+        eps_const = onnx_helper.make_node(
+            "Constant", inputs=[], outputs=[t("eps")], name=t("eps_const"),
+            value=onnx_helper.make_tensor(t("eps_val"), onnx.TensorProto.FLOAT, [], [epsilon]),
+        )
+        mean = onnx_helper.make_node(
+            "ReduceMean", inputs=[x], outputs=[t("mean")], name=t("ReduceMean"),
+            axes=[axis], keepdims=1,
+        )
+        centered = onnx_helper.make_node(
+            "Sub", inputs=[x, t("mean")], outputs=[t("centered")], name=t("Sub"),
+        )
+        squared = onnx_helper.make_node(
+            "Mul", inputs=[t("centered"), t("centered")], outputs=[t("squared")], name=t("Mul_sq"),
+        )
+        var = onnx_helper.make_node(
+            "ReduceMean", inputs=[t("squared")], outputs=[t("var")], name=t("ReduceMean_var"),
+            axes=[axis], keepdims=1,
+        )
+        var_eps = onnx_helper.make_node(
+            "Add", inputs=[t("var"), t("eps")], outputs=[t("var_eps")], name=t("Add_eps"),
+        )
+        std = onnx_helper.make_node(
+            "Sqrt", inputs=[t("var_eps")], outputs=[t("std")], name=t("Sqrt"),
+        )
+        normed = onnx_helper.make_node(
+            "Div", inputs=[t("centered"), t("std")], outputs=[t("normed")], name=t("Div"),
+        )
+        scaled = onnx_helper.make_node(
+            "Mul", inputs=[t("normed"), scale], outputs=[t("scaled")], name=t("Mul_scale"),
+        )
+        biased = onnx_helper.make_node(
+            "Add", inputs=[t("scaled"), bias], outputs=[base], name=t("Add_bias"),
+        )
+
+        new_nodes.extend([
+            eps_const, mean, centered, squared, var, var_eps, std, normed, scaled, biased,
+        ])
+        replaced += 1
+
+    if replaced:
+        del graph.node[:]
+        graph.node.extend(new_nodes)
+        save_onnx(model, onnx_path)
+    return replaced
+
+
 def normalize_negative_transpose_perm(onnx_path: Path) -> int:
     """Rewrite negative-indexed Transpose `perm` attributes to their positive form.
 
@@ -843,6 +988,8 @@ def run_case(model_name: str, execution_mode: str, precision: str, args) -> Dict
         result["shape_subgraphs_folded"] = fold_static_shape_subgraphs(onnx_path)
         result["unsqueeze_axes_rewritten"] = replace_unsqueeze_axes_input_with_attribute(onnx_path)
         result["split_sizes_rewritten"] = replace_split_sizes_input_with_attribute(onnx_path)
+        result["reducesum_axes_rewritten"] = replace_reducesum_axes_input_with_attribute(onnx_path)
+        result["layernorm_decomposed"] = decompose_layernorm(onnx_path)
 
         io_info = infer_output_shape(model, x)
         result["output_shape"] = io_info["shape"]

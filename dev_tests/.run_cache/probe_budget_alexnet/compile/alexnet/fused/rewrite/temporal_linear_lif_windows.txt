@@ -1,0 +1,17 @@
+window_0:
+  layer_id=linear_lif|occurrence=0|weight=placeholder:l_self_modules_layer_modules_classifier_modules_1_parameters_weight_|bias=None|input=shape=(4, 9216)|dtype=torch.float32|output=shape=(4, 4096)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_5', 'lif_forward_state_default_13', 'lif_forward_state_default_21', 'lif_forward_state_default_29', 'lif_forward_state_default_37', 'lif_forward_state_default_45', 'lif_forward_state_default_53', 'lif_forward_state_default_61', 'lif_forward_state_default_69', 'lif_forward_state_default_77', 'lif_forward_state_default_85', 'lif_forward_state_default_93', 'lif_forward_state_default_101', 'lif_forward_state_default_109', 'lif_forward_state_default_117', 'lif_forward_state_default_125']
+
+window_1:
+  layer_id=linear_lif|occurrence=1|weight=placeholder:l_self_modules_layer_modules_classifier_modules_4_parameters_weight_|bias=None|input=shape=(4, 4096)|dtype=torch.float32|output=shape=(4, 4096)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_6', 'lif_forward_state_default_14', 'lif_forward_state_default_22', 'lif_forward_state_default_30', 'lif_forward_state_default_38', 'lif_forward_state_default_46', 'lif_forward_state_default_54', 'lif_forward_state_default_62', 'lif_forward_state_default_70', 'lif_forward_state_default_78', 'lif_forward_state_default_86', 'lif_forward_state_default_94', 'lif_forward_state_default_102', 'lif_forward_state_default_110', 'lif_forward_state_default_118', 'lif_forward_state_default_126']
+
+window_2:
+  layer_id=linear_lif|occurrence=2|weight=placeholder:l_self_modules_layer_modules_classifier_modules_6_parameters_weight_|bias=None|input=shape=(4, 4096)|dtype=torch.float32|output=shape=(4, 10)|dtype=torch.float32|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_7', 'lif_forward_state_default_15', 'lif_forward_state_default_23', 'lif_forward_state_default_31', 'lif_forward_state_default_39', 'lif_forward_state_default_47', 'lif_forward_state_default_55', 'lif_forward_state_default_63', 'lif_forward_state_default_71', 'lif_forward_state_default_79', 'lif_forward_state_default_87', 'lif_forward_state_default_95', 'lif_forward_state_default_103', 'lif_forward_state_default_111', 'lif_forward_state_default_119', 'lif_forward_state_default_127']

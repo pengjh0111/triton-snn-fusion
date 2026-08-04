@@ -1,0 +1,6 @@
+window_0:
+  layer_id=lif_avgpool_linear|occurrence=7|shape=(4, 512, 7, 7)|dtype=torch.float32|fc=placeholder:l_self_modules_layer_modules_fc_parameters_weight_|bias=placeholder:l_self_modules_layer_modules_fc_parameters_bias_|params=(1.0, 0.0, 2.0, False)
+  window_id=0
+  size=16
+  patterns=['lif_forward_state_default_16', 'lif_forward_state_default_33', 'lif_forward_state_default_50', 'lif_forward_state_default_67', 'lif_forward_state_default_84', 'lif_forward_state_default_101', 'lif_forward_state_default_118', 'lif_forward_state_default_135', 'lif_forward_state_default_152', 'lif_forward_state_default_169', 'lif_forward_state_default_186', 'lif_forward_state_default_203', 'lif_forward_state_default_220', 'lif_forward_state_default_237', 'lif_forward_state_default_254', 'lif_forward_state_default_271']
+  acc_nodes=['out_spikes_counter', 'out_spikes_counter_1', 'out_spikes_counter_2', 'out_spikes_counter_3', 'out_spikes_counter_4', 'out_spikes_counter_5', 'out_spikes_counter_6', 'out_spikes_counter_7', 'out_spikes_counter_8', 'out_spikes_counter_9', 'out_spikes_counter_10', 'out_spikes_counter_11', 'out_spikes_counter_12', 'out_spikes_counter_13', 'out_spikes_counter_14', 'out_spikes_counter_15']
