@@ -1,8 +1,22 @@
+import os
 from typing import Tuple
 
 import torch
 import triton
 import triton.language as tl
+
+
+def _allowed_temporal_lengths():
+    # The kernel body is `for t in tl.static_range(0, T)` -- a pure unrolled
+    # sequential scan with [BLOCK_C, D_STATE] register-resident state, valid for
+    # ANY T. The {1,2,4,8,16} set below is a conservative guard, not a structural
+    # limit. Opt in to the extended set for experiments via KAIROS_ALLOW_EXTENDED_T=1.
+    if os.environ.get("KAIROS_ALLOW_EXTENDED_T", "") == "1":
+        # T=128 verified correct vs mamba (rtol 1e-3); note the fully-unrolled
+        # static_range makes T>=128 very slow to compile (~55min) and is past the
+        # crossover where mamba's parallel scan wins -- kept for characterization.
+        return (1, 2, 4, 8, 16, 32, 64, 128)
+    return (1, 2, 4, 8, 16)
 
 
 def _make_autotune_configs():
@@ -114,8 +128,9 @@ def run_fused_temporal_selective_scan_kernel(
     if b_seq.dim() != 3:
         raise RuntimeError(f"b_seq must have shape [T,B,d_state], got dim={b_seq.dim()}")
     d_state = b_seq.shape[2]
-    if T not in (1, 2, 4, 8, 16):
-        raise RuntimeError(f"unsupported temporal length T={T}; expected one of 1,2,4,8,16")
+    _allowed_T = _allowed_temporal_lengths()
+    if T not in _allowed_T:
+        raise RuntimeError(f"unsupported temporal length T={T}; expected one of {_allowed_T}")
     if not x_seq.is_cuda:
         raise RuntimeError("x_seq must be a CUDA tensor")
 

@@ -349,6 +349,8 @@ KAIROS_MODEL_CHOICES = [
     "convlstm",
     "mamba",
     "deepspeech2",
+    "nafnet",
+    "bsrn",
 ]
 
 # Per-model input convention, declared once here and consulted everywhere a
@@ -482,6 +484,259 @@ class KairosAlexZFNet(nn.Module):
     def _forward_single(self, x):
         x = self.features(x)
         x = self.avgpool(x)
+        x = self.flatten(x)
+        return self.classifier(x)
+
+    def forward(self, x):
+        if x.dim() == 5:
+            return torch.stack([self._forward_single(x[t]) for t in range(x.shape[0])], dim=0)
+        return self._forward_single(x)
+
+
+class KairosLayerNorm2d(nn.Module):
+    """Channel-wise LayerNorm over NCHW tensors, as used by NAFNet."""
+
+    def __init__(self, channels: int, eps: float = 1e-6):
+        super().__init__()
+        self.weight = nn.Parameter(torch.ones(channels))
+        self.bias = nn.Parameter(torch.zeros(channels))
+        self.eps = eps
+
+    def forward(self, x):
+        mu = x.mean(1, keepdim=True)
+        var = (x - mu).pow(2).mean(1, keepdim=True)
+        x = (x - mu) / torch.sqrt(var + self.eps)
+        return self.weight[None, :, None, None] * x + self.bias[None, :, None, None]
+
+
+class KairosSimpleGate(nn.Module):
+    """NAFNet's activation-free gate: split channels in half, multiply.
+
+    Left intact (not replaced by custom_lif) -- it is the structural gating
+    mechanism NAFNet uses in place of a classical activation, not itself an
+    activation function.
+    """
+
+    def forward(self, x):
+        x1, x2 = x.chunk(2, dim=1)
+        return x1 * x2
+
+
+class KairosNAFBlock(nn.Module):
+    def __init__(self, c: int, lif_impl: str = "kairos", dw_expand: int = 2, ffn_expand: int = 2):
+        super().__init__()
+        dw_channel = c * dw_expand
+        self.conv1 = nn.Conv2d(c, dw_channel, 1, 1, 0, bias=True)
+        self.lif1 = _make_lif_node(lif_impl)
+        self.conv2 = nn.Conv2d(dw_channel, dw_channel, 3, 1, 1, groups=dw_channel, bias=True)
+        self.lif2 = _make_lif_node(lif_impl)
+        self.sg = KairosSimpleGate()
+        self.sca = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(dw_channel // 2, dw_channel // 2, 1, 1, 0, bias=True),
+        )
+        self.conv3 = nn.Conv2d(dw_channel // 2, c, 1, 1, 0, bias=True)
+        self.lif3 = _make_lif_node(lif_impl)
+
+        ffn_channel = ffn_expand * c
+        self.conv4 = nn.Conv2d(c, ffn_channel, 1, 1, 0, bias=True)
+        self.lif4 = _make_lif_node(lif_impl)
+        self.conv5 = nn.Conv2d(ffn_channel // 2, c, 1, 1, 0, bias=True)
+        self.lif5 = _make_lif_node(lif_impl)
+
+        self.norm1 = KairosLayerNorm2d(c)
+        self.norm2 = KairosLayerNorm2d(c)
+        self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)))
+        self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)))
+
+    def forward(self, inp):
+        x = self.norm1(inp)
+        x = self.lif1(self.conv1(x))
+        x = self.lif2(self.conv2(x))
+        x = self.sg(x)
+        x = x * self.sca(x)
+        x = self.lif3(self.conv3(x))
+        y = inp + x * self.beta
+
+        x = self.norm2(y)
+        x = self.lif4(self.conv4(x))
+        x = self.sg(x)
+        x = self.lif5(self.conv5(x))
+        return y + x * self.gamma
+
+
+class KairosNAFNet(nn.Module):
+    def __init__(
+        self,
+        *,
+        img_channel: int = 3,
+        width: int = 64,
+        middle_blk_num: int = 12,
+        enc_blk_nums=(2, 2, 4, 8),
+        dec_blk_nums=(2, 2, 2, 2),
+        num_classes: int = 10,
+        step_mode: str = "s",
+        lif_impl: str = "kairos",
+    ):
+        super().__init__()
+        self.step_mode = step_mode
+        self.intro = nn.Conv2d(img_channel, width, 3, 1, 1, bias=True)
+
+        self.encoders = nn.ModuleList()
+        self.decoders = nn.ModuleList()
+        self.ups = nn.ModuleList()
+        self.downs = nn.ModuleList()
+
+        chan = width
+        for num in enc_blk_nums:
+            self.encoders.append(nn.Sequential(*[KairosNAFBlock(chan, lif_impl=lif_impl) for _ in range(num)]))
+            self.downs.append(nn.Conv2d(chan, 2 * chan, 2, 2))
+            chan *= 2
+
+        self.middle_blks = nn.Sequential(*[KairosNAFBlock(chan, lif_impl=lif_impl) for _ in range(middle_blk_num)])
+
+        for num in dec_blk_nums:
+            self.ups.append(nn.Sequential(
+                nn.Conv2d(chan, chan * 2, 1, bias=False),
+                nn.PixelShuffle(2),
+            ))
+            chan //= 2
+            self.decoders.append(nn.Sequential(*[KairosNAFBlock(chan, lif_impl=lif_impl) for _ in range(num)]))
+
+        self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.flatten = nn.Flatten(1)
+        self.classifier = nn.Linear(width, num_classes, bias=False)
+
+    def _forward_single(self, x):
+        x = self.intro(x)
+        encs = []
+        for encoder, down in zip(self.encoders, self.downs):
+            x = encoder(x)
+            encs.append(x)
+            x = down(x)
+        x = self.middle_blks(x)
+        for decoder, up, enc_skip in zip(self.decoders, self.ups, encs[::-1]):
+            x = up(x)
+            x = x + enc_skip
+            x = decoder(x)
+        x = self.avgpool(x)
+        x = self.flatten(x)
+        return self.classifier(x)
+
+    def forward(self, x):
+        if x.dim() == 5:
+            return torch.stack([self._forward_single(x[t]) for t in range(x.shape[0])], dim=0)
+        return self._forward_single(x)
+
+
+class KairosBSConvU(nn.Module):
+    """Blueprint separable conv: full pointwise, then depthwise."""
+
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, stride: int = 1, padding: int = 1, bias: bool = True):
+        super().__init__()
+        self.pw = nn.Conv2d(in_channels, out_channels, 1, 1, 0, bias=False)
+        self.dw = nn.Conv2d(out_channels, out_channels, kernel_size, stride, padding, groups=out_channels, bias=bias)
+
+    def forward(self, x):
+        return self.dw(self.pw(x))
+
+
+class KairosESA(nn.Module):
+    """Enhanced Spatial Attention (BSRN); left as-is -- a spatial gate, not an activation."""
+
+    def __init__(self, esa_channels: int, n_feats: int):
+        super().__init__()
+        f = esa_channels
+        self.conv1 = nn.Conv2d(n_feats, f, 1)
+        self.conv_f = nn.Conv2d(f, f, 1)
+        self.conv2 = nn.Conv2d(f, f, 3, 2, 0)
+        self.conv3 = nn.Conv2d(f, f, 3, 1, 1)
+        self.conv4 = nn.Conv2d(f, n_feats, 1)
+        self.sigmoid = nn.Sigmoid()
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, x):
+        c1_ = self.conv1(x)
+        c1 = self.conv2(c1_)
+        v_max = F.max_pool2d(c1, kernel_size=7, stride=3)
+        c3 = self.relu(self.conv3(v_max))
+        c3 = F.interpolate(c3, (x.size(2), x.size(3)), mode="bilinear", align_corners=False)
+        cf = self.conv_f(c1_)
+        c4 = self.conv4(c3 + cf)
+        return x * self.sigmoid(c4)
+
+
+class KairosESDB(nn.Module):
+    """Efficient Separable Distillation Block (BSRN). Every branch's GELU
+    activation is replaced 1:1 by custom_lif -- unlike NAFNet, BSRN already
+    has classical per-conv activations, so no new insertion points are
+    needed."""
+
+    def __init__(self, in_channels: int, lif_impl: str = "kairos"):
+        super().__init__()
+        self.dc = in_channels // 2
+        self.rc = in_channels
+        self.c1_d = nn.Conv2d(in_channels, self.dc, 1)
+        self.c1_r = KairosBSConvU(in_channels, self.rc, 3, 1, 1)
+        self.c2_d = nn.Conv2d(self.rc, self.dc, 1)
+        self.c2_r = KairosBSConvU(self.rc, self.rc, 3, 1, 1)
+        self.c3_d = nn.Conv2d(self.rc, self.dc, 1)
+        self.c3_r = KairosBSConvU(self.rc, self.rc, 3, 1, 1)
+        self.c4 = KairosBSConvU(self.rc, self.dc, 3, 1, 1)
+        self.lif_d1 = _make_lif_node(lif_impl)
+        self.lif_r1 = _make_lif_node(lif_impl)
+        self.lif_d2 = _make_lif_node(lif_impl)
+        self.lif_r2 = _make_lif_node(lif_impl)
+        self.lif_d3 = _make_lif_node(lif_impl)
+        self.lif_r3 = _make_lif_node(lif_impl)
+        self.lif_r4 = _make_lif_node(lif_impl)
+        self.c5 = nn.Conv2d(self.dc * 4, in_channels, 1)
+        self.esa = KairosESA(16, in_channels)
+
+    def forward(self, inp):
+        d1 = self.lif_d1(self.c1_d(inp))
+        r1 = self.lif_r1(self.c1_r(inp) + inp)
+        d2 = self.lif_d2(self.c2_d(r1))
+        r2 = self.lif_r2(self.c2_r(r1) + r1)
+        d3 = self.lif_d3(self.c3_d(r2))
+        r3 = self.lif_r3(self.c3_r(r2) + r2)
+        r4 = self.lif_r4(self.c4(r3))
+        out = torch.cat([d1, d2, d3, r4], dim=1)
+        return self.esa(self.c5(out)) + inp
+
+
+class KairosBSRN(nn.Module):
+    def __init__(
+        self,
+        *,
+        num_in_ch: int = 3,
+        num_feat: int = 64,
+        num_block: int = 7,
+        num_classes: int = 10,
+        step_mode: str = "s",
+        lif_impl: str = "kairos",
+    ):
+        super().__init__()
+        self.step_mode = step_mode
+        self.fea_conv = KairosBSConvU(num_in_ch, num_feat, 3, 1, 1)
+        self.blocks = nn.ModuleList([KairosESDB(num_feat, lif_impl=lif_impl) for _ in range(num_block)])
+        self.c1 = nn.Conv2d(num_feat * num_block, num_feat, 1)
+        self.lif_tail = _make_lif_node(lif_impl)
+        self.c2 = KairosBSConvU(num_feat, num_feat, 3, 1, 1)
+        self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.flatten = nn.Flatten(1)
+        self.classifier = nn.Linear(num_feat, num_classes, bias=False)
+
+    def _forward_single(self, x):
+        out_fea = self.fea_conv(x)
+        h = out_fea
+        outs = []
+        for block in self.blocks:
+            h = block(h)
+            outs.append(h)
+        out_b = self.lif_tail(self.c1(torch.cat(outs, dim=1)))
+        out_lr = self.c2(out_b) + out_fea
+        x = self.avgpool(out_lr)
         x = self.flatten(x)
         return self.classifier(x)
 
@@ -1188,6 +1443,12 @@ def make_resnet_layer(
     deepspeech2_conv_channels: int = 32,
     deepspeech2_gru_hidden: int = 800,
     deepspeech2_gru_layers: int = 3,
+    nafnet_width: int = 8,
+    nafnet_enc_blk_nums=(2, 2, 4, 8),
+    nafnet_middle_blk_num: int = 12,
+    nafnet_dec_blk_nums=(2, 2, 2, 2),
+    bsrn_num_feat: int = 16,
+    bsrn_num_block: int = 8,
 ) -> nn.Module:
     # step_mode is a spikingjelly concept (stateful module buffers) that
     # doesn't apply to these explicit-state, step()/init_state()-form
@@ -1281,6 +1542,24 @@ def make_resnet_layer(
         )
     elif model_name in ("vgg11", "vgg16"):
         return _make_vgg_layer(model_name, step_mode, lif_impl=lif_impl)
+    elif model_name == "nafnet":
+        return KairosNAFNet(
+            width=nafnet_width,
+            enc_blk_nums=nafnet_enc_blk_nums,
+            middle_blk_num=nafnet_middle_blk_num,
+            dec_blk_nums=nafnet_dec_blk_nums,
+            num_classes=10,
+            step_mode=step_mode,
+            lif_impl=lif_impl,
+        )
+    elif model_name == "bsrn":
+        return KairosBSRN(
+            num_feat=bsrn_num_feat,
+            num_block=bsrn_num_block,
+            num_classes=10,
+            step_mode=step_mode,
+            lif_impl=lif_impl,
+        )
     else:
         raise ValueError(f"unsupported model: {model_name}")
 

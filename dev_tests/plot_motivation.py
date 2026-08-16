@@ -17,6 +17,7 @@ from matplotlib.lines import Line2D
 
 COL = {
     "per_step": "#2C5F8A",
+    "compiled": "#7C7067",
     "batched": "#2E7D6F",
     "fused": "#6B4E8F",
     "theory": "#8A9199",
@@ -29,8 +30,13 @@ COL = {
     "muted": "#8A9199",
     "grid": "#EDF1F5",
 }
-LABEL = {"per_step": "Per-step", "batched": "Batched-only", "fused": "Fused"}
-MARKER = {"per_step": "o", "batched": "s", "fused": "^"}
+LABEL = {
+    "per_step": "Per-step",
+    "compiled": "torch.compile",
+    "batched": "Batched-only",
+    "fused": "Fused",
+}
+MARKER = {"per_step": "o", "compiled": "D", "batched": "s", "fused": "^"}
 
 
 def number(value):
@@ -147,7 +153,12 @@ def configure():
 def plot_taxes(rows, output: Path):
     fig, ax = plt.subplots(figsize=(3.45, 2.45), constrained_layout=True)
     complete = any(math.isfinite(row["dram_total_bytes"]) for row in rows)
-    for mode in ("per_step", "batched", "fused"):
+    modes = tuple(
+        mode
+        for mode in ("per_step", "compiled", "batched", "fused")
+        if any(row["mode"] == mode for row in rows)
+    )
+    for mode in modes:
         x, y = series(rows, mode, "dram_total_bytes")
         ax.plot(x, y / 1e9, marker=MARKER[mode], color=COL[mode], label=LABEL[mode])
     theory_rows = sorted(
@@ -167,7 +178,13 @@ def plot_taxes(rows, output: Path):
     ax.grid(True, color=COL["grid"], linewidth=0.55)
 
     kernels = ax.twinx()
-    for mode, linestyle in (("per_step", ":"), ("fused", "-.")):
+    for mode, linestyle in (
+        ("per_step", ":"),
+        ("compiled", "--"),
+        ("fused", "-."),
+    ):
+        if mode not in modes:
+            continue
         x, y = series(rows, mode, "kernel_count")
         kernels.plot(
             x,
@@ -255,7 +272,12 @@ def plot_multilayer(rows, output: Path):
     fig, (traffic_ax, time_ax) = plt.subplots(
         1, 2, figsize=(7.0, 2.4), constrained_layout=True
     )
-    for mode in ("per_step", "batched", "fused"):
+    modes = tuple(
+        mode
+        for mode in ("per_step", "compiled", "batched", "fused")
+        if any(row["mode"] == mode for row in rows)
+    )
+    for mode in modes:
         selected = sorted(
             (row for row in rows if row["mode"] == mode),
             key=lambda row: row["layer_count"],
@@ -301,7 +323,14 @@ def plot_multilayer(rows, output: Path):
     plt.close(fig)
 
 
-def plot_combined(rows, multilayer_rows, output: Path):
+def plot_combined(
+    rows,
+    multilayer_rows,
+    output: Path,
+    compiled_rows=None,
+    compiled_multilayer_rows=None,
+    compiled_config=None,
+):
     """Combine the timestep tax plot and multilayer traffic plot in one row."""
     combined_style = {
         "font.size": 13.0625,
@@ -313,7 +342,7 @@ def plot_combined(rows, multilayer_rows, output: Path):
     }
     with plt.rc_context(combined_style):
         fig, (tax_ax, stack_ax) = plt.subplots(
-            1, 2, figsize=(7.15, 2.55), constrained_layout=True
+            1, 2, figsize=(7.15, 2.9), constrained_layout=True
         )
 
         for mode in ("per_step", "batched", "fused"):
@@ -324,6 +353,18 @@ def plot_combined(rows, multilayer_rows, output: Path):
                 marker=MARKER[mode],
                 color=COL[mode],
                 label=LABEL[mode],
+            )
+        if compiled_rows:
+            x, traffic = series(compiled_rows, "compiled", "dram_total_bytes")
+            tax_ax.plot(
+                x,
+                traffic / 1e9,
+                linestyle="none",
+                marker=MARKER["compiled"],
+                markersize=6.5,
+                color=COL["compiled"],
+                label=LABEL["compiled"],
+                zorder=5,
             )
         theory_rows = sorted(
             (row for row in rows if row["mode"] == "per_step"),
@@ -361,6 +402,19 @@ def plot_combined(rows, multilayer_rows, output: Path):
                 alpha=0.72,
                 label=f"{LABEL[mode]} launches",
             )
+        if compiled_rows:
+            x, launches = series(compiled_rows, "compiled", "kernel_count")
+            launches_ax.plot(
+                x,
+                launches,
+                linestyle="none",
+                marker=MARKER["compiled"],
+                markersize=6.5,
+                color=COL["compiled"],
+                alpha=0.9,
+                label=f"{LABEL['compiled']} launches",
+                zorder=5,
+            )
         launches_ax.set_yscale("log")
         launches_ax.set_yticks([1, 10, 100, 1000])
         launches_ax.set_ylabel("Kernel launches", color=COL["muted"])
@@ -379,6 +433,23 @@ def plot_combined(rows, multilayer_rows, output: Path):
                 marker=MARKER[mode],
                 color=COL[mode],
                 label=LABEL[mode],
+            )
+        if compiled_multilayer_rows:
+            selected = sorted(
+                (
+                    row
+                    for row in compiled_multilayer_rows
+                    if row["mode"] == "compiled"
+                ),
+                key=lambda row: row["layer_count"],
+            )
+            stack_ax.plot(
+                [row["layer_count"] for row in selected],
+                [row["dram_total_bytes"] / 1e9 for row in selected],
+                marker=MARKER["compiled"],
+                color=COL["compiled"],
+                label=LABEL["compiled"],
+                zorder=5,
             )
         per_stack = sorted(
             (row for row in multilayer_rows if row["mode"] == "per_step"),
@@ -434,6 +505,25 @@ def plot_combined(rows, multilayer_rows, output: Path):
                 color=COL[mode],
                 alpha=0.72,
             )
+        if compiled_multilayer_rows:
+            selected = sorted(
+                (
+                    row
+                    for row in compiled_multilayer_rows
+                    if row["mode"] == "compiled"
+                ),
+                key=lambda row: row["layer_count"],
+            )
+            stack_launches_ax.plot(
+                [row["layer_count"] for row in selected],
+                [row["kernel_count"] for row in selected],
+                linestyle="--",
+                marker=MARKER["compiled"],
+                color=COL["compiled"],
+                alpha=0.9,
+                label=f"{LABEL['compiled']} launches",
+                zorder=5,
+            )
         stack_launches_ax.set_yscale("log")
         stack_launches_ax.set_yticks([1, 10, 100, 1000])
         stack_launches_ax.set_ylabel("Kernel launches", color=COL["muted"])
@@ -452,10 +542,16 @@ def plot_combined(rows, multilayer_rows, output: Path):
             combined.setdefault(label, handle)
         legend_handles = list(combined.values())
         legend_labels = list(combined.keys())
-        # Preserve the original 2x3 legend geometry after removing the HBM
-        # reference: the empty fourth slot is below Fused in column-major order.
-        legend_handles.insert(3, Line2D([], [], linestyle="none", alpha=0))
-        legend_labels.insert(3, "")
+        if compiled_config:
+            fig.text(
+                0.5,
+                0.006,
+                compiled_config,
+                ha="center",
+                va="bottom",
+                fontsize=8.5,
+                color=COL["muted"],
+            )
         fig.legend(
             legend_handles,
             legend_labels,
@@ -467,10 +563,120 @@ def plot_combined(rows, multilayer_rows, output: Path):
         plt.close(fig)
 
 
+def plot_combined_no_launches(rows, multilayer_rows, output: Path):
+    """Combined HBM-traffic plot without launch-count overlays."""
+    style = {
+        "font.size": 13.0625,
+        "axes.labelsize": 14,
+        "axes.titlesize": 14,
+        "legend.fontsize": 12.75,
+        "xtick.labelsize": 12.125,
+        "ytick.labelsize": 12.125,
+    }
+    modes = tuple(
+        mode
+        for mode in ("per_step", "compiled", "batched", "fused")
+        if any(row["mode"] == mode for row in rows)
+    )
+    with plt.rc_context(style):
+        fig, (tax_ax, stack_ax) = plt.subplots(
+            1, 2, figsize=(7.15, 2.55), constrained_layout=True
+        )
+        for mode in modes:
+            x, traffic = series(rows, mode, "dram_total_bytes")
+            tax_ax.plot(
+                x, traffic / 1e9,
+                marker=MARKER[mode], markersize=4.0, linewidth=1.1,
+                color=COL[mode], label=LABEL[mode],
+                zorder=5 if mode == "compiled" else 3,
+            )
+        theory_rows = sorted(
+            (row for row in rows if row["mode"] == "per_step"),
+            key=lambda row: row["T"],
+        )
+        timesteps = np.array([row["T"] for row in theory_rows])
+        per_x, per_traffic = series(rows, "per_step", "dram_total_bytes")
+        _, fused_traffic = series(rows, "fused", "dram_total_bytes")
+        if np.all(np.isfinite(per_traffic)) and np.all(np.isfinite(fused_traffic)):
+            tax_ax.fill_between(
+                per_x, fused_traffic / 1e9, per_traffic / 1e9,
+                color=COL["spatial_fill"], alpha=0.75, linewidth=0,
+            )
+        tax_ax.set_xscale("log", base=2)
+        tax_ax.set_xticks(timesteps, [str(value) for value in timesteps])
+        tax_ax.set_xlabel("Timesteps (T)")
+        tax_ax.set_ylabel("HBM traffic (GB)")
+        tax_ax.set_title("(a) Temporal accumulation")
+        tax_ax.grid(True, color=COL["grid"], linewidth=0.55)
+
+        for mode in modes:
+            selected = sorted(
+                (row for row in multilayer_rows if row["mode"] == mode),
+                key=lambda row: row["layer_count"],
+            )
+            if not selected:
+                continue
+            stack_ax.plot(
+                [row["layer_count"] for row in selected],
+                [row["dram_total_bytes"] / 1e9 for row in selected],
+                marker=MARKER[mode], markersize=4.0, linewidth=1.1,
+                color=COL[mode], label=LABEL[mode],
+                zorder=5 if mode == "compiled" else 3,
+            )
+        per_stack = sorted(
+            (row for row in multilayer_rows if row["mode"] == "per_step"),
+            key=lambda row: row["layer_count"],
+        )
+        fused_stack = sorted(
+            (row for row in multilayer_rows if row["mode"] == "fused"),
+            key=lambda row: row["layer_count"],
+        )
+        depths = np.array([row["layer_count"] for row in per_stack])
+        if np.array_equal(depths, np.array([row["layer_count"] for row in fused_stack])):
+            stack_ax.fill_between(
+                depths,
+                np.array([row["dram_total_bytes"] for row in fused_stack]) / 1e9,
+                np.array([row["dram_total_bytes"] for row in per_stack]) / 1e9,
+                color=COL["spatial_fill"], alpha=0.75, linewidth=0,
+            )
+        stack_ax.set_xlabel("Stack depth (layers)")
+        stack_ax.set_ylabel("HBM traffic (GB)")
+        stack_ax.set_title("(b) Cross-layer accumulation")
+        stack_ax.set_xticks(sorted({int(row["layer_count"]) for row in multilayer_rows}))
+        stack_ax.grid(True, color=COL["grid"], linewidth=0.55)
+
+        handles, labels = tax_ax.get_legend_handles_labels()
+        fig.legend(
+            handles, labels, loc="outside upper center", ncol=4, frameon=False
+        )
+        fig.savefig(output, format="pdf")
+        plt.close(fig)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-dir", default="test/motivation_three_taxes")
     parser.add_argument("--representative-t", type=int, default=16)
+    parser.add_argument(
+        "--compiled-data-dir",
+        default=None,
+        help="Optional directory containing newly collected compiled rows.",
+    )
+    parser.add_argument(
+        "--combined-output",
+        default=None,
+        help="Output path for the combined plot; defaults to the legacy filename.",
+    )
+    parser.add_argument(
+        "--combined-only",
+        action="store_true",
+        help="Only render the combined plot, preserving the other PDFs.",
+    )
+    parser.add_argument(
+        "--combined-no-launches",
+        action="store_true",
+        help="Render the combined plot without launch-count curves or axes.",
+    )
     args = parser.parse_args()
     input_dir = Path(args.input_dir)
     rows = read_rows(input_dir / "three_taxes_by_T.csv")
@@ -478,30 +684,75 @@ def main():
     audit_derived_metrics(rows, metadata)
     print_roofline_audit(rows, metadata, args.representative_t)
     configure()
-    plot_taxes(rows, input_dir / "fig_motivation_taxes.pdf")
-    plot_roofline(
-        rows,
-        metadata,
-        input_dir / "fig_motivation_roofline.pdf",
-        args.representative_t,
-    )
+    if not args.combined_only:
+        plot_taxes(rows, input_dir / "fig_motivation_taxes.pdf")
+        plot_roofline(
+            rows,
+            metadata,
+            input_dir / "fig_motivation_roofline.pdf",
+            args.representative_t,
+        )
     multilayer_path = input_dir / "three_taxes_multilayer.csv"
     if multilayer_path.exists():
         multilayer_rows = read_rows(multilayer_path)
         audit_derived_metrics(multilayer_rows, metadata, layer_field="layer_count")
-        plot_multilayer(
-            multilayer_rows, input_dir / "fig_motivation_multilayer.pdf"
+        if not args.combined_only:
+            plot_multilayer(
+                multilayer_rows, input_dir / "fig_motivation_multilayer.pdf"
+            )
+        combined_output = (
+            Path(args.combined_output)
+            if args.combined_output
+            else input_dir / "fig_motivation_combined.pdf"
         )
-        plot_combined(
-            rows,
-            multilayer_rows,
-            input_dir / "fig_motivation_combined.pdf",
+        compiled_rows = (
+            rows if any(row["mode"] == "compiled" for row in rows) else None
         )
-    print(f"[write] {input_dir / 'fig_motivation_taxes.pdf'}")
-    print(f"[write] {input_dir / 'fig_motivation_roofline.pdf'}")
+        compiled_multilayer_rows = (
+            multilayer_rows
+            if any(row["mode"] == "compiled" for row in multilayer_rows)
+            else None
+        )
+        compiled_config = None
+        if args.compiled_data_dir:
+            compiled_dir = Path(args.compiled_data_dir)
+            compiled_rows = read_rows(compiled_dir / "three_taxes_by_T.csv")
+            compiled_multilayer_rows = read_rows(
+                compiled_dir / "three_taxes_multilayer.csv"
+            )
+            compiled_metadata = json.loads(
+                (compiled_dir / "metadata.json").read_text(encoding="utf-8")
+            )
+            audit_derived_metrics(compiled_rows, compiled_metadata)
+            audit_derived_metrics(
+                compiled_multilayer_rows,
+                compiled_metadata,
+                layer_field="layer_count",
+            )
+            problem = compiled_metadata["problem"]
+            compiled_config = (
+                "torch.compile measurements: "
+                f"{compiled_metadata['dtype'].upper()}, B={problem['batch']}, "
+                f"T={compiled_metadata['multilayer_t']}"
+            )
+        if args.combined_no_launches:
+            plot_combined_no_launches(rows, multilayer_rows, combined_output)
+        else:
+            plot_combined(
+                rows,
+                multilayer_rows,
+                combined_output,
+                compiled_rows=compiled_rows,
+                compiled_multilayer_rows=compiled_multilayer_rows,
+                compiled_config=compiled_config,
+            )
+    if not args.combined_only:
+        print(f"[write] {input_dir / 'fig_motivation_taxes.pdf'}")
+        print(f"[write] {input_dir / 'fig_motivation_roofline.pdf'}")
     if multilayer_path.exists():
-        print(f"[write] {input_dir / 'fig_motivation_multilayer.pdf'}")
-        print(f"[write] {input_dir / 'fig_motivation_combined.pdf'}")
+        if not args.combined_only:
+            print(f"[write] {input_dir / 'fig_motivation_multilayer.pdf'}")
+        print(f"[write] {combined_output}")
 
 
 if __name__ == "__main__":

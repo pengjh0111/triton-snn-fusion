@@ -1,5 +1,6 @@
 import argparse
 import copy
+import gc
 import json
 import statistics
 import sys
@@ -58,6 +59,7 @@ class BenchResult:
     error: str = ""
     schedule_mean_ms: Optional[float] = None
     schedule_min_ms: Optional[float] = None
+    autotune_seconds: Optional[float] = None
 
 
 def percentile(values, q):
@@ -81,6 +83,13 @@ def prepare_runnable(name, model, compile_mode, backend, device, args):
     reset_lif_modules(model)
 
     if compile_mode:
+        # `backend is None` is exactly the baseline_*_compile cases (they
+        # fall back to "inductor" below) -- Kairos cases pass their own
+        # rewrite backend callable here instead. --baseline-max-autotune is
+        # scoped to the baseline path since Kairos's standalone backend
+        # doesn't go through Inductor's autotuning at all; it has its own
+        # fused-kernel autotune already.
+        is_baseline_case = backend is None
         runnable = compile_with_kairos_options(
             model,
             backend=backend if backend is not None else "inductor",
@@ -88,6 +97,7 @@ def prepare_runnable(name, model, compile_mode, backend, device, args):
             cudagraph_mode=args.cudagraph_mode,
             fullgraph=False,
             dynamic=False,
+            max_autotune=args.baseline_max_autotune if is_baseline_case else False,
         )
     else:
         runnable = model
@@ -101,6 +111,27 @@ def _mark_cudagraph_step(args):
     mark_step = getattr(torch.compiler, "cudagraph_mark_step_begin", None)
     if mark_step is not None:
         mark_step()
+
+
+def release_case_resources(compile_mode: bool, device: str) -> None:
+    # Each compiled case (especially --fx-standalone-cudagraph ones) captures
+    # a torch.cuda.CUDAGraph with its own private memory pool. With
+    # --sweep-temporal-windows, several such cases run back-to-back in the
+    # same process, and nothing frees a prior case's compiled artifacts
+    # (dynamo's guard cache keeps the backend closure -- and its captured
+    # graph -- alive) until this reset/collect runs. Without it, private
+    # pools from every earlier candidate window stay resident and later
+    # candidates OOM even though each one alone would have fit.
+    if compile_mode:
+        import torch._dynamo
+
+        torch._dynamo.reset()
+
+    gc.collect()
+
+    if device.startswith("cuda") and torch.cuda.is_available():
+        torch.cuda.synchronize()
+        torch.cuda.empty_cache()
 
 
 def compile_and_warmup(runnable, model, x, device, warmup, args):
@@ -185,6 +216,8 @@ def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat,
             args,
         )
 
+        autotune_start = time.perf_counter()
+
         compile_and_warmup(
             runnable,
             model,
@@ -194,7 +227,9 @@ def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat,
             args,
         )
 
-        return benchmark_runnable(
+        autotune_seconds = time.perf_counter() - autotune_start
+
+        result = benchmark_runnable(
             case_name,
             runnable,
             model,
@@ -203,6 +238,9 @@ def run_case(case_name, model, x, device, compile_mode, backend, warmup, repeat,
             repeat,
             args,
         )
+        result.autotune_seconds = autotune_seconds
+
+        return result
 
     except Exception:
         return BenchResult(
@@ -223,6 +261,7 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         cudagraph_mode=args.cudagraph_mode,
         fullgraph=False,
         dynamic=False,
+        max_autotune=args.baseline_max_autotune,
     )
     _, kairos_compile_config = build_kairos_compile_config(
         backend=args.rewrite_backend_mode,
@@ -274,6 +313,12 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         deepspeech2_conv_channels=args.deepspeech2_conv_channels,
         deepspeech2_gru_hidden=args.deepspeech2_gru_hidden,
         deepspeech2_gru_layers=args.deepspeech2_gru_layers,
+        nafnet_width=args.nafnet_width,
+        nafnet_enc_blk_nums=args.nafnet_enc_blk_nums,
+        nafnet_middle_blk_num=args.nafnet_middle_blk_num,
+        nafnet_dec_blk_nums=args.nafnet_dec_blk_nums,
+        bsrn_num_feat=args.bsrn_num_feat,
+        bsrn_num_block=args.bsrn_num_block,
     )
     base_layer_m = make_resnet_layer(
         model_name,
@@ -303,6 +348,12 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
         deepspeech2_conv_channels=args.deepspeech2_conv_channels,
         deepspeech2_gru_hidden=args.deepspeech2_gru_hidden,
         deepspeech2_gru_layers=args.deepspeech2_gru_layers,
+        nafnet_width=args.nafnet_width,
+        nafnet_enc_blk_nums=args.nafnet_enc_blk_nums,
+        nafnet_middle_blk_num=args.nafnet_middle_blk_num,
+        nafnet_dec_blk_nums=args.nafnet_dec_blk_nums,
+        bsrn_num_feat=args.bsrn_num_feat,
+        bsrn_num_block=args.bsrn_num_block,
     )
 
     base_layer_s = base_layer_s.to(
@@ -516,6 +567,14 @@ def benchmark_one_model(model_name: str, args) -> Dict[str, Any]:
             if result.error:
                 print(result.error.splitlines()[-1])
 
+        # Drop this case's model out of `cases` (it's otherwise held alive
+        # for the rest of the loop) and release its compiled/captured GPU
+        # state before moving on to the next candidate -- see
+        # release_case_resources().
+        cases[case_name] = None
+        del model
+        release_case_resources(compile_mode, args.device)
+
     fused_stats = snn_custom_ops.get_fused_op_call_stats()
 
     print("\n[AUTOTUNE SUMMARY]")
@@ -655,6 +714,23 @@ def parse_args():
     parser.add_argument("--deepspeech2-gru-hidden", type=int, default=800)
     parser.add_argument("--deepspeech2-gru-layers", type=int, default=3)
 
+    parser.add_argument("--nafnet-width", type=int, default=8)
+    parser.add_argument("--nafnet-enc-blk-nums", type=int, nargs=4, default=[2, 2, 4, 8])
+    parser.add_argument("--nafnet-middle-blk-num", type=int, default=12)
+    parser.add_argument("--nafnet-dec-blk-nums", type=int, nargs=4, default=[2, 2, 2, 2])
+
+    parser.add_argument("--bsrn-num-feat", type=int, default=16)
+    parser.add_argument(
+        "--bsrn-num-block",
+        type=int,
+        default=8,
+        help="Official ESDB block count (8) kept as-is; num_feat narrowed "
+        "instead of block count, since each ESDB's 7 stateful LIF buffers "
+        "(persistent for the whole T loop) dominate memory far more than "
+        "the plain-activation version this was budgeted against -- see "
+        "peak activation memory at batch=4/T=16/224x224 vs vgg16_bn.",
+    )
+
     parser.add_argument(
         "--lif-impl",
         choices=LIF_IMPL_CHOICES,
@@ -741,6 +817,18 @@ def parse_args():
         "--cudagraph-mode",
         choices=("reduce-overhead", "triton-option", "both"),
         default="reduce-overhead",
+    )
+
+    parser.add_argument(
+        "--baseline-max-autotune",
+        action="store_true",
+        help=(
+            "Compile the baseline_*_compile cases with torch.compile's "
+            "mode='max-autotune' (or 'max-autotune-no-cudagraphs' if "
+            "--enable-cudagraphs is not set) instead of the default mode. "
+            "Only affects the baseline (backend=inductor) cases, not the "
+            "Kairos rewrite backend, which has its own autotuning."
+        ),
     )
 
     parser.add_argument(

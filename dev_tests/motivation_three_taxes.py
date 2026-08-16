@@ -39,7 +39,7 @@ from runtime.triton_convlif_backend import (
 from runtime.triton_temporal_lif_backend import run_triton_fused_temporal_lif_state
 
 
-MODES = ("per_step", "batched", "fused")
+MODES = ("per_step", "compiled", "batched", "fused")
 NCU_METRICS = (
     "dram__bytes_op_read.sum",
     "dram__bytes_op_write.sum",
@@ -308,6 +308,11 @@ def mode_callable(
 ) -> Callable[[], Tuple[torch.Tensor, torch.Tensor]]:
     if mode == "per_step":
         return lambda: per_step_forward(data, problem)
+    if mode == "compiled":
+        return torch.compile(
+            lambda: per_step_forward(data, problem),
+            fullgraph=True,
+        )
     if mode == "batched":
         return lambda: batched_forward(data, problem, temporal_window)
     if mode == "fused":
@@ -430,6 +435,11 @@ def stack_mode_callable(
 ) -> Callable:
     if mode == "per_step":
         return lambda: per_step_stack_forward(x, params, problem)
+    if mode == "compiled":
+        return torch.compile(
+            lambda: per_step_stack_forward(x, params, problem),
+            fullgraph=True,
+        )
     if mode == "batched":
         return lambda: batched_stack_forward(x, params, problem, temporal_window)
     if mode == "fused":
@@ -765,9 +775,9 @@ def write_breakdown(path: Path, rows: List[Dict], problem: Problem, args) -> Non
     for row in selected:
         measured = float(row["dram_total_bytes"])
         components = {
-            "weight_reload": weight_tax if row["mode"] == "per_step" else 0,
+            "weight_reload": weight_tax if row["mode"] in ("per_step", "compiled") else 0,
             "preact_roundtrip": 2 * output_bytes if row["mode"] != "fused" else 0,
-            "state_roundtrip": recurrent_state_tax if row["mode"] == "per_step" else 0,
+            "state_roundtrip": recurrent_state_tax if row["mode"] in ("per_step", "compiled") else 0,
         }
         known = sum(components.values())
         components["other"] = max(measured - known, 0.0) if math.isfinite(measured) else math.nan

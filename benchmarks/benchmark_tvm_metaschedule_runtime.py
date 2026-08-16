@@ -29,6 +29,8 @@ KAIROS_MODEL_CHOICES = [
     "convlstm",
     "mamba",
     "deepspeech2",
+    "nafnet",
+    "bsrn",
 ]
 LIF_IMPL_CHOICES = ["kairos", "spikingjelly"]
 
@@ -114,10 +116,12 @@ def get_relay_integration(ms):
 def build_relay_pass_config(fuse_max_depth: Optional[int]) -> Dict[str, Any]:
     """Base pass_config used by extract_tasks/compile_relay, with an optional
     override for relay.FuseOps.max_depth (TVM's C++ default is 256, which lets
-    long chains of injective ops like fake-quant simulation graphs get fused
-    into a single sketch-generation target and blow up AutoInline's candidate
-    search; capping it keeps fused subgraphs small enough to tune in
-    reasonable time).
+    long chains of injective ops -- e.g. the dense+normalize+LIF-surrogate
+    chains in these spiking models -- get fused into a single sketch-generation
+    target whose AutoInline candidate search can take upwards of many hours to
+    even initialize (see e.g. task "fused_nn_dense_subtract_divide_add_
+    greater_equal_cast_cast_greater_where_subtract..."); capping it keeps
+    fused subgraphs small enough to tune in reasonable time).
     """
     pass_config: Dict[str, Any] = {
         "relay.backend.use_meta_schedule": True,
@@ -169,6 +173,34 @@ def patched_extract_tasks(ms, pass_config: Dict[str, Any]):
         relay_integration.extract_tasks = original_extract_tasks
 
 
+def build_recycling_local_runner(ms, timeout_sec=30.0, maximum_process_uses=16):
+    """A LocalRunner whose single worker process gets recycled periodically.
+
+    ms.runner.LocalRunner hardcodes a single PopenPoolExecutor worker that is
+    only recycled when a candidate times out. A candidate that crashes with a
+    CUDA-level error (e.g. "CUDA: misaligned address") leaves that worker
+    process alive at the OS level, but its CUDA context is left permanently
+    unusable -- every later measurement submitted to the same process then
+    silently fails too, for the rest of the tuning run, even though those
+    later candidates' schedules were never themselves at fault. Recycling the
+    process every `maximum_process_uses` trials bounds how many trials a
+    single bad candidate can take down with it.
+    """
+    import subprocess
+
+    from tvm.contrib.popen_pool import PopenPoolExecutor
+
+    runner = ms.runner.LocalRunner(timeout_sec=timeout_sec)
+    runner.pool = PopenPoolExecutor(
+        max_workers=1,
+        timeout=timeout_sec,
+        initializer=None,
+        maximum_process_uses=maximum_process_uses,
+        stderr=subprocess.DEVNULL,
+    )
+    return runner
+
+
 def find_untuned_tasks(mod, target, params, database, ms):
     """Return task names for which MetaSchedule never recorded a measured schedule.
 
@@ -200,6 +232,7 @@ def tune_and_build_with_metaschedule(
     target,
     work_dir: Path,
     max_trials_global: int,
+    max_trials_per_task: int,
     num_trials_per_iter: int,
     runner: str,
     builder: str,
@@ -207,6 +240,9 @@ def tune_and_build_with_metaschedule(
     ms,
     relay,
     tvm,
+    runner_timeout_sec: float = 30.0,
+    runner_max_process_uses: int = 16,
+    untuned_retry_trials: int = 512,
     fuse_max_depth: Optional[int] = None,
 ):
     tune_relay, compile_relay = get_relay_integration(ms)
@@ -218,6 +254,13 @@ def tune_and_build_with_metaschedule(
     )
     pass_config = build_relay_pass_config(fuse_max_depth)
 
+    def make_runner_config():
+        if runner == "local":
+            return build_recycling_local_runner(
+                ms, timeout_sec=runner_timeout_sec, maximum_process_uses=runner_max_process_uses
+            )
+        return runner
+
     with patched_extract_tasks(ms, pass_config):
         database = call_with_supported_kwargs(
             tune_relay,
@@ -226,33 +269,87 @@ def tune_and_build_with_metaschedule(
             params=params,
             work_dir=str(work_dir),
             max_trials_global=max_trials_global,
+            max_trials_per_task=max_trials_per_task,
             num_trials_per_iter=num_trials_per_iter,
-            runner=runner,
+            runner=make_runner_config(),
             builder=builder_config,
         )
 
         untuned_tasks = find_untuned_tasks(mod, target, params, database, ms)
-        if untuned_tasks:
+        if untuned_tasks and untuned_retry_trials > 0:
+            # A poisoned CUDA context (see build_recycling_local_runner) is a
+            # likely cause of a task ending up with zero measured trials even
+            # though its schedule itself is fine. work_dir/database already
+            # persisted every trial that DID succeed, so re-entering tune_relay
+            # on the same work_dir with a brand-new runner process gives the
+            # still-untuned tasks a fresh, unpoisoned shot before we give up on
+            # them and discard the rest of the (successfully tuned) database.
             print(
-                f"[TVM METASCHEDULE] {len(untuned_tasks)} task(s) have no measured "
-                "schedule in the tuning database; falling back to a non-MetaSchedule "
-                "Relay build (opt_level=3) to guarantee executable kernel code:"
+                f"[TVM METASCHEDULE] {len(untuned_tasks)} task(s) still lack a measured "
+                f"schedule; retrying with a fresh runner process and a "
+                f"{untuned_retry_trials}-trial top-up budget:"
             )
             for name in untuned_tasks:
                 print(f"  - {name}")
+            database = call_with_supported_kwargs(
+                tune_relay,
+                mod=mod,
+                target=target,
+                params=params,
+                work_dir=str(work_dir),
+                max_trials_global=untuned_retry_trials,
+                max_trials_per_task=max_trials_per_task,
+                num_trials_per_iter=num_trials_per_iter,
+                runner=make_runner_config(),
+                builder=builder_config,
+            )
+            untuned_tasks = find_untuned_tasks(mod, target, params, database, ms)
+
+        if untuned_tasks:
+            # Don't throw away the tuned schedules for every other task just
+            # because a handful of tasks never got a measured record.
+            # compile_relay()'s TE compiler already does a per-PrimFunc
+            # database lookup (see te_compiler_cache.cc): a miss logs a
+            # warning and falls back to TVM's default (untuned) schedule for
+            # *that one task only*, leaving every tuned task's kernel intact.
+            print(
+                f"[TVM METASCHEDULE] {len(untuned_tasks)} task(s) still have no measured "
+                "schedule in the tuning database after retry; compile_relay() will fall "
+                "back to TVM's default (untuned) schedule for just these kernels while "
+                "every other task keeps its MetaSchedule-tuned kernel:"
+            )
+            for name in untuned_tasks:
+                print(f"  - {name}")
+
+        try:
+            lib = call_with_supported_kwargs(
+                compile_relay,
+                database=database,
+                mod=mod,
+                target=target,
+                params=params,
+                pass_config=pass_config,
+            )
+        except Exception:
+            if not untuned_tasks:
+                raise
+            # Some untuned tasks can leave compile_relay() with an
+            # unscheduled/unbound PrimFunc that fails a codegen-time
+            # verification pass (e.g. VerifyMemory) instead of degrading
+            # gracefully -- see find_untuned_tasks()'s docstring. Only in
+            # that case do we fall all the way back to a plain, non-tuned
+            # build of the whole module so we still produce something
+            # executable.
+            print(
+                "[TVM METASCHEDULE] Per-task fallback via compile_relay() could not "
+                "produce a valid build (likely an unscheduled PrimFunc for one of the "
+                "untuned tasks above); falling back to a non-MetaSchedule Relay build "
+                "(opt_level=3) for the entire module as a last resort:"
+            )
+            traceback.print_exc()
             lib = build_without_tuning(
                 mod, params, target, relay, tvm, build_fallback_pass_config(fuse_max_depth)
             )
-            return database, lib, untuned_tasks
-
-        lib = call_with_supported_kwargs(
-            compile_relay,
-            database=database,
-            mod=mod,
-            target=target,
-            params=params,
-            pass_config=pass_config,
-        )
     return database, lib, untuned_tasks
 
 
@@ -284,7 +381,7 @@ def run_tvm_graph_executor(lib, input_data, repeat: int, number: int, dev, graph
         repeat=repeat,
     )
     prof = timer()
-    per_run_ms = [float(t) * 1000.0 / float(number) for t in prof.results]
+    per_run_ms = [float(t) * 1000.0 for t in prof.results]
 
     # Scheduling overhead: CPU-side dispatch time for module.run() before the
     # device sync, measured separately from time_evaluator's own device-synced
@@ -319,6 +416,7 @@ def benchmark_onnx_with_tvm(
     target_text: str,
     dev_id: int,
     max_trials_global: int,
+    max_trials_per_task: int,
     num_trials_per_iter: int,
     runner: str,
     builder: str,
@@ -339,6 +437,7 @@ def benchmark_onnx_with_tvm(
         "precision": precision,
         "target": target_text,
         "max_trials_global": max_trials_global,
+        "max_trials_per_task": max_trials_per_task,
         "num_trials_per_iter": num_trials_per_iter,
         "runner": runner,
         "builder": builder,
@@ -384,6 +483,7 @@ def benchmark_onnx_with_tvm(
                 target=target,
                 work_dir=tune_dir,
                 max_trials_global=max_trials_global,
+                max_trials_per_task=max_trials_per_task,
                 num_trials_per_iter=num_trials_per_iter,
                 runner=runner,
                 builder=builder,
@@ -475,7 +575,8 @@ def main():
 
     parser.add_argument("--target", default="cuda")
     parser.add_argument("--dev-id", type=int, default=0)
-    parser.add_argument("--max-trials-global", type=int, default=8192)
+    parser.add_argument("--max-trials-global", type=int, default=16384)
+    parser.add_argument("--max-trials-per-task", type=int, default=512)
     parser.add_argument("--num-trials-per-iter", type=int, default=64)
     parser.add_argument("--runner", default="local")
     parser.add_argument("--builder", default="local")
@@ -483,13 +584,13 @@ def main():
     parser.add_argument(
         "--fuse-max-depth",
         type=int,
-        default=5,
+        default=10,
         help="Override for relay.FuseOps.max_depth (TVM's C++ default is 256). "
         "Caps how many ops FuseOps can chain into a single fused subgraph before "
-        "MetaSchedule tunes it; long injective chains (e.g. fake-quant style "
-        "greater/where/cast/divide chains) left uncapped can make AutoInline's "
-        "design-space generation take extremely long. Use <=0 to keep TVM's "
-        "built-in default.",
+        "MetaSchedule tunes it; long injective chains (e.g. dense+normalize+LIF "
+        "surrogate chains) left uncapped can make AutoInline's design-space "
+        "generation take many hours to even initialize for a single task. "
+        "Use <=0 to keep TVM's built-in default.",
     )
     parser.add_argument("--repeat", type=int, default=20)
     parser.add_argument("--number", type=int, default=10)
@@ -579,6 +680,7 @@ def main():
                         target_text=args.target,
                         dev_id=args.dev_id,
                         max_trials_global=args.max_trials_global,
+                        max_trials_per_task=args.max_trials_per_task,
                         num_trials_per_iter=args.num_trials_per_iter,
                         runner=args.runner,
                         builder=args.builder,

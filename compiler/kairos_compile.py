@@ -120,11 +120,18 @@ def build_kairos_compile_config(
     cudagraph_mode: str = "reduce-overhead",
     fullgraph: bool = False,
     dynamic: bool = False,
+    max_autotune: bool = False,
 ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     mode: Optional[str] = None
     options: Optional[Dict[str, Any]] = None
 
-    if enable_cudagraphs:
+    if max_autotune:
+        # Inductor's own template/epilogue autotuning search (distinct from
+        # Kairos's fused-kernel autotune) -- "max-autotune" mode also turns
+        # on CUDA graphs, so use the no-cudagraphs variant unless the caller
+        # actually asked for cudagraphs, to avoid silently enabling them.
+        mode = "max-autotune" if enable_cudagraphs else "max-autotune-no-cudagraphs"
+    elif enable_cudagraphs:
         if cudagraph_mode == "reduce-overhead":
             mode = "reduce-overhead"
         elif cudagraph_mode == "triton-option":
@@ -148,6 +155,7 @@ def build_kairos_compile_config(
     config = {
         "enable_cudagraphs": bool(enable_cudagraphs),
         "cudagraph_mode": cudagraph_mode,
+        "max_autotune": bool(max_autotune),
         "compile_mode": mode,
         "compile_options": options,
         "backend": str(backend),
@@ -165,6 +173,7 @@ def compile_with_kairos_options(
     cudagraph_mode: str = "reduce-overhead",
     fullgraph: bool = False,
     dynamic: bool = False,
+    max_autotune: bool = False,
 ):
     kwargs, config = build_kairos_compile_config(
         backend=backend,
@@ -172,11 +181,13 @@ def compile_with_kairos_options(
         cudagraph_mode=cudagraph_mode,
         fullgraph=fullgraph,
         dynamic=dynamic,
+        max_autotune=max_autotune,
     )
     print(
         "[Compile Config] "
         f"enable_cudagraphs={config['enable_cudagraphs']} "
         f"cudagraph_mode={config['cudagraph_mode']} "
+        f"max_autotune={config['max_autotune']} "
         f"mode={config['compile_mode']} "
         f"options={config['compile_options']}"
     )

@@ -34,7 +34,7 @@ OUT_ROOT=test/tvm_metaschedule_full_validation
 mkdir -p ${OUT_ROOT}
 
 BATCH_SIZE_OVERRIDE=""
-FUSE_MAX_DEPTH=5
+FUSE_MAX_DEPTH=10
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --batch-size)
@@ -57,7 +57,7 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: $0 [--batch-size N] [--fuse-max-depth N]"
       echo "  --batch-size N      use N for every model; otherwise use per-model defaults"
       echo "  --fuse-max-depth N  cap on relay.FuseOps.max_depth passed to MetaSchedule"
-      echo "                      tuning/compile (default: 5; TVM's own default is 256;"
+      echo "                      tuning/compile (default: 10; TVM's own default is 256;"
       echo "                      use <=0 to keep TVM's built-in default)"
       exit 0
       ;;
@@ -69,15 +69,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 MODELS=(
-  "vgg11"
-  "vgg16"
-  "mobilenetv1"
   "mobilenetv2"
-  "spiketransformer"
-  "spikebert"
-  "convlstm"
-  "mamba"
-  "deepspeech2"
 )
 
 PRECISIONS=(
@@ -98,7 +90,7 @@ for MODEL in "${MODELS[@]}"; do
     BATCH_SIZE=${BATCH_SIZE_OVERRIDE}
   elif [[ "${MODEL}" == "vgg11" ]]; then
     BATCH_SIZE=8
-  elif [[ "${MODEL}" == "vgg16" ]]; then
+  elif [[ "${MODEL}" == "vgg16" || "${MODEL}" == "nafnet" || "${MODEL}" == "bsrn" ]]; then
     BATCH_SIZE=4
   else
     BATCH_SIZE=16
@@ -130,7 +122,7 @@ for MODEL in "${MODELS[@]}"; do
       --transformer-vocab-size 30522 \
       --transformer-num-classes 100 \
       --target cuda \
-      --max-trials-global 8192 \
+      --max-trials-global 65536 \
       --num-trials-per-iter 64 \
       --builder-timeout-sec 300 \
       --fuse-max-depth ${FUSE_MAX_DEPTH} \

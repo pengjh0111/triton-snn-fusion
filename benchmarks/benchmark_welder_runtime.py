@@ -514,6 +514,77 @@ def decompose_layernorm(onnx_path: Path) -> int:
     return replaced
 
 
+def decompose_softplus(onnx_path: Path) -> int:
+    """Rewrite Softplus nodes into their primitive-op decomposition.
+
+    NNFusion's ONNX frontend has its Softplus translator commented out
+    (`//REGISTER_OPERATOR("Softplus", 1, softplus);` in ops_bridge.cpp), so
+    the op falls through to a GenericOp with no registered infershape/Antares
+    IR and the C++ import stage hard-aborts (`No infershape or Antares IR
+    found for op type: Softplus`). Mamba's `dt` projection applies softplus
+    once per block (384 nodes here). Every primitive below -- Abs, Neg, Exp,
+    Add, Log, Relu -- has a live translator, so decomposing sidesteps the gap.
+
+    Uses the numerically stable identity
+        softplus(x) = relu(x) + log(1 + exp(-|x|))
+    which is exact (equal to log(1 + exp(x)) for all x) and never overflows:
+    exp(-|x|) lies in (0, 1], so 1 + exp(-|x|) lies in (1, 2] and its log is
+    always well defined. This matches torch's default softplus (beta=1); the
+    threshold=20 linear cutoff torch uses for large x is already implied here
+    since relu(x)==x and log(1+exp(-|x|))->0 as x grows.
+    """
+    model = onnx.load(str(onnx_path))
+    graph = model.graph
+
+    new_nodes = []
+    replaced = 0
+    for node in graph.node:
+        if node.op_type != "Softplus":
+            new_nodes.append(node)
+            continue
+
+        x = node.input[0]
+        base = node.output[0]
+
+        def t(suffix):
+            return f"{base}/{suffix}"
+
+        absx = onnx_helper.make_node(
+            "Abs", inputs=[x], outputs=[t("abs")], name=t("Abs"),
+        )
+        negabs = onnx_helper.make_node(
+            "Neg", inputs=[t("abs")], outputs=[t("negabs")], name=t("Neg"),
+        )
+        expv = onnx_helper.make_node(
+            "Exp", inputs=[t("negabs")], outputs=[t("exp")], name=t("Exp"),
+        )
+        one_const = onnx_helper.make_node(
+            "Constant", inputs=[], outputs=[t("one")], name=t("one_const"),
+            value=onnx_helper.make_tensor(t("one_val"), onnx.TensorProto.FLOAT, [], [1.0]),
+        )
+        one_plus = onnx_helper.make_node(
+            "Add", inputs=[t("exp"), t("one")], outputs=[t("one_plus")], name=t("Add_one"),
+        )
+        logv = onnx_helper.make_node(
+            "Log", inputs=[t("one_plus")], outputs=[t("log")], name=t("Log"),
+        )
+        relu = onnx_helper.make_node(
+            "Relu", inputs=[x], outputs=[t("relu")], name=t("Relu"),
+        )
+        out = onnx_helper.make_node(
+            "Add", inputs=[t("relu"), t("log")], outputs=[base], name=t("Add_out"),
+        )
+
+        new_nodes.extend([absx, negabs, expv, one_const, one_plus, logv, relu, out])
+        replaced += 1
+
+    if replaced:
+        del graph.node[:]
+        graph.node.extend(new_nodes)
+        save_onnx(model, onnx_path)
+    return replaced
+
+
 def normalize_negative_transpose_perm(onnx_path: Path) -> int:
     """Rewrite negative-indexed Transpose `perm` attributes to their positive form.
 
@@ -768,6 +839,23 @@ def compile_with_welder(
         f"~/cutlass/include:{base_env.get('CPLUS_INCLUDE_PATH', '')}"
     )
 
+    # nnfusion profiles candidate kernels by JIT-compiling one throwaway
+    # .cu -> .so *per kernel* into $NNFUSION_HOME/tmp (and nvcc spills its own
+    # intermediates to $TMPDIR). A big graph like mamba emits tens of thousands
+    # of these (>1GB) during a single compile. Unset, $NNFUSION_HOME defaults to
+    # ~/.nnfusion and $TMPDIR to /tmp -- both on the small 49G root fs, which
+    # fills mid-compile; nvcc then dies with "No space left on device", the
+    # profiler reports the kernel as failed, and nnfusion aborts (SIGABRT) on an
+    # unrelated-looking evaluator check. work_dir already lives on the large
+    # data volume, so anchor both scratch dirs beside it (unless the caller
+    # already pointed NNFUSION_HOME somewhere). The persistent tuning cache is
+    # elsewhere (~/.cache/nnfusion/kernel_cache.db) and is unaffected.
+    if not base_env.get("NNFUSION_HOME"):
+        nnfusion_home = work_dir / "nnfusion_home"
+        (nnfusion_home / "tmp").mkdir(parents=True, exist_ok=True)
+        base_env["NNFUSION_HOME"] = str(nnfusion_home)
+        base_env["TMPDIR"] = str(nnfusion_home / "tmp")
+
     # Must be the absolute path, not the bare "model.onnx" relative filename:
     # nnfusion resolves an external-data tensor's companion file as
     # `dirname(argv[1]) + "/" + location` (graph_convert.cpp), and computes
@@ -990,6 +1078,7 @@ def run_case(model_name: str, execution_mode: str, precision: str, args) -> Dict
         result["split_sizes_rewritten"] = replace_split_sizes_input_with_attribute(onnx_path)
         result["reducesum_axes_rewritten"] = replace_reducesum_axes_input_with_attribute(onnx_path)
         result["layernorm_decomposed"] = decompose_layernorm(onnx_path)
+        result["softplus_decomposed"] = decompose_softplus(onnx_path)
 
         io_info = infer_output_shape(model, x)
         result["output_shape"] = io_info["shape"]
@@ -1105,6 +1194,12 @@ def parse_args():
     p.add_argument("--deepspeech2-conv-channels", type=int, default=32)
     p.add_argument("--deepspeech2-gru-hidden", type=int, default=800)
     p.add_argument("--deepspeech2-gru-layers", type=int, default=3)
+    p.add_argument("--nafnet-width", type=int, default=8)
+    p.add_argument("--nafnet-enc-blk-nums", type=int, nargs=4, default=[2, 2, 4, 8])
+    p.add_argument("--nafnet-middle-blk-num", type=int, default=12)
+    p.add_argument("--nafnet-dec-blk-nums", type=int, nargs=4, default=[2, 2, 2, 2])
+    p.add_argument("--bsrn-num-feat", type=int, default=16)
+    p.add_argument("--bsrn-num-block", type=int, default=8)
 
     p.add_argument("--opset", type=int, default=17)
     p.add_argument("--out-dir", default="test/welder_validation")
@@ -1119,7 +1214,7 @@ def parse_args():
                     help="Pass --nofusion to welder's run_compiler: tune every op "
                          "individually instead of building multi-node fusion groups.")
     p.add_argument(
-        "--compile-timeout-sec", type=int, default=7200,
+        "--compile-timeout-sec", type=int, default=72000,
         help="Welder's autotuner compiles+profiles ~topk candidates per fusion "
              "group on the real GPU; for a full model at topk=20 this routinely "
              "takes over an hour (~14 min was observed at topk=3), not seconds.",

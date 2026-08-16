@@ -3,6 +3,7 @@
 import argparse
 import copy
 import json
+import os
 import re
 import subprocess
 import sys
@@ -355,6 +356,18 @@ def parse_trtexec_output(text: str) -> Dict[str, Any]:
             throughput_match.group(1)
         )
 
+    # trtexec's own reported engine-build time -- this *is* the TensorRT
+    # tactic autotuning/kernel-selection cost (the builder searches and
+    # times candidate kernel implementations before picking one), distinct
+    # from the timed inference loop captured above.
+    build_match = re.search(
+        r"Engine built in ([\d.]+) sec\.",
+        text,
+    )
+
+    if build_match:
+        out["autotune_seconds"] = float(build_match.group(1))
+
     return out
 
 
@@ -403,6 +416,19 @@ def run_trtexec(
     print("[TRTEXEC]")
     print(" ".join(cmd))
 
+    # TensorRT's own tactic-timing cache is already scoped to this single
+    # build (trtexec logs "Local timing cache ... will not be stored" since
+    # --timingCacheFile is never passed above, so that's not a factor). But
+    # the CUDA driver's JIT compute cache (~/.nv/ComputeCache by default)
+    # persists across *all* processes on the machine and is keyed on kernel
+    # signature -- so once one model's build JIT-compiles a conv/gemm
+    # kernel shape, any later model/run whose search visits the same shape
+    # gets a warm SASS binary instead of a real compile, understating this
+    # build's measured autotune cost. Disable it for this subprocess only
+    # so "Engine built in X sec." reflects a genuinely cold build.
+    trtexec_env = dict(os.environ)
+    trtexec_env["CUDA_CACHE_DISABLE"] = "1"
+
     try:
         proc = subprocess.run(
             cmd,
@@ -410,6 +436,7 @@ def run_trtexec(
             stderr=subprocess.STDOUT,
             text=True,
             check=False,
+            env=trtexec_env,
         )
     except FileNotFoundError as exc:
         text = f"trtexec not found: {exc}"

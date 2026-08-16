@@ -1,8 +1,22 @@
+import os
 from typing import Tuple
 
 import torch
 import triton
 import triton.language as tl
+
+
+def _allowed_temporal_lengths():
+    # The temporal loop is `for group_start in tl.static_range(0, T, REUSE_GROUPS)`
+    # (REUSE_GROUPS in {1,2,4}); the only structural requirement is T % REUSE_GROUPS
+    # == 0, which the launcher already enforces (falls back to REUSE_GROUPS=1).
+    # T=32/64 are divisible by 1/2/4, so the {1,2,4,8,16} set is a conservative
+    # guard, not a structural limit. Opt in via KAIROS_ALLOW_EXTENDED_T=1.
+    if os.environ.get("KAIROS_ALLOW_EXTENDED_T", "") == "1":
+        # T=128 permitted for full-sweep characterization; note the static-unroll
+        # temporal loop makes T>=128 slow to compile.
+        return (1, 2, 4, 8, 16, 32, 64, 128)
+    return (1, 2, 4, 8, 16)
 
 
 TEMPORAL_POW2_CANDIDATES = (1, 2, 4, 8, 16)
@@ -271,8 +285,9 @@ def run_fused_temporal_linear_lif_state_kernel(
     out_features = int(weight.shape[0])
     if int(weight.shape[1]) != in_features:
         raise RuntimeError(f"weight in_features {int(weight.shape[1])} does not match x_seq {in_features}")
-    if T not in (1, 2, 4, 8, 16):
-        raise RuntimeError(f"unsupported temporal length T={T}; expected one of 1,2,4,8,16")
+    _allowed_T = _allowed_temporal_lengths()
+    if T not in _allowed_T:
+        raise RuntimeError(f"unsupported temporal length T={T}; expected one of {_allowed_T}")
 
     x_seq = x_seq.contiguous()
     weight = weight.contiguous()

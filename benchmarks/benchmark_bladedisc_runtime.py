@@ -48,7 +48,7 @@ from benchmarks.validate_kairos_baselines import (  # noqa: E402
 WORKLOADS = [
     "resnet18", "resnet34", "alexnet", "zfnet", "vgg11", "vgg16",
     "mobilenetv1", "mobilenetv2", "spiketransformer", "spikebert",
-    "convlstm", "mamba", "deepspeech2",
+    "convlstm", "mamba", "deepspeech2", "nafnet", "bsrn",
 ]
 
 
@@ -86,6 +86,12 @@ def build_case(model_name, args, dtype):
         deepspeech2_conv_channels=args.deepspeech2_conv_channels,
         deepspeech2_gru_hidden=args.deepspeech2_gru_hidden,
         deepspeech2_gru_layers=args.deepspeech2_gru_layers,
+        nafnet_width=args.nafnet_width,
+        nafnet_enc_blk_nums=args.nafnet_enc_blk_nums,
+        nafnet_middle_blk_num=args.nafnet_middle_blk_num,
+        nafnet_dec_blk_nums=args.nafnet_dec_blk_nums,
+        bsrn_num_feat=args.bsrn_num_feat,
+        bsrn_num_block=args.bsrn_num_block,
     )
     wrapper_cls = (
         SequenceInputLoopWrapper
@@ -265,6 +271,12 @@ def parse_args():
     p.add_argument("--deepspeech2-conv-channels", type=int, default=32)
     p.add_argument("--deepspeech2-gru-hidden", type=int, default=800)
     p.add_argument("--deepspeech2-gru-layers", type=int, default=3)
+    p.add_argument("--nafnet-width", type=int, default=8)
+    p.add_argument("--nafnet-enc-blk-nums", type=int, nargs=4, default=[2, 2, 4, 8])
+    p.add_argument("--nafnet-middle-blk-num", type=int, default=12)
+    p.add_argument("--nafnet-dec-blk-nums", type=int, nargs=4, default=[2, 2, 2, 2])
+    p.add_argument("--bsrn-num-feat", type=int, default=16)
+    p.add_argument("--bsrn-num-block", type=int, default=8)
     return p.parse_args()
 
 

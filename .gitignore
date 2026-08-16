@@ -4,6 +4,12 @@ __pycache__/
 
 aot_result/
 
+torchinductor_ubuntu/
+
+*.pdf
+
+*.csv
+
 kairos_benchmark_resnet18_w*/
 kairos_benchmark_resnet32_w*/
 

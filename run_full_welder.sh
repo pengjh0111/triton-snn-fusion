@@ -61,11 +61,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 MODELS=(
-  "spiketransformer"
-  "spikebert"
-  "convlstm"
   "mamba"
-  "deepspeech2"
 )
 PRECISIONS=(
   "tf32"

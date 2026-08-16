@@ -29,25 +29,24 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+# MODELS=(
+# "mamba"
+# )
 MODELS=(
+  "resnet18"
+  "resnet34"
+  "alexnet"
+  "zfnet"
+  "vgg11"
+  "vgg16"
+  "mobilenetv1"
+  "mobilenetv2"
   "spiketransformer"
   "spikebert"
+  "convlstm"
+  "mamba"
+  "deepspeech2"
 )
-# MODELS=(
-#   "resnet18"
-#   "resnet34"
-#   "alexnet"
-#   "zfnet"
-#   "vgg11"
-#   "vgg16"
-#   "mobilenetv1"
-#   "mobilenetv2"
-#   "spiketransformer"
-#   "spikebert"
-#   "convlstm"
-#   "mamba"
-#   "deepspeech2"
-# )
 PRECISIONS=(
   "tf32"
 )
@@ -66,7 +65,7 @@ for MODEL in "${MODELS[@]}"; do
     BATCH_SIZE=${BATCH_SIZE_OVERRIDE}
   elif [[ "${MODEL}" == "vgg11" ]]; then
     BATCH_SIZE=8
-  elif [[ "${MODEL}" == "vgg16" ]]; then
+  elif [[ "${MODEL}" == "vgg16" || "${MODEL}" == "nafnet" || "${MODEL}" == "bsrn" ]]; then
     BATCH_SIZE=4
   else
     BATCH_SIZE=16
@@ -105,6 +104,76 @@ python3 benchmarks/benchmark_tensorrt_runtime.py \
 
   done
 done
+
+############################################
+# AUTOTUNE OVERHEAD SUMMARY
+############################################
+# trtexec reports its own engine-build time ("Engine built in X sec.") --
+# that's the TensorRT builder's tactic autotuning/kernel-selection cost,
+# parsed into parsed.autotune_seconds by parse_trtexec_output() in
+# benchmark_tensorrt_runtime.py, and already present in each
+# tensorrt_summary_all.json under result["parsed"]["autotune_seconds"].
+# Walk all of them here and collect one flat JSON report of autotune
+# overhead per workload (model/batch/precision/execution_mode).
+AUTOTUNE_SUMMARY_JSON=${OUT_ROOT}/autotune_overhead_summary.json
+
+python3 - "${OUT_ROOT}" "${AUTOTUNE_SUMMARY_JSON}" <<'PY'
+import json
+import re
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+out_root = Path(sys.argv[1])
+summary_path = Path(sys.argv[2])
+
+DIR_RE = re.compile(r"^(?P<prec>[a-z0-9]+)_b(?P<batch>\d+)$")
+
+records = []
+by_model = defaultdict(float)
+
+for summary_file in sorted(out_root.glob("*/*/tensorrt_summary_all.json")):
+    case_dir = summary_file.parent
+    model_dir = case_dir.parent
+
+    m = DIR_RE.match(case_dir.name)
+    if not m:
+        continue
+
+    batch_size = int(m.group("batch"))
+    precision = m.group("prec")
+
+    payload = json.loads(summary_file.read_text())
+
+    for model_name, by_exec_mode in payload.items():
+        for execution_mode, by_precision in by_exec_mode.items():
+            for prec_key, result in by_precision.items():
+                parsed = result.get("parsed", {}) or {}
+                autotune_seconds = parsed.get("autotune_seconds")
+
+                records.append({
+                    "model": model_name,
+                    "batch_size": batch_size,
+                    "precision": prec_key,
+                    "execution_mode": execution_mode,
+                    "ok": result.get("ok"),
+                    "trtexec_ok": result.get("trtexec_ok"),
+                    "autotune_seconds": autotune_seconds,
+                    "mean_ms": parsed.get("latency_ms", {}).get("mean"),
+                    "out_dir": str(case_dir),
+                })
+
+                if autotune_seconds is not None:
+                    by_model[model_name] += autotune_seconds
+
+report = {
+    "workloads": records,
+    "total_autotune_seconds_by_model": dict(by_model),
+}
+
+summary_path.write_text(json.dumps(report, indent=2, sort_keys=True))
+print(f"[AUTOTUNE OVERHEAD] wrote {len(records)} workload records to {summary_path}")
+PY
 
 echo "========================================="
 echo "ALL TENSORRT TESTS FINISHED"
